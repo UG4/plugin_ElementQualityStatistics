@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int SayHello()
+void SayHello()
 {
 	UG_LOG("HELLO From Grid Statistics!\n");
 }
