@@ -7,6 +7,7 @@
 #include "common/error.h"
 #include "lib_disc/domain.h"
 #include "lib_grid/lib_grid.h"
+#include "element_quality_statistics.h"
 
 #include <string>
 
@@ -22,4 +23,5 @@ extern "C" UG_API void InitUGPlugin(ug::bridge::Registry* reg, string parentGrou
 	string grp(parentGroup); grp.append("ElementQualityStatistics/");
 
 	reg->add_function("SayHello", &SayHello, grp);
+	reg->add_function("element_quality_statistics", &ug::element_quality_statistics, grp);
 }

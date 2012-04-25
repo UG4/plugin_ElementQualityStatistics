@@ -11,7 +11,9 @@ include("../../../ug_plugin_cmake_includes.txt")
 
 
 # sources
-set(SOURCES	plugin_main.cpp)
+set(SOURCES	plugin_main.cpp
+			element_quality_statistics.cpp
+			volume_calculation.cpp)
 
 
 # create a shared library from the sources and link it against ug4.
