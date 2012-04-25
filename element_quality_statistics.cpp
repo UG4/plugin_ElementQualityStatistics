@@ -512,7 +512,7 @@ void MinFaceAngleHistogram(Grid& grid)
 			}
 		#endif
 	}
-}
+
 
 //	MinFaceAngle-Histogram output table
 	UG_LOG(endl << "MinFaceAngle-Histogram\n" << endl);
