@@ -493,22 +493,20 @@ void MinFaceAngleHistogram(Grid& grid)
 
 //	Count the faces in their corresponding MinAngle range (18 ranges)
 	for(uint i = 0; i < MinFaceAngles.size(); ++i) {
-		double MinFacesAngle = MinFacesAngle[i];
+		double MinFaceAngle = MinFaceAngles[i];
 		#ifdef __GXX_EXPERIMENTAL_CXX0X__
-			for (unsigned int range = 0; range < 18; range++) {
-				if (isInRange(range*10, (range+1)*10)(MinFacesAngle)) {
+			for (uint range = 0; range < 18; range++) {
+				if (isInRange(range*10, (range+1)*10)(MinFaceAngle)) {
 					++counter[range];
 					break;
 				}
-				continue;
 			}
 		#else
-			for (unsigned int range = 0; range < 180; range+=10) {
-				if (range < MinFacesAngle < range+10) {
+			for (uint range = 0; range < 180; range+=10) {
+				if (range < MinFaceAngle < range+10) {
 					++counter[range];
 					break;
 				}
-				continue;
 			}
 		#endif
 	}
@@ -552,23 +550,21 @@ void MinVolumeAngleHistogram(Grid& grid)
 
 //	Count the volumes in their corresponding MinAngle range (18 ranges)
 	for(uint i = 0; i < MinVolumeAngles.size(); ++i) {
-		double MinVolumeAngle = MinVolumeAngle[i];
+		double MinVolumeAngle = MinVolumeAngles[i];
 
 		#ifdef __GXX_EXPERIMENTAL_CXX0X__
-			for (unsigned int range = 0; range < 18; range++) {
-				if (isInRange(range*10, (range+1)*10)(MinVolumeAngles[i])) {
+			for (uint range = 0; range < 18; range++) {
+				if (isInRange(range*10, (range+1)*10)(MinVolumeAngle)) {
 					++counter[range];
 					break;
 				}
-				continue;
 			}
 		#else
-			for (unsigned int range = 0; range < 180; range+=10) {
+			for (uint range = 0; range < 180; range+=10) {
 				if (range < MinVolumeAngle < range+10) {
 					++counter[range];
 					break;
 				}
-				continue;
 			}
 		#endif
 	}
