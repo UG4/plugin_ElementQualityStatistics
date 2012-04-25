@@ -8,6 +8,12 @@
 
 #include "element_quality_statistics.h"
 
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+	#include <functional>
+	function<bool(const int)> isInRange(const int lo, const int high) {
+		return [lo,hi](const int res) { return res >= lo && res <= hi; };
+	}
+#endif
 
 namespace ug
 {
@@ -486,134 +492,27 @@ void MinFaceAngleHistogram(Grid& grid)
 	sort (MinFaceAngles.begin(), MinFaceAngles.end());
 
 //	Count the faces in their corresponding MinAngle range (18 ranges)
-	for(uint i = 0; i < MinFaceAngles.size(); ++i)
-	{
-	//	range 0 - 10 degrees
-		if(MinFaceAngles[i] < 10)
-		{
-			++counter[0];
-			continue;
-		}
-
-	//	range 10 - 20 degrees
-		if(MinFaceAngles[i] < 20)
-		{
-			++counter[1];
-			continue;
-		}
-
-	//	range 20 - 30 degrees
-		if(MinFaceAngles[i] < 30)
-		{
-			++counter[2];
-			continue;
-		}
-
-	//	range 30 - 40 degrees
-		if(MinFaceAngles[i] < 40)
-		{
-			++counter[3];
-			continue;
-		}
-
-	//	range 40 - 50 degrees
-		if(MinFaceAngles[i] < 50)
-		{
-			++counter[4];
-			continue;
-		}
-
-	//	range 50 - 60 degrees
-		if(MinFaceAngles[i] < 60)
-		{
-			++counter[5];
-			continue;
-		}
-
-	//	range 60 - 70 degrees
-		if(MinFaceAngles[i] < 70)
-		{
-			++counter[6];
-			continue;
-		}
-
-	//	range 70 - 80 degrees
-		if(MinFaceAngles[i] < 80)
-		{
-			++counter[7];
-			continue;
-		}
-
-	//	range 80 - 90 degrees
-		if(MinFaceAngles[i] < 90)
-		{
-			++counter[8];
-			continue;
-		}
-
-	//	range 90 - 100 degrees
-		if(MinFaceAngles[i] < 100)
-		{
-			++counter[9];
-			continue;
-		}
-
-	//	range 100 - 110 degrees
-		if(MinFaceAngles[i] < 110)
-		{
-			++counter[10];
-			continue;
-		}
-
-	//	range 110 - 120 degrees
-		if(MinFaceAngles[i] < 120)
-		{
-			++counter[11];
-			continue;
-		}
-
-	//	range 120 - 130 degrees
-		if(MinFaceAngles[i] < 130)
-		{
-			++counter[12];
-			continue;
-		}
-
-	//	range 130 - 140 degrees
-		if(MinFaceAngles[i] < 140)
-		{
-			++counter[13];
-			continue;
-		}
-
-	//	range 140 - 150 degrees
-		if(MinFaceAngles[i] < 150)
-		{
-			++counter[14];
-			continue;
-		}
-
-	//	range 150 - 160 degrees
-		if(MinFaceAngles[i] < 160)
-		{
-			++counter[15];
-			continue;
-		}
-
-	//	range 160 - 170 degrees
-		if(MinFaceAngles[i] < 170)
-		{
-			++counter[16];
-			continue;
-		}
-
-	//	range 170 - 180 degrees
-		if(MinFaceAngles[i] < 180)
-		{
-			++counter[17];
-			continue;
-		}
+	for(uint i = 0; i < MinFaceAngles.size(); ++i) {
+		double MinFacesAngle = MinFacesAngle[i];
+		#ifdef __GXX_EXPERIMENTAL_CXX0X__
+			for (unsigned int range = 0; range < 18; range++) {
+				if (isInRange(range*10, (range+1)*10)(MinFacesAngle)) {
+					++counter[range];
+					break;
+				}
+				continue;
+			}
+		#else
+			for (unsigned int range = 0; range < 180; range+=10) {
+				if (range < MinFacesAngle < range+10) {
+					++counter[range];
+					break;
+				}
+				continue;
+			}
+		#endif
 	}
+}
 
 //	MinFaceAngle-Histogram output table
 	UG_LOG(endl << "MinFaceAngle-Histogram\n" << endl);
@@ -650,134 +549,28 @@ void MinVolumeAngleHistogram(Grid& grid)
 //	Sort the calculated MinAngles in an ascending way
 	sort (MinVolumeAngles.begin(), MinVolumeAngles.end());
 
+
 //	Count the volumes in their corresponding MinAngle range (18 ranges)
-	for(uint i = 0; i < MinVolumeAngles.size(); ++i)
-	{
-	//	range 0 - 10 degrees
-		if(MinVolumeAngles[i] < 10)
-		{
-			++counter[0];
-			continue;
-		}
+	for(uint i = 0; i < MinVolumeAngles.size(); ++i) {
+		double MinVolumeAngle = MinVolumeAngle[i];
 
-	//	range 10 - 20 degrees
-		if(MinVolumeAngles[i] < 20)
-		{
-			++counter[1];
-			continue;
-		}
-
-	//	range 20 - 30 degrees
-		if(MinVolumeAngles[i] < 30)
-		{
-			++counter[2];
-			continue;
-		}
-
-	//	range 30 - 40 degrees
-		if(MinVolumeAngles[i] < 40)
-		{
-			++counter[3];
-			continue;
-		}
-
-	//	range 40 - 50 degrees
-		if(MinVolumeAngles[i] < 50)
-		{
-			++counter[4];
-			continue;
-		}
-
-	//	range 50 - 60 degrees
-		if(MinVolumeAngles[i] < 60)
-		{
-			++counter[5];
-			continue;
-		}
-
-	//	range 60 - 70 degrees
-		if(MinVolumeAngles[i] < 70)
-		{
-			++counter[6];
-			continue;
-		}
-
-	//	range 70 - 80 degrees
-		if(MinVolumeAngles[i] < 80)
-		{
-			++counter[7];
-			continue;
-		}
-
-	//	range 80 - 90 degrees
-		if(MinVolumeAngles[i] < 90)
-		{
-			++counter[8];
-			continue;
-		}
-
-	//	range 90 - 100 degrees
-		if(MinVolumeAngles[i] < 100)
-		{
-			++counter[9];
-			continue;
-		}
-
-	//	range 100 - 110 degrees
-		if(MinVolumeAngles[i] < 110)
-		{
-			++counter[10];
-			continue;
-		}
-
-	//	range 110 - 120 degrees
-		if(MinVolumeAngles[i] < 120)
-		{
-			++counter[11];
-			continue;
-		}
-
-	//	range 120 - 130 degrees
-		if(MinVolumeAngles[i] < 130)
-		{
-			++counter[12];
-			continue;
-		}
-
-	//	range 130 - 140 degrees
-		if(MinVolumeAngles[i] < 140)
-		{
-			++counter[13];
-			continue;
-		}
-
-	//	range 140 - 150 degrees
-		if(MinVolumeAngles[i] < 150)
-		{
-			++counter[14];
-			continue;
-		}
-
-	//	range 150 - 160 degrees
-		if(MinVolumeAngles[i] < 160)
-		{
-			++counter[15];
-			continue;
-		}
-
-	//	range 160 - 170 degrees
-		if(MinVolumeAngles[i] < 170)
-		{
-			++counter[16];
-			continue;
-		}
-
-	//	range 170 - 180 degrees
-		if(MinVolumeAngles[i] < 180)
-		{
-			++counter[17];
-			continue;
-		}
+		#ifdef __GXX_EXPERIMENTAL_CXX0X__
+			for (unsigned int range = 0; range < 18; range++) {
+				if (isInRange(range*10, (range+1)*10)(MinVolumeAngles[i])) {
+					++counter[range];
+					break;
+				}
+				continue;
+			}
+		#else
+			for (unsigned int range = 0; range < 180; range+=10) {
+				if (range < MinVolumeAngle < range+10) {
+					++counter[range];
+					break;
+				}
+				continue;
+			}
+		#endif
 	}
 
 //	MinVolumeAngle-Histogram output table
@@ -938,26 +731,6 @@ void element_quality_statistics(Grid& grid)
 	UG_LOG("--------------------------------------------------------------------------" << endl << endl);
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 
