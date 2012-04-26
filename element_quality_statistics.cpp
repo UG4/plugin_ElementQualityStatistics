@@ -10,9 +10,9 @@
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
 	#include <functional>
-	function<bool(const int)> isInRange(const int lo, const int high) {
-		return [lo,hi](const int res) { return res >= lo && res <= hi; };
-	}
+	  template <class T> function<bool(T)> isInRange(T low, T high) {
+      return [low,high](T value) { return std::fabs(value - low) >= std::numeric_limits<T>::epsilon() \
+                                       && std::fabs(value - high) <= std::numeric_limits<T>::epsilon(); }; }
 #endif
 
 namespace ug
@@ -225,8 +225,8 @@ number CalculateMinVolumeAngle(Grid& grid, Volume* v, Grid::VertexAttachmentAcce
 
 	//	!!!	Beware of the correct direction normals to get correct angle value !!!
 	//	INFO:	Angles of a regular tetrahedron:
-	//			- "Tetrahedron (dihedral) angle x" 	= 109,471...¡
-	//			- "Face-to-face angle y"			= 180¡ - x = 70,52...¡
+	//			- "Tetrahedron (dihedral) angle x" 	= 109,471...ï¿½
+	//			- "Face-to-face angle y"			= 180ï¿½ - x = 70,52...ï¿½
 		VecScale(vNorm1, vNorm1, -1);
 		tmpAngle = acos(VecDot(vNorm1, vNorm2));
 
