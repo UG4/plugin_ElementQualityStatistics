@@ -228,12 +228,21 @@ number CalculateMinVolumeAngle(Grid& grid, Volume* v, Grid::VertexAttachmentAcce
 		CalculateNormal(vNorm1, vNeighbourFacesToEdge[0], aaPos);
 		CalculateNormal(vNorm2, vNeighbourFacesToEdge[1], aaPos);
 
-	//	!!!	Beware of the correct direction normals to get correct angle value !!!
-	//	INFO:	Angles of a regular tetrahedron:
-	//			- "Tetrahedron (dihedral) angle x" 	= 109,471...ÔøΩ
-	//			- "Face-to-face angle y"			= 180ÔøΩ - x = 70,52...ÔøΩ
-		VecScale(vNorm1, vNorm1, -1);
+	/*	!!!	Beware of the correct direction normals to get correct angle value !!!
+		INFO:	Angles of a regular tetrahedron:
+				- "Tetrahedron (dihedral) angle x" 	= 109,471...deg
+				- "Face-to-face angle y"			= 180deg - x = 70,52...deg
+
+		--> Old version:
+		//VecScale(vNorm1, vNorm1, -1);
+		//tmpAngle = acos(VecDot(vNorm1, vNorm2));
+
+		--> New version:
+			(s.	"Qualitäts-Metriken und Optimierung von Tetraeder-Netzen",
+				 Seminararbeit von Johannes Ahlmann, Universität Karlsruhe)
+	*/
 		tmpAngle = acos(VecDot(vNorm1, vNorm2));
+		tmpAngle = PI - tmpAngle;
 
 	//	Check for minimality
 		if(tmpAngle < minAngle)
