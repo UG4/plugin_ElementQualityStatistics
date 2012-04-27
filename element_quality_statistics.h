@@ -49,26 +49,26 @@ UG_API
 inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, EdgeBase* e);
 
 
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateMinFaceAngle
-number CalculateMinFaceAngle(Grid& grid, Face* f, Grid::VertexAttachmentAccessor<APosition> aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindFaceWithSmallestMinAngle
-template <class TIterator, class TAAPosVRT>
-Face* FindFaceWithSmallestMinAngle(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
+template <class TAAPosVRT>
+number CalculateMinFaceAngle(Grid& grid, Face* f, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateVolumeMinAngle
-number CalculateMinVolumeAngle(Grid& grid, Volume* v, Grid::VertexAttachmentAccessor<APosition> aaPos);
+template <class TAAPosVRT>
+number CalculateMinVolumeAngle(Grid& grid, Volume* v, Grid::VertexAttachmentAccessor<APosition>& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindVolumeWithSmallestMinAngle
-template <class TIterator, class TAAPosVRT>
-Volume* FindVolumeWithSmallestMinAngle(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
+//	CalculateFaceMinHeight
+template <class TAAPosVRT>
+number CalculateMinTriangleHeight(Triangle* tri, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,6 +78,28 @@ number CalculateMinVolumeHeight(const Volume& vol,
 
 number CalculateMinVolumeHeight(const Tetrahedron& tet,
 								Grid::VertexAttachmentAccessor<APosition>& aaPos);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateTriangleAspectRatio
+template <class TAAPosVRT>
+number CalculateTriangleAspectRatio(Grid& grid, Triangle* tri, TAAPosVRT& aaPos);
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindFaceWithSmallestMinAngle
+template <class TIterator, class TAAPosVRT>
+Face* FindFaceWithSmallestMinAngle(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindVolumeWithSmallestMinAngle
+template <class TIterator, class TAAPosVRT>
+Volume* FindVolumeWithSmallestMinAngle(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,6 +132,10 @@ template <class TIterator, class TAAPosVRT>
 Volume* FindTetrahedronWithLargestAspectRatio(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
 
 
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	MinFaceAngleHistogram
 void MinFaceAngleHistogram(Grid& grid);
@@ -118,6 +144,10 @@ void MinFaceAngleHistogram(Grid& grid);
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	MinFaceAngleHistogram
 void MinVolumeAngleHistogram(Grid& grid);
+
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////

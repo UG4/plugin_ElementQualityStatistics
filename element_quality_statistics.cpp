@@ -104,9 +104,14 @@ inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, Edg
 }
 
 
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateMinFaceAngle
-number CalculateMinFaceAngle(Grid& grid, Face* f, Grid::VertexAttachmentAccessor<APosition> aaPos)
+template <class TAAPosVRT>
+number CalculateMinFaceAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 {
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
@@ -117,16 +122,19 @@ number CalculateMinFaceAngle(Grid& grid, Face* f, Grid::VertexAttachmentAccessor
 		grid.enable_options(GRIDOPT_AUTOGENERATE_SIDES);
 	}
 
+//	Get type of vertex attachment in aaPos and define it as ValueType
+	typedef typename TAAPosVRT::ValueType ValueType;
+
 //	Initialization
-	uint numElementVrts = f->num_vertices();
-	vector3 vNorm1, vNorm2;
-	vector3 vDir1, vDir2;
+	uint numFaceVrts = f->num_vertices();
+	ValueType vNorm1, vNorm2;
+	ValueType vDir1, vDir2;
 	number minAngle = 180.0;
 	number tmpAngle;
 	EdgeBase* vNeighbourEdgesToVertex[2];
 
 //	Iterate over all face vertices
-	for(uint vrtIter = 0; vrtIter < numElementVrts; ++vrtIter)
+	for(uint vrtIter = 0; vrtIter < numFaceVrts; ++vrtIter)
 	{
 		VertexBase* vrt = f->vertex(vrtIter);
 
@@ -165,41 +173,8 @@ number CalculateMinFaceAngle(Grid& grid, Face* f, Grid::VertexAttachmentAccessor
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindFaceWithSmallestMinAngle
-template <class TIterator, class TAAPosVRT>
-Face* FindFaceWithSmallestMinAngle(Grid& grid, TIterator facesBegin, TIterator facesEnd, TAAPosVRT& aaPos)
-{
-//	if volumesBegin equals volumesBegin, then the list is empty and we can
-//	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
-
-//	Initializations
-	Face* faceWithSmallestMinAngle = *facesBegin;
-	number smallestMinAngle = CalculateMinFaceAngle(grid, faceWithSmallestMinAngle, aaPos);
-	++facesBegin;
-
-//	compare all volumes and find that one with smallest minAngle
-	for(; facesBegin != facesEnd; ++facesBegin)
-	{
-		Face* curFace = *facesBegin;
-		number curSmallestMinAngle = CalculateMinFaceAngle(grid, curFace, aaPos);
-
-		if(curSmallestMinAngle < smallestMinAngle)
-		{
-			faceWithSmallestMinAngle = curFace;
-			smallestMinAngle = curSmallestMinAngle;
-		}
-	}
-
-	return faceWithSmallestMinAngle;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateMinVolumeAngle
-number CalculateMinVolumeAngle(Grid& grid, Volume* v, Grid::VertexAttachmentAccessor<APosition> aaPos)
+number CalculateMinVolumeAngle(Grid& grid, Volume* v, Grid::VertexAttachmentAccessor<APosition>& aaPos)
 {
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
@@ -259,6 +234,130 @@ number CalculateMinVolumeAngle(Grid& grid, Volume* v, Grid::VertexAttachmentAcce
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateMinTriangleHeight
+template <class TAAPosVRT>
+number CalculateMinTriangleHeight(Triangle* tri, TAAPosVRT& aaPos)
+{
+//	Get type of vertex attachment in aaPos and define it as ValueType
+	typedef typename TAAPosVRT::ValueType ValueType;
+
+	number minHeight, tmpMinHeight;
+	ValueType v = aaPos[tri->vertex(2)];
+
+//	Calculate start height and set to minHeight
+	minHeight = DistancePointToRay(v, aaPos[tri->vertex(0)], aaPos[tri->vertex(1)] - aaPos[tri->vertex(0)]);
+
+	for(uint i = 1; i < 3; ++i)
+	{
+		v = aaPos[tri->vertex((i+2)%3)];
+		tmpMinHeight = DistancePointToRay(v, 	aaPos[tri->vertex(i )],
+												aaPos[tri->vertex((i+1)%3)] - aaPos[tri->vertex((i))]);
+
+		if(tmpMinHeight < minHeight)
+		{
+			minHeight = tmpMinHeight;
+		}
+	}
+
+	return minHeight;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateVolumeMinHeight
+number CalculateMinVolumeHeight(const Volume& vol,
+								Grid::VertexAttachmentAccessor<APosition>& aaPos)
+{
+	switch (vol.reference_object_id())
+	{
+		case ROID_TETRAHEDRON:
+			return CalculateMinVolumeHeight(static_cast<Tetrahedron>(vol), aaPos);
+		/*
+		case ROID_PRISM:
+			return CalculateMinVolumeHeight(static_cast<Prism>(vol), aaPos);
+		case ROID_PYRAMID:
+			return CalculateMinVolumeHeight(static_cast<Pyramid>(vol), aaPos);
+		case ROID_HEXAHEDRON:
+			return CalculateMinVolumeHeight(static_cast<Hexahedron>(vol), aaPos);
+		*/
+		default:
+			UG_ASSERT(false, "dont know how to calculate height for given volume.");
+	}
+
+	return NAN;
+}
+
+number CalculateMinVolumeHeight(const Tetrahedron& tet,
+								Grid::VertexAttachmentAccessor<APosition>& aaPos)
+{
+	vector3& a = aaPos[tet.vertex(0)];
+	vector3& b = aaPos[tet.vertex(1)];
+	vector3& c = aaPos[tet.vertex(2)];
+	vector3& d = aaPos[tet.vertex(3)];
+
+	return CalculateMinTetrahedronHeight(a, b, c, d);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateTriangleAspectRatio
+template <class TAAPosVRT>
+number CalculateTriangleAspectRatio(Grid& grid, Triangle* tri, TAAPosVRT& aaPos)
+{
+	number AspectRatio;
+	number tmpMaxEdgeLength;
+	number maxEdgeLength;
+	number minTriangleHeight;
+
+	vector<EdgeBase*> edges;
+	CollectAssociated(edges, grid, tri);
+	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	maxEdgeLength = EdgeLength(longestEdge, aaPos);
+
+	minTriangleHeight = CalculateMinTriangleHeight(tri, aaPos);
+	AspectRatio = minTriangleHeight / maxEdgeLength;
+
+	return AspectRatio;
+}
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindFaceWithSmallestMinAngle
+template <class TIterator, class TAAPosVRT>
+Face* FindFaceWithSmallestMinAngle(Grid& grid, TIterator facesBegin, TIterator facesEnd, TAAPosVRT& aaPos)
+{
+//	if volumesBegin equals volumesBegin, then the list is empty and we can
+//	immediately return NULL
+	//	if(volumesBegin == volumesBegin)
+	//		return NULL;
+
+//	Initializations
+	Face* faceWithSmallestMinAngle = *facesBegin;
+	number smallestMinAngle = CalculateMinFaceAngle(grid, faceWithSmallestMinAngle, aaPos);
+	++facesBegin;
+
+//	compare all volumes and find that one with smallest minAngle
+	for(; facesBegin != facesEnd; ++facesBegin)
+	{
+		Face* curFace = *facesBegin;
+		number curSmallestMinAngle = CalculateMinFaceAngle(grid, curFace, aaPos);
+
+		if(curSmallestMinAngle < smallestMinAngle)
+		{
+			faceWithSmallestMinAngle = curFace;
+			smallestMinAngle = curSmallestMinAngle;
+		}
+	}
+
+	return faceWithSmallestMinAngle;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	FindVolumeWithSmallestMinAngle
 template <class TIterator, class TAAPosVRT>
 Volume* FindVolumeWithSmallestMinAngle(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
@@ -287,42 +386,6 @@ Volume* FindVolumeWithSmallestMinAngle(Grid& grid, TIterator volumesBegin, TIter
 	}
 
 	return volumeWithSmallestMinAngle;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateVolumeMinHeight
-number CalculateMinVolumeHeight(const Volume& vol,
-								Grid::VertexAttachmentAccessor<APosition>& aaPos)
-{
-	switch (vol.reference_object_id())
-	{
-		case ROID_TETRAHEDRON:
-			return CalculateMinVolumeHeight(static_cast<Tetrahedron>(vol), aaPos);
-		/*
-		case ROID_PRISM:
-			return CalculateMinVolumeHeight(static_cast<Prism>(vol), aaPos);
-		case ROID_PYRAMID:
-			return CalculateMinVolumeHeight(static_cast<Pyramid>(vol), aaPos);
-		case ROID_HEXAHEDRON:
-		*/
-			return CalculateMinVolumeHeight(static_cast<Hexahedron>(vol), aaPos);
-		default:
-			UG_ASSERT(false, "dont know how to calculate height for given volume.");
-	}
-
-	return NAN;
-}
-
-number CalculateMinVolumeHeight(const Tetrahedron& tet,
-								Grid::VertexAttachmentAccessor<APosition>& aaPos)
-{
-	vector3& a = aaPos[tet.vertex(0)];
-	vector3& b = aaPos[tet.vertex(1)];
-	vector3& c = aaPos[tet.vertex(2)];
-	vector3& d = aaPos[tet.vertex(3)];
-
-	return CalculateMinTetrahedronHeight(a, b, c, d);
 }
 
 
@@ -430,12 +493,13 @@ Volume* FindTetrahedronWithSmallestAspectRatio(Grid& grid, TIterator volumesBegi
 
 //	Initializations
 	Volume* volumeWithSmallestAspectRatio = *volumesBegin;
-	number smallestAspectRatio = CalculateVolume(*volumeWithSmallestAspectRatio, aaPos);
+	number smallestAspectRatio = CalculateTetrahedronAspectRatio(grid, *volumeWithSmallestAspectRatio);
 	++volumesBegin;
 
 //	compare all tetrahedrons and find that one with minimal aspect ratio
 	for(; volumesBegin != volumesEnd; ++volumesBegin)
 	{
+	//	typename TIterator::value_type curElem = *elemsBegin;
 		Volume* curVolume = *volumesBegin;
 		number curSmallestAspectRatio = CalculateTetrahedronAspectRatio(grid, *curVolume);
 
@@ -462,7 +526,7 @@ Volume* FindTetrahedronWithLargestAspectRatio(Grid& grid, TIterator volumesBegin
 
 //	Initializations
 	Volume* volumeWithLargestAspectRatio = *volumesBegin;
-	number largestAspectRatio = CalculateVolume(*volumeWithLargestAspectRatio, aaPos);
+	number largestAspectRatio = CalculateTetrahedronAspectRatio(grid, *volumeWithLargestAspectRatio);
 	++volumesBegin;
 
 //	compare all tetrahedrons and find that one with maximal aspect ratio
@@ -480,6 +544,10 @@ Volume* FindTetrahedronWithLargestAspectRatio(Grid& grid, TIterator volumesBegin
 
 	return volumeWithLargestAspectRatio;
 }
+
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -600,6 +668,10 @@ void MinVolumeAngleHistogram(Grid& grid)
 }
 
 
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	element_quality_statistics
 void ElementQualityStatistics(Grid& grid)
@@ -671,9 +743,9 @@ void ElementQualityStatistics(Grid& grid)
 		{
 		//	Tetrahedrons
 			tetrahedronWithSmallestAspectRatio = FindTetrahedronWithSmallestAspectRatio(grid,
-																						grid.volumes_begin(),
-																						grid.volumes_end(),
-																						aaPos);
+																					grid.begin<Tetrahedron>(),
+																					grid.end<Tetrahedron>(),
+																					aaPos);
 
 			tetrahedronWithLargestAspectRatio = FindTetrahedronWithLargestAspectRatio(	grid,
 																						grid.volumes_begin(),
