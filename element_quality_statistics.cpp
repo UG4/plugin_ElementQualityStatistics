@@ -602,7 +602,7 @@ void MinVolumeAngleHistogram(Grid& grid)
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	element_quality_statistics
-void element_quality_statistics(Grid& grid)
+void ElementQualityStatistics(Grid& grid)
 {
 	Grid::VertexAttachmentAccessor<AVector3> aaPos(grid, aPosition);
 

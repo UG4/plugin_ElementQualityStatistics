@@ -23,5 +23,5 @@ extern "C" UG_API void InitUGPlugin(ug::bridge::Registry* reg, string parentGrou
 	string grp(parentGroup); grp.append("ElementQualityStatistics/");
 
 	reg->add_function("SayHello", &SayHello, grp);
-	reg->add_function("element_quality_statistics", &ug::element_quality_statistics, grp);
+	reg->add_function("element_quality_statistics", &ug::ElementQualityStatistics, grp);
 }
