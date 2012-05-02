@@ -90,9 +90,15 @@ inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, Edg
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateMinFaceAngle
+//	CalculateMinAngle
+
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateMinAngle(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
+
+//	Face (Triangles and Quadrilaterals)
 template <class TAAPosVRT>
-number CalculateMinFaceAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
+number CalculateMinAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 {
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
@@ -152,11 +158,30 @@ number CalculateMinFaceAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 	return minAngle;
 }
 
+//	Tetrahedron
+template <class TAAPosVRT>
+number CalculateMinAngle(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
+{
+	return CalculateMinAngle(grid, static_cast<Volume*>(tet), aaPos);
+}
 
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateMinVolumeAngle
-number CalculateMinVolumeAngle(	Grid& grid, Volume* v,
-								Grid::VertexAttachmentAccessor<APosition>& aaPos)
+//	Prism
+template <class TAAPosVRT>
+number CalculateMinAngle(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
+{
+	return CalculateMinAngle(grid, static_cast<Volume*>(prism), aaPos);
+}
+
+//	Pyramid
+template <class TAAPosVRT>
+number CalculateMinAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
+{
+	return CalculateMinAngle(grid, static_cast<Volume*>(pyr), aaPos);
+}
+
+//	Volume
+template <class TAAPosVRT>
+number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 {
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
@@ -218,33 +243,39 @@ number CalculateMinVolumeAngle(	Grid& grid, Volume* v,
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateMinTriangleHeight
 template <class TAAPosVRT>
-number CalculateMinTriangleHeight(Triangle* tri, TAAPosVRT& aaPos)
+number CalculateMinTriangleHeight(Face* face, TAAPosVRT& aaPos)
 {
-//	Get type of vertex attachment in aaPos and define it as ValueType
-	typedef typename TAAPosVRT::ValueType ValueType;
-
-	number minHeight, tmpMinHeight;
-	ValueType v = aaPos[tri->vertex(2)];
-
-//	Calculate start height and set to minHeight
-	minHeight = DistancePointToRay(	v,
-									aaPos[tri->vertex(0)],
-									aaPos[tri->vertex(1)] - aaPos[tri->vertex(0)]);
-
-	for(uint i = 1; i < 3; ++i)
+	if(face->num_vertices() == 3)
 	{
-		v = aaPos[tri->vertex((i+2)%3)];
-		tmpMinHeight = DistancePointToRay(	v,
-											aaPos[tri->vertex(i )],
-											aaPos[tri->vertex((i+1)%3)] - aaPos[tri->vertex((i))]);
+	//	Get type of vertex attachment in aaPos and define it as ValueType
+		typedef typename TAAPosVRT::ValueType ValueType;
 
-		if(tmpMinHeight < minHeight)
+		number minHeight, tmpMinHeight;
+		ValueType v = aaPos[face->vertex(2)];
+		ValueType dir;
+
+	//	Calculate start height and set to minHeight
+		VecSubtract(dir, aaPos[face->vertex(1)], aaPos[face->vertex(0)]);
+		minHeight = DistancePointToRay(	v, aaPos[face->vertex(0)], dir);
+
+		for(uint i = 1; i < 3; ++i)
 		{
-			minHeight = tmpMinHeight;
-		}
-	}
+			v = aaPos[face->vertex((i+2)%3)];
+			VecSubtract(dir, aaPos[face->vertex((i+1)%3)], aaPos[face->vertex((i))]);
+			tmpMinHeight = DistancePointToRay(v, aaPos[face->vertex(i )], dir);
 
-	return minHeight;
+			if(tmpMinHeight < minHeight)
+			{
+				minHeight = tmpMinHeight;
+			}
+		}
+
+		return minHeight;
+	}
+	else
+		UG_ASSERT(false, "Error. Face is not a triangle.");
+
+	return NAN;
 }
 
 
@@ -253,7 +284,7 @@ number CalculateMinTriangleHeight(Triangle* tri, TAAPosVRT& aaPos)
 
 //	An unimplemented version, so that a compile error occurs if no overload exists.
 template <class TElem, class TAAPosVRT>
-number CalculateAspectRatio(Grid& grid, TElem*, TAAPosVRT& aaPos);
+number CalculateAspectRatio(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
 
 //	Face (Triangles and Quadrilaterals)
 template <class TAAPosVRT>
@@ -272,13 +303,13 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 	{
 		case ROID_TRIANGLE:
 		{
-		/* MINHEIGHT / MAXEDGELENGTH
+			/* MINHEIGHT / MAXEDGELENGTH
 			 * optimal Aspect Ratio of a regular triangle
 			 * Q = sqrt(3)/2 * a / a = 0.86602540378444...
 			 */
 
 		//	Calculate minimal triangle height
-			number minTriangleHeight = CalculateMinTriangleHeight(static_cast<Triangle*>(face), aaPos);
+			number minTriangleHeight = CalculateMinTriangleHeight(face, aaPos);
 
 		//	Calculate the aspect ratio
 			AspectRatio = minTriangleHeight / maxEdgeLength;
@@ -288,7 +319,7 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 
 		case ROID_QUADRILATERAL:
 		{
-		/* AREA / MAXEDGELENGTH */
+			/* AREA / MAXEDGELENGTH */
 		//	Calculate the element area
 			number area = FaceArea(face, aaPos);
 
@@ -336,7 +367,6 @@ number CalculateAspectRatio(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
 {
 	number AspectRatio;
 	number maxEdgeLength;
-	number minTetrahedronHeight;
 
 //	Collect element edges, find longest edge and calculate its length
 	vector<EdgeBase*> edges;
@@ -360,7 +390,6 @@ number CalculateAspectRatio(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 {
 	number AspectRatio;
 	number maxEdgeLength;
-	number minTetrahedronHeight;
 
 //	Collect element edges, find longest edge and calculate its length
 	vector<EdgeBase*> edges;
@@ -408,9 +437,10 @@ number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos)
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindFaceWithSmallestMinAngle
-template <class TIterator, class TAAPosVRT>
-Face* FindFaceWithSmallestMinAngle(Grid& grid, TIterator facesBegin, TIterator facesEnd, TAAPosVRT& aaPos)
+//	FindElementWithSmallestMinAngle
+template <class TElem, class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindElementWithSmallestMinAngle(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
 {
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
@@ -418,56 +448,24 @@ Face* FindFaceWithSmallestMinAngle(Grid& grid, TIterator facesBegin, TIterator f
 	//		return NULL;
 
 //	Initializations
-	Face* faceWithSmallestMinAngle = *facesBegin;
-	number smallestMinAngle = CalculateMinFaceAngle(grid, faceWithSmallestMinAngle, aaPos);
-	++facesBegin;
+	typename TIterator::value_type elementWithSmallestMinAngle = *elementsBegin;
+	number smallestMinAngle = CalculateMinAngle(grid, elementWithSmallestMinAngle, aaPos);
+	++elementsBegin;
 
 //	compare all volumes and find that one with smallest minAngle
-	for(; facesBegin != facesEnd; ++facesBegin)
+	for(; elementsBegin != elementsEnd; ++elementsBegin)
 	{
-		Face* curFace = *facesBegin;
-		number curSmallestMinAngle = CalculateMinFaceAngle(grid, curFace, aaPos);
+		typename TIterator::value_type curElement = *elementsBegin;
+		number curSmallestMinAngle = CalculateMinAngle(grid, curElement, aaPos);
 
 		if(curSmallestMinAngle < smallestMinAngle)
 		{
-			faceWithSmallestMinAngle = curFace;
+			elementWithSmallestMinAngle = curElement;
 			smallestMinAngle = curSmallestMinAngle;
 		}
 	}
 
-	return faceWithSmallestMinAngle;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindVolumeWithSmallestMinAngle
-template <class TIterator, class TAAPosVRT>
-Volume* FindVolumeWithSmallestMinAngle(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
-{
-//	if volumesBegin equals volumesBegin, then the list is empty and we can
-//	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
-
-//	Initializations
-	Volume* volumeWithSmallestMinAngle = *volumesBegin;
-	number smallestMinAngle = CalculateMinVolumeAngle(grid, volumeWithSmallestMinAngle, aaPos);
-	++volumesBegin;
-
-//	compare all volumes and find that one with smallest minAngle
-	for(; volumesBegin != volumesEnd; ++volumesBegin)
-	{
-		Volume* curVolume = *volumesBegin;
-		number curSmallestMinAngle = CalculateMinVolumeAngle(grid, curVolume, aaPos);
-
-		if(curSmallestMinAngle < smallestMinAngle)
-		{
-			volumeWithSmallestMinAngle = curVolume;
-			smallestMinAngle = curSmallestMinAngle;
-		}
-	}
-
-	return volumeWithSmallestMinAngle;
+	return elementWithSmallestMinAngle;
 }
 
 
@@ -500,9 +498,10 @@ Face* FindLargestFace(TIterator facesBegin, TIterator facesEnd, TAAPosVRT& aaPos
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindSmallestVolume
+//	FindSmallestVolumeElement
 template <class TIterator, class TAAPosVRT>
-Volume* FindSmallestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
+typename TIterator::value_type
+FindSmallestVolumeElement(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
 {
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
@@ -510,7 +509,7 @@ Volume* FindSmallestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosV
 	//		return NULL;
 
 //	Initializations
-	Volume* smallestVolume = *volumesBegin;
+	typename TIterator::value_type smallestVolume = *volumesBegin;
 	number smallestVolumeVolume = CalculateVolume(*smallestVolume, aaPos);
 	++volumesBegin;
 
@@ -532,9 +531,10 @@ Volume* FindSmallestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosV
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindLargestVolume
+//	FindLargestVolumeElement
 template <class TIterator, class TAAPosVRT>
-Volume* FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
+typename TIterator::value_type
+FindLargestVolumeElement(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
 {
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
@@ -542,7 +542,7 @@ Volume* FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVR
 	//		return NULL;
 
 //	Initializations
-	Volume* largestVolume = *volumesBegin;
+	typename TIterator::value_type largestVolume = *volumesBegin;
 	number largestVolumeVolume = CalculateVolume(*largestVolume, aaPos);
 	++volumesBegin;
 
@@ -565,7 +565,7 @@ Volume* FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVR
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithSmallestAspectRatio
-template <class TIterator, class TAAPosVRT>
+template <class TElem, class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator elemsBegin,
 												TIterator elemsEnd, TAAPosVRT& aaPos)
@@ -638,125 +638,97 @@ FindElementWithLargestAspectRatio(Grid& grid,  	TIterator elemsBegin,
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	MinFaceAngleHistogram
-void MinFaceAngleHistogram(Grid& grid)
+//	MinAngleHistogram
+template <class TIterator, class TAAPosVRT>
+void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
+									TIterator elementsEnd,
+									TAAPosVRT& aaPos,
+									uint stepSize)
 {
-//	Quality histograms
-	//ANumber aMinFaceAngle;
-	//Grid::FaceAttachmentAccessor<ANumber> aaFaceMinAngle(grid, aFaceMinAngle);
-
 //	Initialization
-	Grid::VertexAttachmentAccessor<AVector3> aaPos(grid, aPosition);
-	vector<number> MinFaceAngles;
-	uint counter[18] = {0};
+	vector<number> minAngles;
+	uint numRanges = floor(180 / stepSize);
+	vector<uint> counter(numRanges, 0);
+	typename TIterator::value_type refElem = *elementsBegin;
 
-//	Calculate the MinAngle of every face
-	for(FaceIterator fIter = grid.faces_begin(); fIter != grid.faces_end(); ++fIter)
+//	Calculate the minAngle of every element
+	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
 	{
-		number curFaceMinAngle = CalculateMinFaceAngle(grid, *fIter, aaPos);
-		MinFaceAngles.push_back(curFaceMinAngle);
+		number curMinAngle = CalculateMinAngle(grid, *iter, aaPos);
+		minAngles.push_back(curMinAngle);
 	}
 
-//	Sort the calculated MinAngles in an ascending way
-	sort (MinFaceAngles.begin(), MinFaceAngles.end());
+//	Sort the calculated minAngles in an ascending way
+	sort (minAngles.begin(), minAngles.end());
 
-//	Count the faces in their corresponding MinAngle range (18 ranges)
-	for(uint i = 0; i < MinFaceAngles.size(); ++i)
+//	Count the elements in their corresponding minAngle range (180/stepSize ranges)
+	for(uint i = 0; i < minAngles.size(); ++i)
 	{
-		number MinFaceAngle = MinFaceAngles[i];
-				#ifdef __GXX_EXPERIMENTAL_CXX0X__
-					for (uint range = 0; range < 18; range++) {
-						if (isInRange(range*10, (range+1)*10)(MinFaceAngle)) {
-							++counter[range];
-							break;
-						}
-					}
-				#else
-					for (uint range = 0; range < 18; range++) {
-						if (MinFaceAngle < (range+1)*10) {
-							++counter[range];
-							break;
-						}
-					}
-				#endif
-	}
-
-//	MinFaceAngle-Histogram output table
-	UG_LOG(endl << "MinFaceAngle-Histogram\n" << endl);
-	UG_LOG("   " << 	" 0"  << " - " << "10"  << " degrees   :   "  << counter[0] << "      |      " <<
-						" 90" << " - " << "100" << " degrees   :   "  << counter[9] << endl);
-	for(uint i = 1; i < 9; ++i)
-		{
-			UG_LOG("   " << 	i*10 		<< " - " << (i+1)*10 	<< " degrees   :   "  << counter[i] << "      |      " <<
-								(i+9)*10 	<< " - " << (i+9+1)*10 	<< " degrees   :   "  << counter[i+9] << endl);
-		}
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	MinFaceAngleHistogram
-void MinVolumeAngleHistogram(Grid& grid)
-{
-//	Quality histograms
-	//ANumber aMinFaceAngle;
-	//Grid::FaceAttachmentAccessor<ANumber> aaFaceMinAngle(grid, aFaceMinAngle);
-
-//	Initialization
-	Grid::VertexAttachmentAccessor<AVector3> aaPos(grid, aPosition);
-	vector<number> MinVolumeAngles;
-	uint counter[18] = {0};
-
-//	Calculate the MinAngle of every volume
-	for(VolumeIterator vIter = grid.volumes_begin(); vIter != grid.volumes_end(); ++vIter)
-	{
-		number curVolumeMinAngle = CalculateMinVolumeAngle(grid, *vIter, aaPos);
-		MinVolumeAngles.push_back(curVolumeMinAngle);
-	}
-
-//	Sort the calculated MinAngles in an ascending way
-	sort (MinVolumeAngles.begin(), MinVolumeAngles.end());
-
-//	Count the volumes in their corresponding MinAngle range (18 ranges)
-	for(uint i = 0; i < MinVolumeAngles.size(); ++i)
-	{
-		number MinVolumeAngle = MinVolumeAngles[i];
-
+		number minAngle = minAngles[i];
 		#ifdef __GXX_EXPERIMENTAL_CXX0X__
-			for (uint range = 0; range < 18; range++)
+			for (uint range = 0; range < numRanges; range++)
 			{
-				if (isInRange(range*10, (range+1)*10)(MinVolumeAngle))
+				if (isInRange(range*stepSize, (range+1)*stepSize)(minAngle))
 				{
 					++counter[range];
 					break;
 				}
 			}
 		#else
-			for (uint range = 0; range < 18; range++)
+			for (uint range = 0; range < numRanges; range++)
 			{
-				if (MinVolumeAngle < (range+1)*10)
+				if (minAngle < (range+1)*stepSize)
 				{
 					++counter[range];
 					break;
 				}
 			}
 		#endif
+	}
+
+
+//	Histogram table output section:
+
+//	Divide table into two halfs
+	uint numRows = ceil(number(numRanges) / 2.0);
+	ug::Table<std::stringstream> minAngleTable(numRows, 4);
+
+//	Specific element header
+	UG_LOG(endl << "MinAngle-Histogram for '" << refElem->reference_object_id() << "' elements");
+	UG_LOG(endl);
+
+//	First half
+	uint i = 0;
+	for(; i < numRows; ++i)
+	{
+		minAngleTable(i, 0) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
+		minAngleTable(i, 1) << counter[i];
+
 
 	}
 
-//	MinVolumeAngle-Histogram output table
-	UG_LOG(endl << "MinVolumeAngle-Histogram\n" << endl);
-	UG_LOG("   " << 	" 0"  << " - " << "10"  << " degrees   :   "  << counter[0] << "      |      " <<
-						" 90" << " - " << "100" << " degrees   :   "  << counter[9] << endl);
-	for(uint i = 1; i < 9; ++i)
+//	Second half
+	for(; i < numRanges; ++i)
+	{
+		if(i < numRanges-1)
 		{
-			UG_LOG("   " << 	i*10 		<< " - " << (i+1)*10 	<< " degrees   :   "  << counter[i] << "      |      " <<
-								(i+9)*10 	<< " - " << (i+9+1)*10 	<< " degrees   :   "  << counter[i+9] << endl);
+			minAngleTable(i-numRows, 2) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
+			minAngleTable(i-numRows, 3) << counter[i];
 		}
+
+	//	Last entry needs special treatment
+		else
+		{
+			minAngleTable(i-numRows, 2) << i*stepSize << " - " << 180 << " degrees : ";
+			minAngleTable(i-numRows, 3) << counter[i];
+		}
+	}
+
+//	Output table
+	UG_LOG(endl << minAngleTable);
+
+
 }
-
-
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -779,8 +751,8 @@ void ElementQualityStatistics(Grid& grid)
 	Volume* smallestVolume;
 	Volume* largestVolume;
 	Volume* volumeWithSmallestMinAngle;
-	Tetrahedron* tetrahedronWithLargestAspectRatio = *grid.begin<Tetrahedron>();
-	Tetrahedron* tetrahedronWithSmallestAspectRatio = *grid.begin<Tetrahedron>();
+	Tetrahedron* tetrahedronWithSmallestAspectRatio;
+	Tetrahedron* tetrahedronWithLargestAspectRatio;
 	EdgeBase* shortestEdge;
 	EdgeBase* longestEdge;
 	Face* faceWithSmallestMinAngle;
@@ -792,32 +764,32 @@ void ElementQualityStatistics(Grid& grid)
 	if(grid.num_volumes() > 0)
 	{
 	//	Volumes
-		smallestVolume = FindSmallestVolume(	grid.volumes_begin(),
+		smallestVolume = FindSmallestVolumeElement(	grid.volumes_begin(),
 												grid.volumes_end(),
 												aaPos);
 
-		largestVolume = FindLargestVolume(	grid.volumes_begin(),
+		largestVolume = FindLargestVolumeElement(	grid.volumes_begin(),
 											grid.volumes_end(),
 											aaPos);
 
-		volumeWithSmallestMinAngle = FindVolumeWithSmallestMinAngle(grid,
+		volumeWithSmallestMinAngle = FindElementWithSmallestMinAngle<Volume>(grid,
 																	grid.volumes_begin(),
 																	grid.volumes_end(),
 																	aaPos);
 	//	Numbers
 		smallestVolumeVolume = CalculateVolume(*smallestVolume,	aaPos);
 		largestVolumeVolume = CalculateVolume(*largestVolume, aaPos);
-		minVolumeAngle = CalculateMinVolumeAngle(grid, volumeWithSmallestMinAngle, aaPos);
+		minVolumeAngle = CalculateMinAngle(grid, volumeWithSmallestMinAngle, aaPos);
 	}
 
 //	Tetrahedron section
 	if(grid.num<Tetrahedron>() > 0)
 	{
 	//	Tetrahedrons
-		tetrahedronWithSmallestAspectRatio = FindElementWithSmallestAspectRatio(	grid,
-																					grid.begin<Tetrahedron>(),
-																					grid.end<Tetrahedron>(),
-																					aaPos);
+		tetrahedronWithSmallestAspectRatio = FindElementWithSmallestAspectRatio<Tetrahedron>(	grid,
+																								grid.begin<Tetrahedron>(),
+																								grid.end<Tetrahedron>(),
+																								aaPos);
 
 		tetrahedronWithLargestAspectRatio = FindElementWithLargestAspectRatio<Tetrahedron>(	grid,
 																							grid.begin<Tetrahedron>(),
@@ -839,64 +811,56 @@ void ElementQualityStatistics(Grid& grid)
 									grid.edges_end(),
 									aaPos);
 
-	faceWithSmallestMinAngle = FindFaceWithSmallestMinAngle(grid,
-															grid.faces_begin(),
-															grid.faces_end(),
+	faceWithSmallestMinAngle = FindElementWithSmallestMinAngle<Face>(grid,
+															grid.begin<Face>(),
+															grid.end<Face>(),
 															aaPos);
 
 //	Numbers
 	shortestEdgeLength = EdgeLength(shortestEdge, aaPos);
 	longestEdgeLength = EdgeLength(longestEdge, aaPos);
-	minFaceAngle = CalculateMinFaceAngle(grid, faceWithSmallestMinAngle, aaPos);
+	minFaceAngle = CalculateMinAngle(grid, faceWithSmallestMinAngle, aaPos);
 
 
+//	Table summary
+	ug::Table<std::stringstream> table(10, 2);
+	table(0, 0) << "Number of volumes"; 	table(0, 1) << grid.num_volumes();
+	table(1, 0) << "Number of faces"; 		table(1, 1) << grid.num_faces();
+	table(2, 0) << "Number of vertices";	table(2, 1) << grid.num_vertices();
 
+	table(3, 0) << "Shortest edge length";	table(3, 1) << shortestEdgeLength;
+	table(4, 0) << "Longest edge length";	table(4, 1) << longestEdgeLength;
+
+	table(5, 0) << "Smallest face angle";	table(5, 1) << minFaceAngle;
+
+	if(grid.num_volumes() > 0)
+	{
+		table(6, 0) << "Smallest volume";	table(6, 1) << smallestVolumeVolume;
+		table(7, 0) << "Largest volume";	table(7, 1) << largestVolumeVolume;
+	}
+
+	if(grid.num<Tetrahedron>() > 0)
+	{
+		table(8, 0) << "Smallest tetrahedron AR";	table(8, 1) << minTetrahedronAspectRatio;
+		table(9, 0) << "Largest tetrahedron AR";	table(9, 1) << maxTetrahedronAspectRatio;
+	}
 
 
 //	Output section
 	UG_LOG(endl << "--------------------------------------------------------------------------" << endl);
 	UG_LOG("Grid quality statistics:" << endl << endl);
+	UG_LOG(table);
 
-	UG_LOG("   " << "Number of volumes     = 	" << grid.num_volumes() << endl);
-	UG_LOG("   " << "Number of faces       = 	" << grid.num_faces() << endl);
-	UG_LOG("   " << "Number of vertices    = 	" << grid.num_vertices() << endl << endl);
-
-	UG_LOG("   " << "Shortest edge length  = 	" << shortestEdgeLength << "   |   " <<
-					"Longest edge length   = 	" << longestEdgeLength 	<< endl);
+	MinAngleHistogram(grid, grid.begin<Face>(), grid.end<Face>(), aaPos, 10);
 
 	if(grid.num_volumes() > 0)
 	{
-	UG_LOG("   " << "Smallest volume       = 	" << smallestVolumeVolume << "   |   " <<
-					"Largest volume        = 	" << largestVolumeVolume  << endl);
-	UG_LOG("   " << "Smallest volume angle = 	" << minVolumeAngle << endl);
+		MinAngleHistogram(grid, grid.volumes_begin(), grid.volumes_end(), aaPos, 10);
 	}
-
-	UG_LOG("   " << "Smallest face angle   = 	" << minFaceAngle << endl);
-
-	if(grid.num<Tetrahedron>() > 0)
-	{
-	UG_LOG(endl);
-	UG_LOG("   " 	<< "Smallest tetrahedron" << endl <<
-		   "   "	<< " aspect ratio         =      " << minTetrahedronAspectRatio << endl);
-	UG_LOG("   "    << "Largest tetrahedron" << endl <<
-		   "   "	<< " aspect ratio         =      " << maxTetrahedronAspectRatio  << endl);
-	}
-
-	MinFaceAngleHistogram(grid);
-
-	if(grid.num_volumes() > 0)
-	{
-	MinVolumeAngleHistogram(grid);
-	}
-
 	UG_LOG("--------------------------------------------------------------------------" << endl << endl);
 
-	ug::Table<std::stringstream> table(3, 2);
-	table(0, 0) << "Number of volumes"; table(0, 1) << grid.num_volumes();
-	table(1, 0) << "Number of faces"; table(1, 1) << grid.num_faces();
-	table(2, 0) << "Number of vertices"; table(2, 1) << grid.num_vertices();
 
-	std::cout << table;
+
 }
 
 
