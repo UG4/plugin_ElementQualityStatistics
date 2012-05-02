@@ -7,17 +7,18 @@
 
 
 #include "element_quality_statistics.h"
+#include "common/util/table.h"
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
 	#include <functional>
-	  template <class T> function<bool(T)> isInRange(T low, T high)
-	  {
-		  return [low,high](T value)
-				  {
-			  	  	  return std::fabs(value - low) >= std::numeric_limits<T>::epsilon() \
-                             && std::fabs(value - high) <= std::numeric_limits<T>::epsilon();
-				  };
-	  }
+	template <class T> function<bool(T)> isInRange(T low, T high)
+	{
+		return [low,high](T value)
+		{
+			return std::fabs(value - low) >= std::numeric_limits<T>::epsilon() \
+                   && std::fabs(value - high) <= std::numeric_limits<T>::epsilon();
+		};
+	}
 #endif
 
 namespace ug
@@ -42,42 +43,19 @@ inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, V
 	{
 		if(FaceContains(f, vNeighbourEdgesToVertex[i]) == true)
 		{
-			UG_ASSERT(sidesOut[1] == NULL, "Only two edges may be adjacent to a vertex in a face element.")
+			UG_ASSERT(	sidesOut[1] == NULL,
+						"Only two edges may be adjacent to a vertex in a face element.")
+
 			if(sidesOut[0] == NULL)
 				sidesOut[0] = vNeighbourEdgesToVertex[i];
 			else
 				sidesOut[1] = vNeighbourEdgesToVertex[i];
-			}
 		}
+	}
 
-	UG_ASSERT(sidesOut[1] != NULL, "Exactly two edges should be adjacent to a vertex in a face element.")
+	UG_ASSERT(	sidesOut[1] != NULL,
+				"Exactly two edges should be adjacent to a vertex in a face element.")
 }
-
-///	Collects all faces (= 2) which exist in the given volume and which share the given vertex.
-/*
-UG_API
-inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, VertexBase* vrt)
-{
-	vector<Face*> vNeighbourFacesToVertex;
-	sidesOut[0] = NULL;
-	sidesOut[1] = NULL;
-
-	CollectFaces(vNeighbourFacesToVertex, grid, vrt, true);
-	for(uint i = 0; i < vNeighbourFacesToVertex.size(); ++i)
-	{
-		if(VolumeContains(v, vNeighbourFacesToVertex[i]) == true)
-		{
-			UG_ASSERT(sidesOut[1] == NULL, "Only two faces may be adjacent to vertex in a volume element.")
-			if(sidesOut[0] == NULL)
-				sidesOut[0] = vNeighbourFacesToVertex[i];
-			else
-				sidesOut[1] = vNeighbourFacesToVertex[i];
-			}
-		}
-
-	UG_ASSERT(sidesOut[1] != NULL, "Exactly two faces should be adjacent to a vertex in a volume element.")
-}
-*/
 
 ///	Collects all faces (= 2) which exist in the given volume and which share the given edge.
 UG_API
@@ -92,15 +70,18 @@ inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, Edg
 	{
 		if(VolumeContains(v, vNeighbourFacesToEdge[i]) == true)
 		{
-			UG_ASSERT(sidesOut[1] == NULL, "Only two faces may be adjacent to an edge in a volume element.")
+			UG_ASSERT(	sidesOut[1] == NULL,
+						"Only two faces may be adjacent to an edge in a volume element.")
+
 			if(sidesOut[0] == NULL)
 				sidesOut[0] = vNeighbourFacesToEdge[i];
 			else
 				sidesOut[1] = vNeighbourFacesToEdge[i];
-			}
 		}
+	}
 
-	UG_ASSERT(sidesOut[1] != NULL, "Exactly two faces should be adjacent to an edge in a volume element.")
+	UG_ASSERT(	sidesOut[1] != NULL,
+				"Exactly two faces should be adjacent to an edge in a volume element.")
 }
 
 
@@ -174,7 +155,8 @@ number CalculateMinFaceAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateMinVolumeAngle
-number CalculateMinVolumeAngle(Grid& grid, Volume* v, Grid::VertexAttachmentAccessor<APosition>& aaPos)
+number CalculateMinVolumeAngle(	Grid& grid, Volume* v,
+								Grid::VertexAttachmentAccessor<APosition>& aaPos)
 {
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
@@ -245,13 +227,16 @@ number CalculateMinTriangleHeight(Triangle* tri, TAAPosVRT& aaPos)
 	ValueType v = aaPos[tri->vertex(2)];
 
 //	Calculate start height and set to minHeight
-	minHeight = DistancePointToRay(v, aaPos[tri->vertex(0)], aaPos[tri->vertex(1)] - aaPos[tri->vertex(0)]);
+	minHeight = DistancePointToRay(	v,
+									aaPos[tri->vertex(0)],
+									aaPos[tri->vertex(1)] - aaPos[tri->vertex(0)]);
 
 	for(uint i = 1; i < 3; ++i)
 	{
 		v = aaPos[tri->vertex((i+2)%3)];
-		tmpMinHeight = DistancePointToRay(v, 	aaPos[tri->vertex(i )],
-												aaPos[tri->vertex((i+1)%3)] - aaPos[tri->vertex((i))]);
+		tmpMinHeight = DistancePointToRay(	v,
+											aaPos[tri->vertex(i )],
+											aaPos[tri->vertex((i+1)%3)] - aaPos[tri->vertex((i))]);
 
 		if(tmpMinHeight < minHeight)
 		{
@@ -264,65 +249,162 @@ number CalculateMinTriangleHeight(Triangle* tri, TAAPosVRT& aaPos)
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateVolumeMinHeight
-number CalculateMinVolumeHeight(const Volume& vol,
-								Grid::VertexAttachmentAccessor<APosition>& aaPos)
+//	CalculateAspectRatio
+
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, TElem*, TAAPosVRT& aaPos);
+
+//	Face (Triangles and Quadrilaterals)
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 {
-	switch (vol.reference_object_id())
+	number AspectRatio;
+	number maxEdgeLength;
+
+//	Collect element edges, find longest edge and calculate its length
+	vector<EdgeBase*> edges;
+	CollectAssociated(edges, grid, face);
+	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	maxEdgeLength = EdgeLength(longestEdge, aaPos);
+
+	switch (face->reference_object_id())
 	{
-		case ROID_TETRAHEDRON:
-			return CalculateMinVolumeHeight(static_cast<Tetrahedron>(vol), aaPos);
-		/*
-		case ROID_PRISM:
-			return CalculateMinVolumeHeight(static_cast<Prism>(vol), aaPos);
-		case ROID_PYRAMID:
-			return CalculateMinVolumeHeight(static_cast<Pyramid>(vol), aaPos);
-		case ROID_HEXAHEDRON:
-			return CalculateMinVolumeHeight(static_cast<Hexahedron>(vol), aaPos);
-		*/
+		case ROID_TRIANGLE:
+		{
+		/* MINHEIGHT / MAXEDGELENGTH
+			 * optimal Aspect Ratio of a regular triangle
+			 * Q = sqrt(3)/2 * a / a = 0.86602540378444...
+			 */
+
+		//	Calculate minimal triangle height
+			number minTriangleHeight = CalculateMinTriangleHeight(static_cast<Triangle*>(face), aaPos);
+
+		//	Calculate the aspect ratio
+			AspectRatio = minTriangleHeight / maxEdgeLength;
+
+			return AspectRatio;
+		}
+
+		case ROID_QUADRILATERAL:
+		{
+		/* AREA / MAXEDGELENGTH */
+		//	Calculate the element area
+			number area = FaceArea(face, aaPos);
+
+		//	Calculate the aspect ratio
+			AspectRatio = area / maxEdgeLength;
+
+			return AspectRatio;
+		}
+
 		default:
-			UG_ASSERT(false, "dont know how to calculate height for given volume.");
+		 	UG_ASSERT(false, "Error. Unknown element type for aspect ratio calculation.");
 	}
 
 	return NAN;
 }
 
-number CalculateMinVolumeHeight(const Tetrahedron& tet,
-								Grid::VertexAttachmentAccessor<APosition>& aaPos)
-{
-	vector3& a = aaPos[tet.vertex(0)];
-	vector3& b = aaPos[tet.vertex(1)];
-	vector3& c = aaPos[tet.vertex(2)];
-	vector3& d = aaPos[tet.vertex(3)];
 
-	return CalculateMinTetrahedronHeight(a, b, c, d);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateTriangleAspectRatio
+//	Tetrahedron
 template <class TAAPosVRT>
-number CalculateTriangleAspectRatio(Grid& grid, Triangle* tri, TAAPosVRT& aaPos)
+number CalculateAspectRatio(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
 {
 	number AspectRatio;
-	number tmpMaxEdgeLength;
 	number maxEdgeLength;
-	number minTriangleHeight;
 
+//	Collect element edges, find longest edge and calculate its length
 	vector<EdgeBase*> edges;
-	CollectAssociated(edges, grid, tri);
+	CollectAssociated(edges, grid, tet);
 	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
 	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
-	minTriangleHeight = CalculateMinTriangleHeight(tri, aaPos);
-	AspectRatio = minTriangleHeight / maxEdgeLength;
+	/* MINHEIGHT / MAXEDGELENGTH
+	 * optimal Aspect Ratio of a regular tetrahedron
+	 * Q = sqrt(2/3) * a / a = 0.81...
+	 */
+
+//	Calculate the aspect ratio
+	AspectRatio = CalculateTetrahedronAspectRatio(grid, tet, aaPos);
 
 	return AspectRatio;
 }
 
+//	Prism
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
+{
+	number AspectRatio;
+	number maxEdgeLength;
+	number minTetrahedronHeight;
 
+//	Collect element edges, find longest edge and calculate its length
+	vector<EdgeBase*> edges;
+	CollectAssociated(edges, grid, prism);
+	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
+	/* VOLUME / MAXEDGELENGTH */
+//	Calculate the element volume
+	number volume = CalculateVolume(*prism, aaPos);
 
+//	Calculate the aspect ratio
+	AspectRatio = volume / maxEdgeLength;
+
+	return AspectRatio;
+}
+
+//	Pyramid
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
+{
+	number AspectRatio;
+	number maxEdgeLength;
+	number minTetrahedronHeight;
+
+//	Collect element edges, find longest edge and calculate its length
+	vector<EdgeBase*> edges;
+	CollectAssociated(edges, grid, pyr);
+	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	maxEdgeLength = EdgeLength(longestEdge, aaPos);
+
+	/* VOLUME / MAXEDGELENGTH */
+//	Calculate the element volume
+	number volume = CalculateVolume(*pyr, aaPos);
+
+//	Calculate the aspect ratio
+	AspectRatio = volume / maxEdgeLength;
+
+	return AspectRatio;
+}
+
+//	Volume
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos)
+{
+	switch (vol->reference_object_id())
+	{
+		case ROID_TETRAHEDRON:
+		{
+			return CalculateAspectRatio(grid, static_cast<Tetrahedron*>(vol), aaPos);
+		}
+
+		case ROID_PRISM:
+		{
+			return CalculateAspectRatio(grid, static_cast<Prism*>(vol), aaPos);
+		}
+
+		case ROID_PYRAMID:
+		{
+			return CalculateAspectRatio(grid, static_cast<Pyramid*>(vol), aaPos);
+		}
+
+		default:
+		 	UG_ASSERT(false, "Error. Unknown element type for aspect ratio calculation.");
+	}
+
+	return NAN;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -482,9 +564,11 @@ Volume* FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVR
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindTetrahedronWithSmallestAspectRatio
+//	FindElementWithSmallestAspectRatio
 template <class TIterator, class TAAPosVRT>
-Volume* FindTetrahedronWithSmallestAspectRatio(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
+typename TIterator::value_type
+FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator elemsBegin,
+												TIterator elemsEnd, TAAPosVRT& aaPos)
 {
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
@@ -492,32 +576,34 @@ Volume* FindTetrahedronWithSmallestAspectRatio(Grid& grid, TIterator volumesBegi
 	//		return NULL;
 
 //	Initializations
-	Volume* volumeWithSmallestAspectRatio = *volumesBegin;
-	number smallestAspectRatio = CalculateTetrahedronAspectRatio(grid, *volumeWithSmallestAspectRatio);
-	++volumesBegin;
+	typename TIterator::value_type elementWithSmallestAspectRatio = *elemsBegin;
+	number smallestAspectRatio = CalculateAspectRatio(grid, elementWithSmallestAspectRatio, aaPos);
+	++elemsBegin;
 
 //	compare all tetrahedrons and find that one with minimal aspect ratio
-	for(; volumesBegin != volumesEnd; ++volumesBegin)
+	for(; elemsBegin != elemsEnd; ++elemsBegin)
 	{
-	//	typename TIterator::value_type curElem = *elemsBegin;
-		Volume* curVolume = *volumesBegin;
-		number curSmallestAspectRatio = CalculateTetrahedronAspectRatio(grid, *curVolume);
+		typename TIterator::value_type curElement = *elemsBegin;
+		//TElem* curElement = *elemsBegin;
+		number curSmallestAspectRatio = CalculateAspectRatio(grid, curElement, aaPos);
 
 		if(curSmallestAspectRatio < smallestAspectRatio)
 		{
-			volumeWithSmallestAspectRatio = curVolume;
+			elementWithSmallestAspectRatio = curElement;
 			smallestAspectRatio = curSmallestAspectRatio;
 		}
 	}
 
-	return volumeWithSmallestAspectRatio;
+	return elementWithSmallestAspectRatio;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindTetrahedronWithLargestAspectRatio
-template <class TIterator, class TAAPosVRT>
-Volume* FindTetrahedronWithLargestAspectRatio(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
+//	FindElementWithLargestAspectRatio
+template <class TElem, class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindElementWithLargestAspectRatio(Grid& grid,  	TIterator elemsBegin,
+												TIterator elemsEnd, TAAPosVRT& aaPos)
 {
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
@@ -525,24 +611,25 @@ Volume* FindTetrahedronWithLargestAspectRatio(Grid& grid, TIterator volumesBegin
 	//		return NULL;
 
 //	Initializations
-	Volume* volumeWithLargestAspectRatio = *volumesBegin;
-	number largestAspectRatio = CalculateTetrahedronAspectRatio(grid, *volumeWithLargestAspectRatio);
-	++volumesBegin;
+	typename TIterator::value_type elementWithLargestAspectRatio = *elemsBegin;
+	number largestAspectRatio = CalculateAspectRatio(grid, elementWithLargestAspectRatio, aaPos);
+	++elemsBegin;
 
 //	compare all tetrahedrons and find that one with maximal aspect ratio
-	for(; volumesBegin != volumesEnd; ++volumesBegin)
+	for(; elemsBegin != elemsEnd; ++elemsBegin)
 	{
-		Volume* curVolume = *volumesBegin;
-		number curSmallestAspectRatio = CalculateTetrahedronAspectRatio(grid, *curVolume);
+		typename TIterator::value_type curElement = *elemsBegin;
+		//TElem* curElement = *elemsBegin;
+		number curSmallestAspectRatio = CalculateAspectRatio(grid, curElement, aaPos);
 
 		if(curSmallestAspectRatio > largestAspectRatio)
 		{
-			volumeWithLargestAspectRatio = curVolume;
+			elementWithLargestAspectRatio = curElement;
 			largestAspectRatio = curSmallestAspectRatio;
 		}
 	}
 
-	return volumeWithLargestAspectRatio;
+	return elementWithLargestAspectRatio;
 }
 
 
@@ -692,14 +779,11 @@ void ElementQualityStatistics(Grid& grid)
 	Volume* smallestVolume;
 	Volume* largestVolume;
 	Volume* volumeWithSmallestMinAngle;
-	Volume* tetrahedronWithLargestAspectRatio;
-	Volume* tetrahedronWithSmallestAspectRatio;
+	Tetrahedron* tetrahedronWithLargestAspectRatio = *grid.begin<Tetrahedron>();
+	Tetrahedron* tetrahedronWithSmallestAspectRatio = *grid.begin<Tetrahedron>();
 	EdgeBase* shortestEdge;
 	EdgeBase* longestEdge;
 	Face* faceWithSmallestMinAngle;
-
-	bool bTetrahedronCheck;
-
 
 
 //	Basic grid properties
@@ -720,41 +804,31 @@ void ElementQualityStatistics(Grid& grid)
 																	grid.volumes_begin(),
 																	grid.volumes_end(),
 																	aaPos);
-
 	//	Numbers
 		smallestVolumeVolume = CalculateVolume(*smallestVolume,	aaPos);
 		largestVolumeVolume = CalculateVolume(*largestVolume, aaPos);
 		minVolumeAngle = CalculateMinVolumeAngle(grid, volumeWithSmallestMinAngle, aaPos);
-
-	//	Check, if grid contains tetrahedrons
-		for(VolumeIterator vIter = grid.volumes_begin(); vIter != grid.volumes_end(); ++vIter)
-		{
-			Volume* v = *vIter;
-			if(v->reference_object_id() == ROID_TETRAHEDRON)
-			{
-				bTetrahedronCheck = true;
-				break;
-			}
-		}
 	}
 
 //	Tetrahedron section
-	if(bTetrahedronCheck)
-		{
-		//	Tetrahedrons
-			tetrahedronWithSmallestAspectRatio = FindTetrahedronWithSmallestAspectRatio(grid,
+	if(grid.num<Tetrahedron>() > 0)
+	{
+	//	Tetrahedrons
+		tetrahedronWithSmallestAspectRatio = FindElementWithSmallestAspectRatio(	grid,
 																					grid.begin<Tetrahedron>(),
 																					grid.end<Tetrahedron>(),
 																					aaPos);
 
-			tetrahedronWithLargestAspectRatio = FindTetrahedronWithLargestAspectRatio(	grid,
-																						grid.volumes_begin(),
-																						grid.volumes_end(),
-																						aaPos);
-		//	Numbers
-			minTetrahedronAspectRatio = CalculateTetrahedronAspectRatio(grid, *tetrahedronWithSmallestAspectRatio);
-			maxTetrahedronAspectRatio = CalculateTetrahedronAspectRatio(grid, *tetrahedronWithLargestAspectRatio);
-		}
+		tetrahedronWithLargestAspectRatio = FindElementWithLargestAspectRatio<Tetrahedron>(	grid,
+																							grid.begin<Tetrahedron>(),
+																							grid.end<Tetrahedron>(),
+																							aaPos);
+
+	//	Numbers
+		minTetrahedronAspectRatio = CalculateAspectRatio(grid, tetrahedronWithSmallestAspectRatio, aaPos);
+		maxTetrahedronAspectRatio = CalculateAspectRatio(grid, tetrahedronWithLargestAspectRatio, aaPos);
+	}
+
 
 //	Elements
 	shortestEdge = FindShortestEdge(grid.edges_begin(),
@@ -799,7 +873,7 @@ void ElementQualityStatistics(Grid& grid)
 
 	UG_LOG("   " << "Smallest face angle   = 	" << minFaceAngle << endl);
 
-	if(bTetrahedronCheck)
+	if(grid.num<Tetrahedron>() > 0)
 	{
 	UG_LOG(endl);
 	UG_LOG("   " 	<< "Smallest tetrahedron" << endl <<
@@ -817,6 +891,12 @@ void ElementQualityStatistics(Grid& grid)
 
 	UG_LOG("--------------------------------------------------------------------------" << endl << endl);
 
+	ug::Table<std::stringstream> table(3, 2);
+	table(0, 0) << "Number of volumes"; table(0, 1) << grid.num_volumes();
+	table(1, 0) << "Number of faces"; table(1, 1) << grid.num_faces();
+	table(2, 0) << "Number of vertices"; table(2, 1) << grid.num_vertices();
+
+	std::cout << table;
 }
 
 

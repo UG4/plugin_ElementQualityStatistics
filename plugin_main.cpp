@@ -1,6 +1,9 @@
-// created by Sebastian Reiter
-// s.b.reiter@googlemail.com
-// 12.09.2011 (m,d,y)
+/*
+ * plugin_main.cpp
+ *
+ *  Created on: 17.04.2012
+ *      Author: Martin Stepniewski
+ */
 
 #include "registry/registry.h"
 #include "common/ug_config.h"

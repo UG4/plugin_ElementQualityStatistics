@@ -24,6 +24,7 @@
 #include "volume_calculation.h"
 
 
+
 using namespace std;
 
 
@@ -37,12 +38,6 @@ namespace ug {
 ///	Collects all edges (= 2) which exist in the given face and which share the given vertex.
 UG_API
 inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, VertexBase* vrt);
-
-///	Collects all faces (= 2) which exist in the given volume and which share the given vertex.
-/*
-UG_API
-inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, VertexBase* vrt)
-*/
 
 ///	Collects all faces (= 2) which exist in the given volume and which share the given edge.
 UG_API
@@ -60,32 +55,43 @@ number CalculateMinFaceAngle(Grid& grid, Face* f, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateVolumeMinAngle
+//	CalculateMinVolumeAngle
 template <class TAAPosVRT>
 number CalculateMinVolumeAngle(Grid& grid, Volume* v, Grid::VertexAttachmentAccessor<APosition>& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateFaceMinHeight
+//	CalculateMinTriangleHeight
 template <class TAAPosVRT>
 number CalculateMinTriangleHeight(Triangle* tri, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateVolumeMinHeight
-number CalculateMinVolumeHeight(const Volume& vol,
-								Grid::VertexAttachmentAccessor<APosition>& aaPos);
+//	CalculateAspectRatio
 
-number CalculateMinVolumeHeight(const Tetrahedron& tet,
-								Grid::VertexAttachmentAccessor<APosition>& aaPos);
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, TElem*, TAAPosVRT& aaPos);
 
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateTriangleAspectRatio
+//	Face (Triangles and Quadrilaterals)
 template <class TAAPosVRT>
-number CalculateTriangleAspectRatio(Grid& grid, Triangle* tri, TAAPosVRT& aaPos);
+number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos);
 
+//	Tetrahedron
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
 
+//	Prism
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
+
+//	Pyramid
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
+
+//	Volume
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos);
 
 
 
@@ -93,13 +99,15 @@ number CalculateTriangleAspectRatio(Grid& grid, Triangle* tri, TAAPosVRT& aaPos)
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindFaceWithSmallestMinAngle
 template <class TIterator, class TAAPosVRT>
-Face* FindFaceWithSmallestMinAngle(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
+Face* FindFaceWithSmallestMinAngle(Grid& grid, 	TIterator volumesBegin,
+												TIterator volumesEnd, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindVolumeWithSmallestMinAngle
 template <class TIterator, class TAAPosVRT>
-Volume* FindVolumeWithSmallestMinAngle(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
+Volume* FindVolumeWithSmallestMinAngle(Grid& grid, 	TIterator volumesBegin,
+													TIterator volumesEnd, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,15 +129,19 @@ Volume* FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVR
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindTetrahedronWithSmallestAspectRatio
+//	FindElementWithSmallestAspectRatio
 template <class TIterator, class TAAPosVRT>
-Volume* FindTetrahedronWithSmallestAspectRatio(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
+typename TIterator::value_type
+FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator volumesBegin,
+												TIterator volumesEnd, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindTetrahedronWithLargestAspectRatio
-template <class TIterator, class TAAPosVRT>
-Volume* FindTetrahedronWithLargestAspectRatio(Grid& grid, TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
+//	FindElementWithLargestAspectRatio
+template <class TElem, class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindElementWithLargestAspectRatio(Grid& grid, 	TIterator volumesBegin,
+												TIterator volumesEnd, TAAPosVRT& aaPos);
 
 
 
