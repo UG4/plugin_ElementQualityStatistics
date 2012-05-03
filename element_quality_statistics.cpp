@@ -179,7 +179,7 @@ number CalculateMinAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 	return CalculateMinAngle(grid, static_cast<Volume*>(pyr), aaPos);
 }
 
-//	Volume
+//	Volume (For volume elements the smallest dihedral will be calculated.)
 template <class TAAPosVRT>
 number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 {
@@ -686,7 +686,8 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 		#endif
 	}
 
-
+/*
+//	-------------------------------
 //	Histogram table output section:
 
 //	Divide table into two halfs
@@ -703,8 +704,6 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 	{
 		minAngleTable(i, 0) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
 		minAngleTable(i, 1) << counter[i];
-
-
 	}
 
 //	Second half
@@ -715,12 +714,54 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 			minAngleTable(i-numRows, 2) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
 			minAngleTable(i-numRows, 3) << counter[i];
 		}
-
 	//	Last entry needs special treatment
 		else
 		{
 			minAngleTable(i-numRows, 2) << i*stepSize << " - " << 180 << " degrees : ";
 			minAngleTable(i-numRows, 3) << counter[i];
+		}
+	}
+*/
+
+//	-------------------------------
+//	Histogram table output section:
+
+//	Divide table into three thirds
+	uint numRows = ceil(number(numRanges) / 3.0);
+	ug::Table<std::stringstream> minAngleTable(numRows, 6);
+
+//	Specific element header
+	UG_LOG(endl << "MinAngle-Histogram for '" << refElem->reference_object_id() << "' elements");
+	UG_LOG(endl);
+
+//	First third
+	uint i = 0;
+	for(; i < numRows; ++i)
+	{
+		minAngleTable(i, 0) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
+		minAngleTable(i, 1) << counter[i];
+	}
+
+//	Second third
+	for(; i < 2*numRows; ++i)
+	{
+		minAngleTable(i-numRows, 2) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
+		minAngleTable(i-numRows, 3) << counter[i];
+	}
+
+//	Third third
+	for(; i < numRanges; ++i)
+	{
+		if(i < numRanges-1)
+		{
+			minAngleTable(i-2*numRows, 4) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
+			minAngleTable(i-2*numRows, 5) << counter[i];
+		}
+	//	Last entry needs special treatment
+		else
+		{
+			minAngleTable(i-2*numRows, 4) << i*stepSize << " - " << 180 << " degrees : ";
+			minAngleTable(i-2*numRows, 5) << counter[i];
 		}
 	}
 
@@ -732,8 +773,22 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	element_quality_statistics
+//	ElementQualityStatistics
+////////////////////////////////////////////////////////////////////////////////////////////
+
+//	Wrapper
+void ElementQualityStatistics(MultiGrid& mg, int level)
+{
+	ElementQualityStatistics(mg, mg.get_geometric_objects(level));
+}
+
 void ElementQualityStatistics(Grid& grid)
+{
+	ElementQualityStatistics(grid, grid.get_geometric_objects());
+}
+
+//	Actual procedure
+void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 {
 	Grid::VertexAttachmentAccessor<AVector3> aaPos(grid, aPosition);
 

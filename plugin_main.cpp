@@ -16,15 +16,15 @@
 
 using namespace std;
 
-void SayHello()
-{
-	UG_LOG("HELLO From Grid Statistics!\n");
-}
-
 extern "C" UG_API void InitUGPlugin(ug::bridge::Registry* reg, string parentGroup)
 {
 	string grp(parentGroup); grp.append("ElementQualityStatistics/");
 
-	reg->add_function("SayHello", &SayHello, grp);
-	reg->add_function("element_quality_statistics", &ug::ElementQualityStatistics, grp);
+//	Register ElementQualityStatistics wrapper functions
+	reg->add_function(	"ElementQualityStatistics",
+						(void (*)(ug::Grid&)) (&ug::ElementQualityStatistics), grp);
+	reg->add_function(	"ElementQualityStatistics",
+						(void (*)(ug::MultiGrid&, int level)) (&ug::ElementQualityStatistics), grp);
+
+
 }
