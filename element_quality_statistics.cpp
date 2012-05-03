@@ -91,6 +91,7 @@ inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, Edg
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateMinAngle
+////////////////////////////////////////////////////////////////////////////////////////////
 
 //	An unimplemented version, so that a compile error occurs if no overload exists.
 template <class TElem, class TAAPosVRT>
@@ -179,9 +180,65 @@ number CalculateMinAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 	return CalculateMinAngle(grid, static_cast<Volume*>(pyr), aaPos);
 }
 
-//	Volume (For volume elements the smallest dihedral will be calculated.)
+//	Volume (For volume elements the minimum of dihedral and edge angle will be returned.)
 template <class TAAPosVRT>
 number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
+{
+	number minDihedral;
+	number tmpMinEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, 0), aaPos);
+	number minEdgeAngle;
+
+//	Calculate the minimal dihedral
+	minDihedral = CalculateMinDihedral(grid, v, aaPos);
+
+//	Calculate the minimal edge angle
+	for(uint i = 1; i < v->num_faces(); ++i)
+	{
+		minEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
+
+		if(minEdgeAngle < tmpMinEdgeAngle)
+		{
+			minEdgeAngle = tmpMinEdgeAngle;
+		}
+	}
+
+//	return the minimum of minimal dihedral and minimal edge angle
+	return min(minDihedral, minEdgeAngle);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateMinDihedral
+////////////////////////////////////////////////////////////////////////////////////////////
+
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
+
+//	Tetrahedron
+template <class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
+{
+	return CalculateMinDihedral(grid, static_cast<Volume*>(tet), aaPos);
+}
+
+//	Prism
+template <class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
+{
+	return CalculateMinDihedral(grid, static_cast<Volume*>(prism), aaPos);
+}
+
+//	Pyramid
+template <class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
+{
+	return CalculateMinDihedral(grid, static_cast<Volume*>(pyr), aaPos);
+}
+
+//	Volume
+template <class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 {
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
@@ -279,6 +336,7 @@ number CalculateMinTriangleHeight(Face* face, TAAPosVRT& aaPos)
 }
 
 
+/*
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateAspectRatio
 
@@ -303,10 +361,9 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 	{
 		case ROID_TRIANGLE:
 		{
-			/* MINHEIGHT / MAXEDGELENGTH
-			 * optimal Aspect Ratio of a regular triangle
-			 * Q = sqrt(3)/2 * a / a = 0.86602540378444...
-			 */
+		//	MINHEIGHT / MAXEDGELENGTH
+		//  optimal Aspect Ratio of a regular triangle
+		//  Q = sqrt(3)/2 * a / a = 0.86602540378444...
 
 		//	Calculate minimal triangle height
 			number minTriangleHeight = CalculateMinTriangleHeight(face, aaPos);
@@ -319,7 +376,8 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 
 		case ROID_QUADRILATERAL:
 		{
-			/* AREA / MAXEDGELENGTH */
+		//  AREA / MAXEDGELENGTH
+
 		//	Calculate the element area
 			number area = FaceArea(face, aaPos);
 
@@ -350,10 +408,9 @@ number CalculateAspectRatio(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
 	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
 	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
-	/* MINHEIGHT / MAXEDGELENGTH
-	 * optimal Aspect Ratio of a regular tetrahedron
-	 * Q = sqrt(2/3) * a / a = 0.81...
-	 */
+	//	MINHEIGHT / MAXEDGELENGTH
+	// 	optimal Aspect Ratio of a regular tetrahedron
+	//	 Q = sqrt(2/3) * a / a = 0.81...
 
 //	Calculate the aspect ratio
 	AspectRatio = CalculateTetrahedronAspectRatio(grid, tet, aaPos);
@@ -374,7 +431,8 @@ number CalculateAspectRatio(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
 	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
 	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
-	/* VOLUME / MAXEDGELENGTH */
+//  VOLUME / MAXEDGELENGTH
+
 //	Calculate the element volume
 	number volume = CalculateVolume(*prism, aaPos);
 
@@ -397,7 +455,8 @@ number CalculateAspectRatio(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
 	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
-	/* VOLUME / MAXEDGELENGTH */
+//  VOLUME / MAXEDGELENGTH
+
 //	Calculate the element volume
 	number volume = CalculateVolume(*pyr, aaPos);
 
@@ -434,6 +493,91 @@ number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos)
 
 	return NAN;
 }
+*/
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateAspectRatio
+////////////////////////////////////////////////////////////////////////////////////////////
+
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
+
+//	Face (Triangles and Constrained Triangles supported)
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
+{
+	number AspectRatio;
+	number maxEdgeLength;
+
+//	Collect element edges, find longest edge and calculate its length
+	vector<EdgeBase*> edges;
+	CollectAssociated(edges, grid, face);
+	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	maxEdgeLength = EdgeLength(longestEdge, aaPos);
+
+	switch (face->reference_object_id())
+	{
+		case ROID_TRIANGLE:
+		{
+		//	MINHEIGHT / MAXEDGELENGTH
+		//  optimal Aspect Ratio of a regular triangle
+		//  Q = sqrt(3)/2 * a / a = 0.86602540378444...
+
+		//	Calculate minimal triangle height
+			number minTriangleHeight = CalculateMinTriangleHeight(face, aaPos);
+
+		//	Calculate the aspect ratio
+			AspectRatio = minTriangleHeight / maxEdgeLength;
+
+			return AspectRatio;
+		}
+
+		default:
+		 	UG_ASSERT(false, "Error. Only faces of type triangle supported in aspect ratio calculation.");
+	}
+
+	return NAN;
+}
+
+//	Tetrahedron
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
+{
+	number AspectRatio;
+
+	//	MINHEIGHT / MAXEDGELENGTH
+	// 	optimal Aspect Ratio of a regular tetrahedron
+	//	 Q = sqrt(2/3) * a / a = 0.81...
+
+//	Calculate the aspect ratio
+	AspectRatio = CalculateTetrahedronAspectRatio(grid, tet, aaPos);
+
+	return AspectRatio;
+}
+
+//	Volume
+template <class TAAPosVRT>
+number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos)
+{
+	switch (vol->reference_object_id())
+	{
+		case ROID_TETRAHEDRON:
+		{
+			return CalculateAspectRatio(grid, static_cast<Tetrahedron*>(vol), aaPos);
+		}
+
+		default:
+		 	UG_ASSERT(false, "Error. Only volumes of type tetrahedron supported in aspect ratio calculation.");
+	}
+
+	return NAN;
+}
+
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -457,6 +601,39 @@ FindElementWithSmallestMinAngle(Grid& grid, TIterator elementsBegin, TIterator e
 	{
 		typename TIterator::value_type curElement = *elementsBegin;
 		number curSmallestMinAngle = CalculateMinAngle(grid, curElement, aaPos);
+
+		if(curSmallestMinAngle < smallestMinAngle)
+		{
+			elementWithSmallestMinAngle = curElement;
+			smallestMinAngle = curSmallestMinAngle;
+		}
+	}
+
+	return elementWithSmallestMinAngle;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindVolumeWithSmallestMinDihedral
+template <class TElem, class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindVolumeWithSmallestMinDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
+{
+//	if volumesBegin equals volumesBegin, then the list is empty and we can
+//	immediately return NULL
+	//	if(volumesBegin == volumesBegin)
+	//		return NULL;
+
+//	Initializations
+	typename TIterator::value_type elementWithSmallestMinAngle = *elementsBegin;
+	number smallestMinAngle = CalculateMinDihedral(grid, elementWithSmallestMinAngle, aaPos);
+	++elementsBegin;
+
+//	compare all volumes and find that one with smallest minAngle
+	for(; elementsBegin != elementsEnd; ++elementsBegin)
+	{
+		typename TIterator::value_type curElement = *elementsBegin;
+		number curSmallestMinAngle = CalculateMinDihedral(grid, curElement, aaPos);
 
 		if(curSmallestMinAngle < smallestMinAngle)
 		{
@@ -776,12 +953,13 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 //	ElementQualityStatistics
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-//	Wrapper
+//	Wrapper for multigrids
 void ElementQualityStatistics(MultiGrid& mg, int level)
 {
 	ElementQualityStatistics(mg, mg.get_geometric_objects(level));
 }
 
+//	Wrapper for grids
 void ElementQualityStatistics(Grid& grid)
 {
 	ElementQualityStatistics(grid, grid.get_geometric_objects());
@@ -827,14 +1005,14 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 											grid.volumes_end(),
 											aaPos);
 
-		volumeWithSmallestMinAngle = FindElementWithSmallestMinAngle<Volume>(grid,
+		volumeWithSmallestMinAngle = FindVolumeWithSmallestMinDihedral<Volume>(grid,
 																	grid.volumes_begin(),
 																	grid.volumes_end(),
 																	aaPos);
 	//	Numbers
 		smallestVolumeVolume = CalculateVolume(*smallestVolume,	aaPos);
 		largestVolumeVolume = CalculateVolume(*largestVolume, aaPos);
-		minVolumeAngle = CalculateMinAngle(grid, volumeWithSmallestMinAngle, aaPos);
+		minVolumeAngle = CalculateMinDihedral(grid, volumeWithSmallestMinAngle, aaPos);
 	}
 
 //	Tetrahedron section

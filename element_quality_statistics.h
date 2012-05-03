@@ -78,6 +78,35 @@ number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateMinDihedral
+////////////////////////////////////////////////////////////////////////////////////////////
+
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
+
+//	Face (Triangles and Quadrilaterals)
+template <class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, Face* f, TAAPosVRT& aaPos);
+
+//	Tetrahedron
+template <class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
+
+//	Prism
+template <class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
+
+//	Pyramid
+template <class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
+
+//	Volume
+template <class TAAPosVRT>
+number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateMinTriangleHeight
 template <class TAAPosVRT>
 number CalculateMinTriangleHeight(Face* face, TAAPosVRT& aaPos);
@@ -91,7 +120,7 @@ number CalculateMinTriangleHeight(Face* face, TAAPosVRT& aaPos);
 template <class TElem, class TAAPosVRT>
 number CalculateAspectRatio(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
 
-//	Face (Triangles and Quadrilaterals)
+//	Face (Triangles and Constrained Triangles)
 template <class TAAPosVRT>
 number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos);
 
@@ -99,6 +128,7 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos);
 template <class TAAPosVRT>
 number CalculateAspectRatio(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
 
+/*
 //	Prism
 template <class TAAPosVRT>
 number CalculateAspectRatio(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
@@ -106,6 +136,7 @@ number CalculateAspectRatio(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
 //	Pyramid
 template <class TAAPosVRT>
 number CalculateAspectRatio(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
+*/
 
 //	Volume
 template <class TAAPosVRT>
@@ -120,6 +151,13 @@ template <class TElem, class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithSmallestMinAngle(Grid& grid, 	TIterator volumesBegin,
 												TIterator volumesEnd, TAAPosVRT& aaPos);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindElementWithSmallestMinDihedral
+template <class TElem, class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindVolumeWithSmallestMinDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
