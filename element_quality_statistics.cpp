@@ -790,7 +790,7 @@ number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos)
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithSmallestMinAngle
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithSmallestMinAngle(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
 {
@@ -823,7 +823,7 @@ FindElementWithSmallestMinAngle(Grid& grid, TIterator elementsBegin, TIterator e
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindVolumeWithSmallestMinDihedral
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindVolumeWithSmallestMinDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
 {
@@ -856,7 +856,7 @@ FindVolumeWithSmallestMinDihedral(Grid& grid, TIterator elementsBegin, TIterator
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithLargestMaxAngle
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithLargestMaxAngle(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
 {
@@ -889,7 +889,7 @@ FindElementWithLargestMaxAngle(Grid& grid, TIterator elementsBegin, TIterator el
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindVolumeWithLargestMaxDihedral
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindVolumeWithLargestMaxDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
 {
@@ -952,7 +952,7 @@ Face* FindLargestFace(TIterator facesBegin, TIterator facesEnd, TAAPosVRT& aaPos
 //	FindSmallestVolumeElement
 template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
-FindSmallestVolumeElement(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
+FindSmallestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
 {
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
@@ -985,7 +985,7 @@ FindSmallestVolumeElement(TIterator volumesBegin, TIterator volumesEnd, TAAPosVR
 //	FindLargestVolumeElement
 template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
-FindLargestVolumeElement(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
+FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
 {
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
@@ -1016,7 +1016,7 @@ FindLargestVolumeElement(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithSmallestAspectRatio
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator elemsBegin,
 												TIterator elemsEnd, TAAPosVRT& aaPos)
@@ -1051,7 +1051,7 @@ FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator elemsBegin,
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithLargestAspectRatio
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithLargestAspectRatio(Grid& grid,  	TIterator elemsBegin,
 												TIterator elemsEnd, TAAPosVRT& aaPos)
@@ -1189,14 +1189,14 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 	uint i = 0;
 	for(; i < numRows; ++i)
 	{
-		minAngleTable(i, 0) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
+		minAngleTable(i, 0) << i*stepSize << " - " << (i+1)*stepSize << " deg : ";
 		minAngleTable(i, 1) << counter[i];
 	}
 
 //	Second third
 	for(; i < 2*numRows; ++i)
 	{
-		minAngleTable(i-numRows, 2) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
+		minAngleTable(i-numRows, 2) << i*stepSize << " - " << (i+1)*stepSize << " deg : ";
 		minAngleTable(i-numRows, 3) << counter[i];
 	}
 
@@ -1205,13 +1205,13 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 	{
 		if(i < numRanges-1)
 		{
-			minAngleTable(i-2*numRows, 4) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
+			minAngleTable(i-2*numRows, 4) << i*stepSize << " - " << (i+1)*stepSize << " deg : ";
 			minAngleTable(i-2*numRows, 5) << counter[i];
 		}
 	//	Last entry needs special treatment
 		else
 		{
-			minAngleTable(i-2*numRows, 4) << i*stepSize << " - " << 180 << " degrees : ";
+			minAngleTable(i-2*numRows, 4) << i*stepSize << " - " << 180 << " deg : ";
 			minAngleTable(i-2*numRows, 5) << counter[i];
 		}
 	}
@@ -1239,6 +1239,196 @@ void ElementQualityStatistics(Grid& grid)
 	ElementQualityStatistics(grid, grid.get_geometric_objects());
 }
 
+
+void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
+{
+	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
+	//Grid::VertexAttachmentAccessor<AVector3> aaPos3(grid, aPosition);
+
+//	Numbers
+	number n_minEdge;
+	number n_maxEdge;
+	//number n_minFace;
+	//number n_maxFace;
+	number n_minFaceAngle;
+	number n_maxFaceAngle;
+	number n_minTriAspectRatio;
+	number n_maxTriAspectRatio;
+
+	number n_minVolume;
+	number n_maxVolume;
+	number n_minVolAngle;
+	number n_maxVolAngle;
+	number n_minVolDihedral;
+	number n_maxVolDihedral;
+	number n_minTetAspectRatio;
+	number n_maxTetAspectRatio;
+
+
+//	Elements
+	EdgeBase* minEdge;
+	EdgeBase* maxEdge;
+	//Face* minAreaFace;
+	//Face* maxAreaFace;
+	Face* minAngleFace;
+	Face* maxAngleFace;
+	Face* minAspectRatioTri;
+	Face* maxAspectRatioTri;
+
+	Volume* minVolume;
+	Volume* maxVolume;
+	Volume* minAngleVol;
+	Volume* maxAngleVol;
+	Volume* minDihedralVol;
+	Volume* maxDihedralVol;
+	Tetrahedron* minAspectRatioTet;
+	Tetrahedron* maxAspectRatioTet;
+
+
+//	Basic grid properties on level i
+	UG_LOG(endl << "--------------------------------------------------------------------------" << endl);
+	for(uint i = 0; i < goc.num_levels(); ++i)
+	{
+	//	----------
+	//	2D section
+		minEdge = FindShortestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
+		maxEdge = FindLongestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
+		//minFace =
+		//maxFace =
+		minAngleFace = FindElementWithSmallestMinAngle(	grid,
+														goc.begin<Face>(i),
+														goc.end<Face>(i),
+														aaPos);
+		maxAngleFace = FindElementWithLargestMaxAngle(	grid,
+														goc.begin<Face>(i),
+														goc.end<Face>(i),
+														aaPos);
+
+		n_minEdge = EdgeLength(minEdge, aaPos);
+		n_maxEdge = EdgeLength(maxEdge, aaPos);
+		n_minFaceAngle = CalculateMinAngle(grid, minAngleFace, aaPos);
+		n_maxFaceAngle = CalculateMaxAngle(grid, maxAngleFace, aaPos);
+
+	//	Check for triangles
+		if(goc.num<Triangle>(i) > 0)
+		{
+			minAspectRatioTri = FindElementWithSmallestAspectRatio(	grid,
+																	goc.begin<Face>(i),
+																	goc.end<Face>(i),
+																	aaPos);
+			maxAspectRatioTri = FindElementWithLargestAspectRatio(	grid,
+																	goc.begin<Face>(i),
+																	goc.end<Face>(i),
+																	aaPos);
+
+			n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
+			n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
+		}
+
+	//	----------
+	//	3D section
+		if(goc.num<Volume>(i) > 0)
+		{
+			minVolume = FindSmallestVolume(	goc.begin<Volume>(i),
+											goc.end<Volume>(i),
+											aaPos);
+
+			maxVolume = FindLargestVolume(	goc.begin<Volume>(i),
+											goc.end<Volume>(i),
+											aaPos);
+			minAngleVol = FindElementWithSmallestMinAngle(	grid,
+															goc.volumes_begin(i),
+															goc.volumes_end(i),
+															aaPos);
+			maxAngleVol = FindElementWithLargestMaxAngle(	grid,
+															goc.volumes_begin(i),
+															goc.volumes_end(i),
+															aaPos);
+			minDihedralVol = FindVolumeWithSmallestMinDihedral(	grid,
+																goc.volumes_begin(i),
+																goc.volumes_end(i),
+																aaPos);
+			maxDihedralVol = FindVolumeWithLargestMaxDihedral(	grid,
+																goc.volumes_begin(i),
+																goc.volumes_end(i),
+																aaPos);
+
+			n_minVolume = CalculateVolume(*minVolume, aaPos);
+			n_maxVolume = CalculateVolume(*maxVolume, aaPos);
+			n_minVolAngle = CalculateMinAngle(grid, minAngleVol, aaPos);
+			n_maxVolAngle = CalculateMaxAngle(grid, maxAngleVol, aaPos);
+			n_minVolDihedral = CalculateMinDihedral(grid, minDihedralVol, aaPos);
+			n_maxVolDihedral = CalculateMaxDihedral(grid, maxDihedralVol, aaPos);
+
+
+		//	Tetrahedron section
+			if(grid.num<Tetrahedron>() > 0)
+			{
+				minAspectRatioTet = FindElementWithSmallestAspectRatio(	grid,
+																		goc.begin<Tetrahedron>(),
+																		goc.end<Tetrahedron>(),
+																		aaPos);
+				maxAspectRatioTet = FindElementWithLargestAspectRatio(	grid,
+																		goc.begin<Tetrahedron>(),
+																		goc.end<Tetrahedron>(),
+																		aaPos);
+
+				n_minTetAspectRatio = CalculateAspectRatio(grid, minAspectRatioTet, aaPos);
+				n_maxTetAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTet, aaPos);
+			}
+		}
+
+
+
+	//	Table summary
+		ug::Table<std::stringstream> table(9, 4);
+		table(0, 0) << "Number of volumes"; 	table(0, 1) << grid.num_volumes();
+		table(1, 0) << "Number of faces"; 		table(1, 1) << grid.num_faces();
+		table(2, 0) << "Number of vertices";	table(2, 1) << grid.num_vertices() << endl;
+
+		table(3, 0) << "Shortest edge";	table(3, 1) << n_minEdge;
+		table(3, 2) << "Longest edge";	table(3, 3) << n_maxEdge;
+
+		table(4, 0) << "Smallest face angle";	table(4, 1) << n_minFaceAngle;
+		table(4, 2) << "Largest face angle";	table(4, 3) << n_maxFaceAngle;
+
+		if(grid.num_volumes() > 0)
+		{
+			table(5, 0) << "Smallest volume";		table(5, 1) << n_minVolume;
+			table(5, 2) << "Largest volume";		table(5, 3) << n_maxVolume;
+			table(6, 0) << "Smallest volume angle";	table(6, 1) << n_minVolAngle;
+			table(6, 2) << "Largest volume angle";	table(6, 3) << n_maxVolAngle;
+			table(7, 0) << "Smallest volume dihedral";	table(7, 1) << n_minVolDihedral;
+			table(7, 2) << "Largest volume dihedral";	table(7, 3) << n_maxVolDihedral;
+
+			if(grid.num<Tetrahedron>() > 0)
+			{
+				table(8, 0) << "Smallest tetrahedron AR";	table(8, 1) << n_minTetAspectRatio;
+				table(8, 2) << "Largest tetrahedron AR";	table(8, 3) << n_maxTetAspectRatio;
+			}
+		}
+
+
+
+
+	//	Output section
+		UG_LOG(endl << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl);
+		UG_LOG("Grid quality statistics for grid level " << i << ":" << endl << endl);
+		UG_LOG(table);
+
+		MinAngleHistogram(grid, grid.begin<Face>(), grid.end<Face>(), aaPos, 10);
+
+		if(grid.num_volumes() > 0)
+		{
+			MinAngleHistogram(grid, grid.volumes_begin(), grid.volumes_end(), aaPos, 10);
+		}
+	}
+
+	UG_LOG("--------------------------------------------------------------------------" << endl << endl);
+}
+
+
+/*
 //	Actual procedure
 void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 {
@@ -1369,7 +1559,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 
 
 }
-
+*/
 
 
 

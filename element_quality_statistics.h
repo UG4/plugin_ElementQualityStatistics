@@ -205,7 +205,7 @@ number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos);
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithSmallestMinAngle
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithSmallestMinAngle(Grid& grid, 	TIterator volumesBegin,
 												TIterator volumesEnd, TAAPosVRT& aaPos);
@@ -213,7 +213,7 @@ FindElementWithSmallestMinAngle(Grid& grid, 	TIterator volumesBegin,
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindVolumeWithSmallestMinDihedral
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindVolumeWithSmallestMinDihedral(Grid& grid, 	TIterator elementsBegin,
 												TIterator elementsEnd, TAAPosVRT& aaPos);
@@ -221,7 +221,7 @@ FindVolumeWithSmallestMinDihedral(Grid& grid, 	TIterator elementsBegin,
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithLargestMaxAngle
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithLargestMaxAngle(Grid& grid, 	TIterator volumesBegin,
 											TIterator volumesEnd, TAAPosVRT& aaPos);
@@ -229,7 +229,7 @@ FindElementWithLargestMaxAngle(Grid& grid, 	TIterator volumesBegin,
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindVolumeWithLargestMaxDihedral
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindVolumeWithLargestMaxDihedral(Grid& grid, 	TIterator elementsBegin,
 												TIterator elementsEnd, TAAPosVRT& aaPos);
@@ -242,22 +242,22 @@ Face* FindLargestFace(TIterator facesBegin, TIterator facesEnd, TAAPosVRT& aaPos
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindSmallestVolumeElement
+//	FindSmallestVolume
 template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
-FindSmallestVolumeElement(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
+FindSmallestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindLargestVolume
 template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
-FindLargestVolumeElement(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
+FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithSmallestAspectRatio
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator elemsBegin,
 												TIterator elemsEnd, TAAPosVRT& aaPos);
@@ -265,7 +265,7 @@ FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator elemsBegin,
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithLargestAspectRatio
-template <class TElem, class TIterator, class TAAPosVRT>
+template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithLargestAspectRatio(Grid& grid, 	TIterator elemsBegin,
 												TIterator elemsEnd, TAAPosVRT& aaPos);
