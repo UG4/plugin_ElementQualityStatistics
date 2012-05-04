@@ -185,14 +185,14 @@ template <class TAAPosVRT>
 number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 {
 	number minDihedral;
-	number tmpMinEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, 0), aaPos);
-	number minEdgeAngle;
+	number tmpMinEdgeAngle;
+	number minEdgeAngle = 360;
 
 //	Calculate the minimal dihedral
 	minDihedral = CalculateMinDihedral(grid, v, aaPos);
 
 //	Calculate the minimal edge angle
-	for(uint i = 1; i < v->num_faces(); ++i)
+	for(uint i = 0; i < v->num_faces(); ++i)
 	{
 		minEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
 
@@ -252,7 +252,7 @@ number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 //	Initialization
 	uint numElementEdges = v->num_edges();
 	vector3 vNorm1, vNorm2;
-	number minAngle = 360.0;
+	number minDihedral = 360.0;
 	number tmpAngle;
 	Face* vNeighbourFacesToEdge[2];
 
@@ -284,16 +284,224 @@ number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 		tmpAngle = PI - tmpAngle;
 
 	//	Check for minimality
-		if(tmpAngle < minAngle)
+		if(tmpAngle < minDihedral)
 		{
-			minAngle = tmpAngle;
+			minDihedral = tmpAngle;
 		}
 	}
 
 //	Transform minAngle from RAD to DEG
-	minAngle = 180/PI * minAngle;
+	minDihedral = 180/PI * minDihedral;
 
-	return minAngle;
+	return minDihedral;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateMaxAngle
+////////////////////////////////////////////////////////////////////////////////////////////
+
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
+
+//	Face (Triangles and Quadrilaterals)
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
+{
+//	in the current implementation this method requires, that all edges
+//	are created for all faces.
+//TODO: improve this!
+	if(!grid.option_is_enabled(GRIDOPT_AUTOGENERATE_SIDES))
+	{
+		LOG("WARNING: autoenabling GRIDOPT_AUTOGENERATE_SIDES in GetNeighbours(Face).\n");
+		grid.enable_options(GRIDOPT_AUTOGENERATE_SIDES);
+	}
+
+//	Get type of vertex attachment in aaPos and define it as ValueType
+	typedef typename TAAPosVRT::ValueType ValueType;
+
+//	Initialization
+	uint numFaceVrts = f->num_vertices();
+	ValueType vNorm1, vNorm2;
+	ValueType vDir1, vDir2;
+	number maxAngle = 0;
+	number tmpAngle;
+	EdgeBase* vNeighbourEdgesToVertex[2];
+
+//	Iterate over all face vertices
+	for(uint vrtIter = 0; vrtIter < numFaceVrts; ++vrtIter)
+	{
+		VertexBase* vrt = f->vertex(vrtIter);
+
+	//	Get adjacent edges at the current vertex and calculate the angle between their normals
+		CollectAssociatedSides(vNeighbourEdgesToVertex, grid, f, vrt);
+
+	//	Calculate direction vectors of the current two adjacent edges
+	//	!!!	Beware of the correct order of the vertices	to get correct angle value !!!
+		VecSubtract(vDir1,
+					aaPos[vNeighbourEdgesToVertex[0]->vertex(0)],
+					aaPos[vNeighbourEdgesToVertex[0]->vertex(1)]);
+
+		VecSubtract(vDir2,
+					aaPos[vNeighbourEdgesToVertex[1]->vertex(1)],
+					aaPos[vNeighbourEdgesToVertex[1]->vertex(0)]);
+
+	//	Normalize
+		VecNormalize(vDir1, vDir1);
+		VecNormalize(vDir2, vDir2);
+
+	//	Calculate current angle
+		tmpAngle = acos(VecDot(vDir1, vDir2));
+
+	//	Check for maximality
+		if(tmpAngle > maxAngle)
+		{
+			maxAngle = tmpAngle;
+		}
+	}
+
+//	Transform maxAngle from RAD to DEG
+	maxAngle = 180/PI * maxAngle;
+
+	return maxAngle;
+}
+
+//	Tetrahedron
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
+{
+	return CalculateMaxAngle(grid, static_cast<Volume*>(tet), aaPos);
+}
+
+//	Prism
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
+{
+	return CalculateMaxAngle(grid, static_cast<Volume*>(prism), aaPos);
+}
+
+//	Pyramid
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
+{
+	return CalculateMaxAngle(grid, static_cast<Volume*>(pyr), aaPos);
+}
+
+//	Volume (For volume elements the maximum of dihedral and edge angle will be returned.)
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
+{
+	number maxDihedral;
+	number tmpMaxEdgeAngle;
+	number maxEdgeAngle = 0;
+
+//	Calculate the maximal dihedral
+	maxDihedral = CalculateMaxDihedral(grid, v, aaPos);
+
+//	Calculate the maximal edge angle
+	for(uint i = 0; i < v->num_faces(); ++i)
+	{
+		maxEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
+
+		if(maxEdgeAngle > tmpMaxEdgeAngle)
+		{
+			maxEdgeAngle = tmpMaxEdgeAngle;
+		}
+	}
+
+//	return the maximum of maximal dihedral and maximal edge angle
+	return max(maxDihedral, maxEdgeAngle);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateMaxDihedral
+////////////////////////////////////////////////////////////////////////////////////////////
+
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
+
+//	Tetrahedron
+template <class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
+{
+	return CalculateMaxDihedral(grid, static_cast<Volume*>(tet), aaPos);
+}
+
+//	Prism
+template <class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
+{
+	return CalculateMaxDihedral(grid, static_cast<Volume*>(prism), aaPos);
+}
+
+//	Pyramid
+template <class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
+{
+	return CalculateMaxDihedral(grid, static_cast<Volume*>(pyr), aaPos);
+}
+
+//	Volume
+template <class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
+{
+//	in the current implementation this method requires, that all edges
+//	are created for all faces.
+//TODO: improve this!
+	if(!grid.option_is_enabled(GRIDOPT_AUTOGENERATE_SIDES))
+	{
+		LOG("WARNING: autoenabling GRIDOPT_AUTOGENERATE_SIDES in GetNeighbours(Face).\n");
+		grid.enable_options(GRIDOPT_AUTOGENERATE_SIDES);
+	}
+
+//	Initialization
+	uint numElementEdges = v->num_edges();
+	vector3 vNorm1, vNorm2;
+	number maxDihedral = 0;
+	number tmpAngle;
+	Face* vNeighbourFacesToEdge[2];
+
+//	Iterate over all element edges
+	for(uint eIter = 0; eIter < numElementEdges; ++eIter)
+	{
+		EdgeBase* e = grid.get_edge(v, eIter);
+
+	//	Get adjacent faces at the current edge and calculate the angle between their normals
+		CollectAssociatedSides(vNeighbourFacesToEdge, grid, v, e);
+
+		CalculateNormal(vNorm1, vNeighbourFacesToEdge[0], aaPos);
+		CalculateNormal(vNorm2, vNeighbourFacesToEdge[1], aaPos);
+
+	/*	!!!	Beware of the correct direction normals to get correct angle value !!!
+		INFO:	Angles of a regular tetrahedron:
+				- "Tetrahedron (dihedral) angle x" 	= 109,471...deg
+				- "Face-to-face angle y"			= 180deg - x = 70,52...deg
+
+		--> Old version:
+		//VecScale(vNorm1, vNorm1, -1);
+		//tmpAngle = acos(VecDot(vNorm1, vNorm2));
+
+		--> New version:
+			(s.	"QualitŠts-Metriken und Optimierung von Tetraeder-Netzen",
+				 Seminararbeit von Johannes Ahlmann, UniversitŠt Karlsruhe)
+	*/
+		tmpAngle = acos(VecDot(vNorm1, vNorm2));
+		tmpAngle = PI - tmpAngle;
+
+	//	Check for maximality
+		if(tmpAngle > maxDihedral)
+		{
+			maxDihedral = tmpAngle;
+		}
+	}
+
+//	Transform maxDihedral from RAD to DEG
+	maxDihedral = 180/PI * maxDihedral;
+
+	return maxDihedral;
 }
 
 
@@ -625,24 +833,90 @@ FindVolumeWithSmallestMinDihedral(Grid& grid, TIterator elementsBegin, TIterator
 	//		return NULL;
 
 //	Initializations
-	typename TIterator::value_type elementWithSmallestMinAngle = *elementsBegin;
-	number smallestMinAngle = CalculateMinDihedral(grid, elementWithSmallestMinAngle, aaPos);
+	typename TIterator::value_type elementWithSmallestMinDihedral = *elementsBegin;
+	number smallestMinDihedral = CalculateMinDihedral(grid, elementWithSmallestMinDihedral, aaPos);
 	++elementsBegin;
 
 //	compare all volumes and find that one with smallest minAngle
 	for(; elementsBegin != elementsEnd; ++elementsBegin)
 	{
 		typename TIterator::value_type curElement = *elementsBegin;
-		number curSmallestMinAngle = CalculateMinDihedral(grid, curElement, aaPos);
+		number curSmallestMinDihedral = CalculateMinDihedral(grid, curElement, aaPos);
 
-		if(curSmallestMinAngle < smallestMinAngle)
+		if(curSmallestMinDihedral < smallestMinDihedral)
 		{
-			elementWithSmallestMinAngle = curElement;
-			smallestMinAngle = curSmallestMinAngle;
+			elementWithSmallestMinDihedral = curElement;
+			smallestMinDihedral = curSmallestMinDihedral;
 		}
 	}
 
-	return elementWithSmallestMinAngle;
+	return elementWithSmallestMinDihedral;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindElementWithLargestMaxAngle
+template <class TElem, class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindElementWithLargestMaxAngle(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
+{
+//	if volumesBegin equals volumesBegin, then the list is empty and we can
+//	immediately return NULL
+	//	if(volumesBegin == volumesBegin)
+	//		return NULL;
+
+//	Initializations
+	typename TIterator::value_type elementWithLargestMaxAngle = *elementsBegin;
+	number largestMaxAngle = CalculateMaxAngle(grid, elementWithLargestMaxAngle, aaPos);
+	++elementsBegin;
+
+//	compare all volumes and find that one with largest maxAngle
+	for(; elementsBegin != elementsEnd; ++elementsBegin)
+	{
+		typename TIterator::value_type curElement = *elementsBegin;
+		number curLargestMaxAngle = CalculateMaxAngle(grid, curElement, aaPos);
+
+		if(curLargestMaxAngle > largestMaxAngle)
+		{
+			elementWithLargestMaxAngle = curElement;
+			largestMaxAngle = curLargestMaxAngle;
+		}
+	}
+
+	return elementWithLargestMaxAngle;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindVolumeWithLargestMaxDihedral
+template <class TElem, class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindVolumeWithLargestMaxDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
+{
+//	if volumesBegin equals volumesBegin, then the list is empty and we can
+//	immediately return NULL
+	//	if(volumesBegin == volumesBegin)
+	//		return NULL;
+
+//	Initializations
+	typename TIterator::value_type elementWithLargestMaxDihedral = *elementsBegin;
+	number largestMaxDihedral = CalculateMaxDihedral(grid, elementWithLargestMaxDihedral, aaPos);
+	++elementsBegin;
+
+//	compare all volumes and find that one with largest maxDihedral
+	for(; elementsBegin != elementsEnd; ++elementsBegin)
+	{
+		typename TIterator::value_type curElement = *elementsBegin;
+		number curLargestMaxDihedral = CalculateMaxDihedral(grid, curElement, aaPos);
+
+		if(curLargestMaxDihedral > largestMaxDihedral)
+		{
+			elementWithLargestMaxDihedral = curElement;
+			largestMaxDihedral = curLargestMaxDihedral;
+		}
+	}
+
+	return elementWithLargestMaxDihedral;
 }
 
 
@@ -824,9 +1098,9 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 {
 //	Initialization
 	vector<number> minAngles;
+	typename TIterator::value_type refElem = *elementsBegin;
 	uint numRanges = floor(180 / stepSize);
 	vector<uint> counter(numRanges, 0);
-	typename TIterator::value_type refElem = *elementsBegin;
 
 //	Calculate the minAngle of every element
 	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)

@@ -107,6 +107,64 @@ number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateMaxAngle
+////////////////////////////////////////////////////////////////////////////////////////////
+
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
+
+//	Face (Triangles and Quadrilaterals)
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos);
+
+//	Tetrahedron
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
+
+//	Prism
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
+
+//	Pyramid
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
+
+//	Volume
+template <class TAAPosVRT>
+number CalculateMaxAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateMaxDihedral
+////////////////////////////////////////////////////////////////////////////////////////////
+
+//	An unimplemented version, so that a compile error occurs if no overload exists.
+template <class TElem, class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
+
+//	Face (Triangles and Quadrilaterals)
+template <class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, Face* f, TAAPosVRT& aaPos);
+
+//	Tetrahedron
+template <class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
+
+//	Prism
+template <class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
+
+//	Pyramid
+template <class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
+
+//	Volume
+template <class TAAPosVRT>
+number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateMinTriangleHeight
 template <class TAAPosVRT>
 number CalculateMinTriangleHeight(Face* face, TAAPosVRT& aaPos);
@@ -154,10 +212,27 @@ FindElementWithSmallestMinAngle(Grid& grid, 	TIterator volumesBegin,
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindElementWithSmallestMinDihedral
+//	FindVolumeWithSmallestMinDihedral
 template <class TElem, class TIterator, class TAAPosVRT>
 typename TIterator::value_type
-FindVolumeWithSmallestMinDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos);
+FindVolumeWithSmallestMinDihedral(Grid& grid, 	TIterator elementsBegin,
+												TIterator elementsEnd, TAAPosVRT& aaPos);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindElementWithLargestMaxAngle
+template <class TElem, class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindElementWithLargestMaxAngle(Grid& grid, 	TIterator volumesBegin,
+											TIterator volumesEnd, TAAPosVRT& aaPos);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindVolumeWithLargestMaxDihedral
+template <class TElem, class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindVolumeWithLargestMaxDihedral(Grid& grid, 	TIterator elementsBegin,
+												TIterator elementsEnd, TAAPosVRT& aaPos);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
