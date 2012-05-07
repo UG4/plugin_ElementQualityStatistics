@@ -1099,8 +1099,6 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 //	Initialization
 	vector<number> minAngles;
 	typename TIterator::value_type refElem = *elementsBegin;
-	uint numRanges = floor(180 / stepSize);
-	vector<uint> counter(numRanges, 0);
 
 //	Calculate the minAngle of every element
 	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
@@ -1112,73 +1110,48 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 //	Sort the calculated minAngles in an ascending way
 	sort (minAngles.begin(), minAngles.end());
 
-//	Count the elements in their corresponding minAngle range (180/stepSize ranges)
+
+//	Evaluate the minimal and maximal degree rounding to 10
+	uint minDeg = round(number(minAngles.front()) / 10.0) * 10;
+	uint maxDeg = round(number(minAngles.back()) / 10.0) * 10;
+
+//	Expand minDeg and maxDeg by plus minus 10 degrees or at least to 0 or 180 degress
+	if(minDeg-10 > 0)
+		minDeg = minDeg - 10;
+	else
+		minDeg = 0;
+
+	if(maxDeg+10 < 180)
+		maxDeg = maxDeg + 10;
+	else
+		maxDeg = 180;
+
+//	Evaluate the number of ranges in respect to the specified step size
+	uint numRanges = floor((maxDeg-minDeg) / stepSize);
+	vector<uint> counter(numRanges, 0);
+
+//	Count the elements in their corresponding minAngle range
 	for(uint i = 0; i < minAngles.size(); ++i)
 	{
 		number minAngle = minAngles[i];
-		#ifdef __GXX_EXPERIMENTAL_CXX0X__
-			for (uint range = 0; range < numRanges; range++)
-			{
-				if (isInRange(range*stepSize, (range+1)*stepSize)(minAngle))
-				{
-					++counter[range];
-					break;
-				}
-			}
-		#else
-			for (uint range = 0; range < numRanges; range++)
-			{
-				if (minAngle < (range+1)*stepSize)
-				{
-					++counter[range];
-					break;
-				}
-			}
-		#endif
-	}
-
-/*
-//	-------------------------------
-//	Histogram table output section:
-
-//	Divide table into two halfs
-	uint numRows = ceil(number(numRanges) / 2.0);
-	ug::Table<std::stringstream> minAngleTable(numRows, 4);
-
-//	Specific element header
-	UG_LOG(endl << "MinAngle-Histogram for '" << refElem->reference_object_id() << "' elements");
-	UG_LOG(endl);
-
-//	First half
-	uint i = 0;
-	for(; i < numRows; ++i)
-	{
-		minAngleTable(i, 0) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
-		minAngleTable(i, 1) << counter[i];
-	}
-
-//	Second half
-	for(; i < numRanges; ++i)
-	{
-		if(i < numRanges-1)
+		for (uint range = 0; range < numRanges; range++)
 		{
-			minAngleTable(i-numRows, 2) << i*stepSize << " - " << (i+1)*stepSize << " degrees : ";
-			minAngleTable(i-numRows, 3) << counter[i];
-		}
-	//	Last entry needs special treatment
-		else
-		{
-			minAngleTable(i-numRows, 2) << i*stepSize << " - " << 180 << " degrees : ";
-			minAngleTable(i-numRows, 3) << counter[i];
+			if (minAngle < minDeg + (range+1)*stepSize)
+			{
+				++counter[range];
+				break;
+			}
 		}
 	}
-*/
 
-//	-------------------------------
-//	Histogram table output section:
+//	----------------------------------------
+//	Histogram table output section: (THIRDS)
+//	----------------------------------------
 
-//	Divide table into three thirds
+//	Divide the output table into three thirds (columnwise)
 	uint numRows = ceil(number(numRanges) / 3.0);
+
+//	Create table object
 	ug::Table<std::stringstream> minAngleTable(numRows, 6);
 
 //	Specific element header
@@ -1189,29 +1162,28 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 	uint i = 0;
 	for(; i < numRows; ++i)
 	{
-		minAngleTable(i, 0) << i*stepSize << " - " << (i+1)*stepSize << " deg : ";
+		minAngleTable(i, 0) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
 		minAngleTable(i, 1) << counter[i];
 	}
 
 //	Second third
-	for(; i < 2*numRows; ++i)
+//	Check, if second third of table is needed
+	if(i < counter.size())
 	{
-		minAngleTable(i-numRows, 2) << i*stepSize << " - " << (i+1)*stepSize << " deg : ";
-		minAngleTable(i-numRows, 3) << counter[i];
+		for(; i < 2*numRows; ++i)
+		{
+			minAngleTable(i-numRows, 2) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
+			minAngleTable(i-numRows, 3) << counter[i];
+		}
 	}
 
 //	Third third
-	for(; i < numRanges; ++i)
+	if(i < counter.size())
+//	Check, if third third of table is needed
 	{
-		if(i < numRanges-1)
+		for(; i < numRanges; ++i)
 		{
-			minAngleTable(i-2*numRows, 4) << i*stepSize << " - " << (i+1)*stepSize << " deg : ";
-			minAngleTable(i-2*numRows, 5) << counter[i];
-		}
-	//	Last entry needs special treatment
-		else
-		{
-			minAngleTable(i-2*numRows, 4) << i*stepSize << " - " << 180 << " deg : ";
+			minAngleTable(i-2*numRows, 4) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
 			minAngleTable(i-2*numRows, 5) << counter[i];
 		}
 	}
@@ -1286,7 +1258,8 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 
 
 //	Basic grid properties on level i
-	UG_LOG(endl << "--------------------------------------------------------------------------" << endl);
+	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl);
+	UG_LOG("GRID QUALITY STATISTICS" << endl << endl);
 	for(uint i = 0; i < goc.num_levels(); ++i)
 	{
 	//	----------
@@ -1362,15 +1335,15 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 
 
 		//	Tetrahedron section
-			if(grid.num<Tetrahedron>() > 0)
+			if(goc.num<Tetrahedron>(i) > 0)
 			{
 				minAspectRatioTet = FindElementWithSmallestAspectRatio(	grid,
-																		goc.begin<Tetrahedron>(),
-																		goc.end<Tetrahedron>(),
+																		goc.begin<Tetrahedron>(i),
+																		goc.end<Tetrahedron>(i),
 																		aaPos);
 				maxAspectRatioTet = FindElementWithLargestAspectRatio(	grid,
-																		goc.begin<Tetrahedron>(),
-																		goc.end<Tetrahedron>(),
+																		goc.begin<Tetrahedron>(i),
+																		goc.end<Tetrahedron>(i),
 																		aaPos);
 
 				n_minTetAspectRatio = CalculateAspectRatio(grid, minAspectRatioTet, aaPos);
@@ -1378,13 +1351,11 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 			}
 		}
 
-
-
 	//	Table summary
 		ug::Table<std::stringstream> table(9, 4);
-		table(0, 0) << "Number of volumes"; 	table(0, 1) << grid.num_volumes();
-		table(1, 0) << "Number of faces"; 		table(1, 1) << grid.num_faces();
-		table(2, 0) << "Number of vertices";	table(2, 1) << grid.num_vertices() << endl;
+		table(0, 0) << "Number of volumes"; 	table(0, 1) << goc.num_volumes(i);
+		table(1, 0) << "Number of faces"; 		table(1, 1) << goc.num_faces(i);
+		table(2, 0) << "Number of vertices";	table(2, 1) << goc.num_vertices(i) << endl;
 
 		table(3, 0) << "Shortest edge";	table(3, 1) << n_minEdge;
 		table(3, 2) << "Longest edge";	table(3, 3) << n_maxEdge;
@@ -1392,7 +1363,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 		table(4, 0) << "Smallest face angle";	table(4, 1) << n_minFaceAngle;
 		table(4, 2) << "Largest face angle";	table(4, 3) << n_maxFaceAngle;
 
-		if(grid.num_volumes() > 0)
+		if(goc.num_volumes(i) > 0)
 		{
 			table(5, 0) << "Smallest volume";		table(5, 1) << n_minVolume;
 			table(5, 2) << "Largest volume";		table(5, 3) << n_maxVolume;
@@ -1401,7 +1372,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 			table(7, 0) << "Smallest volume dihedral";	table(7, 1) << n_minVolDihedral;
 			table(7, 2) << "Largest volume dihedral";	table(7, 3) << n_maxVolDihedral;
 
-			if(grid.num<Tetrahedron>() > 0)
+			if(goc.num<Tetrahedron>(i) > 0)
 			{
 				table(8, 0) << "Smallest tetrahedron AR";	table(8, 1) << n_minTetAspectRatio;
 				table(8, 2) << "Largest tetrahedron AR";	table(8, 3) << n_maxTetAspectRatio;
@@ -1412,170 +1383,23 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 
 
 	//	Output section
-		UG_LOG(endl << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl);
-		UG_LOG("Grid quality statistics for grid level " << i << ":" << endl << endl);
+		UG_LOG("................." << endl);
+		UG_LOG(" Grid level " << i << ":" << endl);
+		UG_LOG("................." << endl << endl);
 		UG_LOG(table);
 
-		MinAngleHistogram(grid, grid.begin<Face>(), grid.end<Face>(), aaPos, 10);
+		MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 1);
 
-		if(grid.num_volumes() > 0)
+		if(goc.num_volumes(i) > 0)
 		{
-			MinAngleHistogram(grid, grid.volumes_begin(), grid.volumes_end(), aaPos, 10);
+			MinAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, 1);
 		}
+
 	}
 
-	UG_LOG("--------------------------------------------------------------------------" << endl << endl);
-}
-
-
-/*
-//	Actual procedure
-void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
-{
-	Grid::VertexAttachmentAccessor<AVector3> aaPos(grid, aPosition);
-
-//	Numbers
-	number smallestVolumeVolume;
-	number largestVolumeVolume;
-	number minFaceAngle;
-	number minVolumeAngle;
-	number shortestEdgeLength;
-	number longestEdgeLength;
-	number minTetrahedronAspectRatio;
-	number maxTetrahedronAspectRatio;
-
-//	Elements
-	Volume* smallestVolume;
-	Volume* largestVolume;
-	Volume* volumeWithSmallestMinAngle;
-	Tetrahedron* tetrahedronWithSmallestAspectRatio;
-	Tetrahedron* tetrahedronWithLargestAspectRatio;
-	EdgeBase* shortestEdge;
-	EdgeBase* longestEdge;
-	Face* faceWithSmallestMinAngle;
-
-
-//	Basic grid properties
-
-//	Check dimension
-	if(grid.num_volumes() > 0)
-	{
-	//	Volumes
-		smallestVolume = FindSmallestVolumeElement(	grid.volumes_begin(),
-												grid.volumes_end(),
-												aaPos);
-
-		largestVolume = FindLargestVolumeElement(	grid.volumes_begin(),
-											grid.volumes_end(),
-											aaPos);
-
-		volumeWithSmallestMinAngle = FindVolumeWithSmallestMinDihedral<Volume>(grid,
-																	grid.volumes_begin(),
-																	grid.volumes_end(),
-																	aaPos);
-	//	Numbers
-		smallestVolumeVolume = CalculateVolume(*smallestVolume,	aaPos);
-		largestVolumeVolume = CalculateVolume(*largestVolume, aaPos);
-		minVolumeAngle = CalculateMinDihedral(grid, volumeWithSmallestMinAngle, aaPos);
-	}
-
-//	Tetrahedron section
-	if(grid.num<Tetrahedron>() > 0)
-	{
-	//	Tetrahedrons
-		tetrahedronWithSmallestAspectRatio = FindElementWithSmallestAspectRatio<Tetrahedron>(	grid,
-																								grid.begin<Tetrahedron>(),
-																								grid.end<Tetrahedron>(),
-																								aaPos);
-
-		tetrahedronWithLargestAspectRatio = FindElementWithLargestAspectRatio<Tetrahedron>(	grid,
-																							grid.begin<Tetrahedron>(),
-																							grid.end<Tetrahedron>(),
-																							aaPos);
-
-	//	Numbers
-		minTetrahedronAspectRatio = CalculateAspectRatio(grid, tetrahedronWithSmallestAspectRatio, aaPos);
-		maxTetrahedronAspectRatio = CalculateAspectRatio(grid, tetrahedronWithLargestAspectRatio, aaPos);
-	}
-
-
-//	Elements
-	shortestEdge = FindShortestEdge(grid.edges_begin(),
-									grid.edges_end(),
-									aaPos);
-
-	longestEdge = FindLongestEdge(	grid.edges_begin(),
-									grid.edges_end(),
-									aaPos);
-
-	faceWithSmallestMinAngle = FindElementWithSmallestMinAngle<Face>(grid,
-															grid.begin<Face>(),
-															grid.end<Face>(),
-															aaPos);
-
-//	Numbers
-	shortestEdgeLength = EdgeLength(shortestEdge, aaPos);
-	longestEdgeLength = EdgeLength(longestEdge, aaPos);
-	minFaceAngle = CalculateMinAngle(grid, faceWithSmallestMinAngle, aaPos);
-
-
-//	Table summary
-	ug::Table<std::stringstream> table(10, 2);
-	table(0, 0) << "Number of volumes"; 	table(0, 1) << grid.num_volumes();
-	table(1, 0) << "Number of faces"; 		table(1, 1) << grid.num_faces();
-	table(2, 0) << "Number of vertices";	table(2, 1) << grid.num_vertices();
-
-	table(3, 0) << "Shortest edge length";	table(3, 1) << shortestEdgeLength;
-	table(4, 0) << "Longest edge length";	table(4, 1) << longestEdgeLength;
-
-	table(5, 0) << "Smallest face angle";	table(5, 1) << minFaceAngle;
-
-	if(grid.num_volumes() > 0)
-	{
-		table(6, 0) << "Smallest volume";	table(6, 1) << smallestVolumeVolume;
-		table(7, 0) << "Largest volume";	table(7, 1) << largestVolumeVolume;
-	}
-
-	if(grid.num<Tetrahedron>() > 0)
-	{
-		table(8, 0) << "Smallest tetrahedron AR";	table(8, 1) << minTetrahedronAspectRatio;
-		table(9, 0) << "Largest tetrahedron AR";	table(9, 1) << maxTetrahedronAspectRatio;
-	}
-
-
-//	Output section
-	UG_LOG(endl << "--------------------------------------------------------------------------" << endl);
-	UG_LOG("Grid quality statistics:" << endl << endl);
-	UG_LOG(table);
-
-	MinAngleHistogram(grid, grid.begin<Face>(), grid.end<Face>(), aaPos, 10);
-
-	if(grid.num_volumes() > 0)
-	{
-		MinAngleHistogram(grid, grid.volumes_begin(), grid.volumes_end(), aaPos, 10);
-	}
-	UG_LOG("--------------------------------------------------------------------------" << endl << endl);
-
-
+	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);
 
 }
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
