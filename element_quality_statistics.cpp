@@ -732,7 +732,10 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 		}
 
 		default:
-		 	UG_ASSERT(false, "Error. Only faces of type triangle supported in aspect ratio calculation.");
+		{
+		 	UG_THROW("Note: Currently only faces of type triangle supported in aspect ratio calculation.");
+		 	break;
+		}
 	}
 
 	return NAN;
@@ -766,7 +769,10 @@ number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos)
 		}
 
 		default:
-		 	UG_ASSERT(false, "Error. Only volumes of type tetrahedron supported in aspect ratio calculation.");
+		{
+		 	UG_THROW("Note: Currently only volumes of type tetrahedron supported in aspect ratio calculation.");
+		 	break;
+		}
 	}
 
 	return NAN;
