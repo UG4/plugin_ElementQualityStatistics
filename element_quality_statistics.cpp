@@ -9,17 +9,6 @@
 #include "element_quality_statistics.h"
 #include "common/util/table.h"
 
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-	#include <functional>
-	template <class T> function<bool(T)> isInRange(T low, T high)
-	{
-		return [low,high](T value)
-		{
-			return std::fabs(value - low) >= std::numeric_limits<T>::epsilon() \
-                   && std::fabs(value - high) <= std::numeric_limits<T>::epsilon();
-		};
-	}
-#endif
 
 namespace ug
 {
@@ -1155,7 +1144,8 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 	ug::Table<std::stringstream> minAngleTable(numRows, 6);
 
 //	Specific element header
-	UG_LOG(endl << "MinAngle-Histogram for '" << refElem->reference_object_id() << "' elements");
+	//UG_LOG(endl << "MinAngle-Histogram for '" << refElem->reference_object_id() << "' elements");
+	UG_LOG(endl << "MinAngle-Histogram for '" << refElem->base_object_id() << "d' elements");
 	UG_LOG(endl);
 
 //	First third
