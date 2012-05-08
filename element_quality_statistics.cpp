@@ -1196,9 +1196,10 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 //	Wrapper for multigrids
-void ElementQualityStatistics(MultiGrid& mg, int level)
+//void ElementQualityStatistics(MultiGrid& mg, int level)
+void ElementQualityStatistics(MultiGrid& mg)
 {
-	ElementQualityStatistics(mg, mg.get_geometric_objects(level));
+	ElementQualityStatistics(mg, mg.get_geometric_objects());
 }
 
 //	Wrapper for grids
@@ -1393,6 +1394,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 			MinAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, 10);
 		}
 
+		UG_LOG(endl);
 	}
 
 	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);

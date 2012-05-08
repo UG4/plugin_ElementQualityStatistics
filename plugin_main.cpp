@@ -24,7 +24,7 @@ extern "C" UG_API void InitUGPlugin(ug::bridge::Registry* reg, string parentGrou
 	reg->add_function(	"ElementQualityStatistics",
 						(void (*)(ug::Grid&)) (&ug::ElementQualityStatistics), grp);
 	reg->add_function(	"ElementQualityStatistics",
-						(void (*)(ug::MultiGrid&, int level)) (&ug::ElementQualityStatistics), grp);
+						(void (*)(ug::MultiGrid&/*, int level*/)) (&ug::ElementQualityStatistics), grp);
 
 
 }

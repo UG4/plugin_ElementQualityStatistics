@@ -289,7 +289,8 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 //	Wrapper
-void ElementQualityStatistics(MultiGrid& mg, int level);
+//void ElementQualityStatistics(MultiGrid& mg, int level);
+void ElementQualityStatistics(MultiGrid& mg);
 
 void ElementQualityStatistics(Grid& grid);
 
