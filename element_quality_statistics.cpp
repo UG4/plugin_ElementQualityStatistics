@@ -1386,7 +1386,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 		UG_LOG("+++++++++++++++++" << endl << endl);
 		UG_LOG(table);
 
-		MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 1);
+		MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
 
 		if(goc.num_volumes(i) > 0)
 		{
