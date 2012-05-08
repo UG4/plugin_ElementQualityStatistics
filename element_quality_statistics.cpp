@@ -1260,6 +1260,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 	{
 	//	----------
 	//	2D section
+	//	----------
 		minEdge = FindShortestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
 		maxEdge = FindLongestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
 		//minFace =
@@ -1296,6 +1297,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 
 	//	----------
 	//	3D section
+	//	----------
 		if(goc.num<Volume>(i) > 0)
 		{
 			minVolume = FindSmallestVolume(	goc.begin<Volume>(i),
@@ -1379,16 +1381,16 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 
 
 	//	Output section
-		UG_LOG("................." << endl);
+		UG_LOG("+++++++++++++++++" << endl);
 		UG_LOG(" Grid level " << i << ":" << endl);
-		UG_LOG("................." << endl << endl);
+		UG_LOG("+++++++++++++++++" << endl << endl);
 		UG_LOG(table);
 
 		MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 1);
 
 		if(goc.num_volumes(i) > 0)
 		{
-			MinAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, 1);
+			MinAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, 10);
 		}
 
 	}
