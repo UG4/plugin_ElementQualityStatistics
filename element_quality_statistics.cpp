@@ -20,54 +20,83 @@ namespace ug
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 ///	Collects all edges (= 2) which exist in the given face and which share the given vertex.
+/**	This method uses Grid::mark **/
 UG_API
 inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, VertexBase* vrt)
 {
-	vector<EdgeBase*> vNeighbourEdgesToVertex;
+	//PROFILE_BEGIN(CollectAssociatedSides_VERTEX);
 	sidesOut[0] = NULL;
 	sidesOut[1] = NULL;
 
-	CollectEdges(vNeighbourEdgesToVertex, grid, vrt, true);
-	for(uint i = 0; i < vNeighbourEdgesToVertex.size(); ++i)
+	grid.begin_marking();
+	for(size_t i = 0; i < f->num_vertices(); ++i){
+		grid.mark(f->vertex(i));
+	}
+
+	Grid::AssociatedEdgeIterator iterEnd = grid.associated_edges_end(vrt);
+	for(Grid::AssociatedEdgeIterator iter = grid.associated_edges_begin(vrt);
+		iter != iterEnd; ++iter)
 	{
-		if(FaceContains(f, vNeighbourEdgesToVertex[i]) == true)
-		{
+		EdgeBase* e = *iter;
+		if(grid.is_marked(e->vertex(0)) && grid.is_marked(e->vertex(1))){
 			UG_ASSERT(	sidesOut[1] == NULL,
-						"Only two edges may be adjacent to a vertex in a face element.")
+						"Only two edges may be adjacent to a vertex in a face element.");
 
 			if(sidesOut[0] == NULL)
-				sidesOut[0] = vNeighbourEdgesToVertex[i];
+				sidesOut[0] = e;
 			else
-				sidesOut[1] = vNeighbourEdgesToVertex[i];
+				sidesOut[1] = e;
 		}
 	}
 
+	grid.end_marking();
 	UG_ASSERT(	sidesOut[1] != NULL,
 				"Exactly two edges should be adjacent to a vertex in a face element.")
 }
 
 ///	Collects all faces (= 2) which exist in the given volume and which share the given edge.
+/**	This method uses Grid::mark **/
 UG_API
 inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, EdgeBase* e)
 {
-	vector<Face*> vNeighbourFacesToEdge;
+	//PROFILE_BEGIN(CollectAssociatedSides_EDGE);
 	sidesOut[0] = NULL;
 	sidesOut[1] = NULL;
 
-	CollectFaces(vNeighbourFacesToEdge, grid, e, true);
-	for(uint i = 0; i < vNeighbourFacesToEdge.size(); ++i)
-	{
-		if(VolumeContains(v, vNeighbourFacesToEdge[i]) == true)
-		{
-			UG_ASSERT(	sidesOut[1] == NULL,
-						"Only two faces may be adjacent to an edge in a volume element.")
+	grid.begin_marking();
 
-			if(sidesOut[0] == NULL)
-				sidesOut[0] = vNeighbourFacesToEdge[i];
-			else
-				sidesOut[1] = vNeighbourFacesToEdge[i];
+	for(size_t i = 0; i < v->num_vertices(); ++i)
+		grid.mark(v->vertex(i));
+
+	Grid::AssociatedFaceIterator iterEnd = grid.associated_faces_end(e);
+	for(Grid::AssociatedFaceIterator iter = grid.associated_faces_begin(e);
+		iter != iterEnd; ++iter)
+	{
+		Face* f = *iter;
+
+	//	check whether all vertices of f are marked
+		bool allMarked = true;
+		for(size_t i = 0; i < f->num_vertices(); ++i){
+			if(!grid.is_marked(f->vertex(i))){
+				allMarked = false;
+				break;
+			}
+		}
+
+		if(allMarked){
+			if(FaceContains(f, e)){
+				UG_ASSERT(	sidesOut[1] == NULL,
+							"Only two faces may be adjacent to an edge in a volume element.")
+
+				if(sidesOut[0] == NULL)
+					sidesOut[0] = f;
+				else
+					sidesOut[1] = f;
+			}
 		}
 	}
+
+	grid.end_marking();
 
 	UG_ASSERT(	sidesOut[1] != NULL,
 				"Exactly two faces should be adjacent to an edge in a volume element.")
@@ -90,6 +119,7 @@ number CalculateMinAngle(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
 template <class TAAPosVRT>
 number CalculateMinAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
 //TODO: improve this!
@@ -173,6 +203,7 @@ number CalculateMinAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 template <class TAAPosVRT>
 number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 	number minDihedral;
 	number tmpMinEdgeAngle;
 	number minEdgeAngle = 360;
@@ -229,6 +260,7 @@ number CalculateMinDihedral(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 template <class TAAPosVRT>
 number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
 //TODO: improve this!
@@ -298,6 +330,7 @@ number CalculateMaxAngle(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
 template <class TAAPosVRT>
 number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
 //TODO: improve this!
@@ -381,6 +414,7 @@ number CalculateMaxAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 template <class TAAPosVRT>
 number CalculateMaxAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 	number maxDihedral;
 	number tmpMaxEdgeAngle;
 	number maxEdgeAngle = 0;
@@ -437,6 +471,7 @@ number CalculateMaxDihedral(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 template <class TAAPosVRT>
 number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	in the current implementation this method requires, that all edges
 //	are created for all faces.
 //TODO: improve this!
@@ -499,6 +534,7 @@ number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 template <class TAAPosVRT>
 number CalculateMinTriangleHeight(Face* face, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 	if(face->num_vertices() == 3)
 	{
 	//	Get type of vertex attachment in aaPos and define it as ValueType
@@ -705,6 +741,7 @@ number CalculateAspectRatio(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
 template <class TAAPosVRT>
 number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 	number AspectRatio;
 	number maxEdgeLength;
 
@@ -745,6 +782,7 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 template <class TAAPosVRT>
 number CalculateAspectRatio(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 	number AspectRatio;
 
 	//	MINHEIGHT / MAXEDGELENGTH
@@ -789,6 +827,7 @@ template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithSmallestMinAngle(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
 	//	if(volumesBegin == volumesBegin)
@@ -822,6 +861,7 @@ template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindVolumeWithSmallestMinDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
 	//	if(volumesBegin == volumesBegin)
@@ -855,6 +895,7 @@ template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindElementWithLargestMaxAngle(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
 	//	if(volumesBegin == volumesBegin)
@@ -888,6 +929,7 @@ template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindVolumeWithLargestMaxDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
 	//	if(volumesBegin == volumesBegin)
@@ -920,6 +962,7 @@ FindVolumeWithLargestMaxDihedral(Grid& grid, TIterator elementsBegin, TIterator 
 template <class TIterator, class TAAPosVRT>
 Face* FindLargestFace(TIterator facesBegin, TIterator facesEnd, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 	//	if facesBegin equals facesEnd, then the list is empty and we can
 	//	immediately return NULL
 		if(facesBegin == facesEnd)
@@ -949,6 +992,7 @@ template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindSmallestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
 	//	if(volumesBegin == volumesBegin)
@@ -982,6 +1026,7 @@ template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
 FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
 	//	if(volumesBegin == volumesBegin)
@@ -1016,6 +1061,7 @@ typename TIterator::value_type
 FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator elemsBegin,
 												TIterator elemsEnd, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
 	//	if(volumesBegin == volumesBegin)
@@ -1051,6 +1097,7 @@ typename TIterator::value_type
 FindElementWithLargestAspectRatio(Grid& grid,  	TIterator elemsBegin,
 												TIterator elemsEnd, TAAPosVRT& aaPos)
 {
+	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
 	//	if(volumesBegin == volumesBegin)
@@ -1091,6 +1138,7 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 									TAAPosVRT& aaPos,
 									uint stepSize)
 {
+	//PROFILE_FUNC();
 //	Initialization
 	vector<number> minAngles;
 	typename TIterator::value_type refElem = *elementsBegin;
@@ -1211,8 +1259,9 @@ void ElementQualityStatistics(Grid& grid)
 
 void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 {
+	//PROFILE_FUNC();
+
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
-	//Grid::VertexAttachmentAccessor<AVector3> aaPos3(grid, aPosition);
 
 //	Numbers
 	number n_minEdge;
@@ -1259,6 +1308,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 	UG_LOG("GRID QUALITY STATISTICS" << endl << endl);
 	for(uint i = 0; i < goc.num_levels(); ++i)
 	{
+		//PROFILE_BEGIN(eqs_qualityStatistics2d);
 	//	----------
 	//	2D section
 	//	----------
@@ -1296,11 +1346,15 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 			n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
 		}
 
+		//PROFILE_END();
+
 	//	----------
 	//	3D section
 	//	----------
 		if(goc.num<Volume>(i) > 0)
 		{
+			//PROFILE_BEGIN(eqs_qualityStatistics3d);
+
 			minVolume = FindSmallestVolume(	goc.begin<Volume>(i),
 											goc.end<Volume>(i),
 											aaPos);
@@ -1351,6 +1405,8 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 			}
 		}
 
+		//PROFILE_BEGIN(eqs_qualityStatisticsOutput);
+
 	//	Table summary
 		ug::Table<std::stringstream> table(10, 4);
 		table(0, 0) << "Number of volumes"; 	table(0, 1) << goc.num_volumes(i);
@@ -1394,6 +1450,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 		UG_LOG("+++++++++++++++++" << endl << endl);
 		UG_LOG(table);
 
+		PROFILE_BEGIN(eqs_minAngleHistogram);
 		if(goc.num_volumes(i) > 0)
 		{
 			MinAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, 10);
@@ -1403,6 +1460,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 			MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
 		}
 
+		//PROFILE_END();
 		UG_LOG(endl);
 	}
 
