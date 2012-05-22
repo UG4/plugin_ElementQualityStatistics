@@ -1308,6 +1308,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 			maxVolume = FindLargestVolume(	goc.begin<Volume>(i),
 											goc.end<Volume>(i),
 											aaPos);
+
 			minAngleVol = FindElementWithSmallestMinAngle(	grid,
 															goc.volumes_begin(i),
 															goc.volumes_end(i),
@@ -1351,7 +1352,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 		}
 
 	//	Table summary
-		ug::Table<std::stringstream> table(9, 4);
+		ug::Table<std::stringstream> table(10, 4);
 		table(0, 0) << "Number of volumes"; 	table(0, 1) << goc.num_volumes(i);
 		table(1, 0) << "Number of faces"; 		table(1, 1) << goc.num_faces(i);
 		table(2, 0) << "Number of vertices";	table(2, 1) << goc.num_vertices(i) << endl;
@@ -1371,10 +1372,16 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 			table(7, 0) << "Smallest volume dihedral";	table(7, 1) << n_minVolDihedral;
 			table(7, 2) << "Largest volume dihedral";	table(7, 3) << n_maxVolDihedral;
 
+			if(goc.num<Triangle>(i) > 0)
+			{
+				table(8, 0) << "Smallest triangle AR"; table(8, 1) << n_minTriAspectRatio;
+				table(8, 2) << "Largest triangle AR"; table(8, 3) << n_maxTriAspectRatio;
+			}
+
 			if(goc.num<Tetrahedron>(i) > 0)
 			{
-				table(8, 0) << "Smallest tetrahedron AR";	table(8, 1) << n_minTetAspectRatio;
-				table(8, 2) << "Largest tetrahedron AR";	table(8, 3) << n_maxTetAspectRatio;
+				table(9, 0) << "Smallest tetrahedron AR";	table(9, 1) << n_minTetAspectRatio;
+				table(9, 2) << "Largest tetrahedron AR";	table(9, 3) << n_maxTetAspectRatio;
 			}
 		}
 
