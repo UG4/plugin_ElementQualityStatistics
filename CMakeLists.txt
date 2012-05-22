@@ -16,11 +16,12 @@ set(SOURCES	plugin_main.cpp
 			volume_calculation.cpp)
 
 
-# create a shared library from the sources and link it against ug4.
-add_library(ElementQualityStatistics SHARED ${SOURCES})
 
 if(STATIC)
-	target_link_libraries (ElementQualityStatistics ug4_s)
+	# add the sources to ug4's sources
+	EXPORTSOURCES(plugins/experimental/element_quality_statistics ${SOURCES})
 else(STATIC)
+	# create a shared library from the sources and link it against ug4.
+	add_library(ElementQualityStatistics SHARED ${SOURCES})
 	target_link_libraries (ElementQualityStatistics ug4)
 endif(STATIC)

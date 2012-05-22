@@ -16,7 +16,8 @@
 
 using namespace std;
 
-extern "C" UG_API void InitUGPlugin(ug::bridge::Registry* reg, string parentGroup)
+extern "C" UG_API void
+InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGroup)
 {
 	string grp(parentGroup); grp.append("ElementQualityStatistics/");
 
