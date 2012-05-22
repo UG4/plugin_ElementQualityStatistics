@@ -1107,16 +1107,16 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 
 
 //	Evaluate the minimal and maximal degree rounding to 10
-	uint minDeg = round(number(minAngles.front()) / 10.0) * 10;
-	uint maxDeg = round(number(minAngles.back()) / 10.0) * 10;
+	int minDeg = round(number(minAngles.front()) / 10.0) * 10;
+	int maxDeg = round(number(minAngles.back()) / 10.0) * 10;
 
 //	Expand minDeg and maxDeg by plus minus 10 degrees or at least to 0 or 180 degress
-	if(minDeg-10 > 0)
+	if((minDeg-10) > 0)
 		minDeg = minDeg - 10;
 	else
 		minDeg = 0;
 
-	if(maxDeg+10 < 180)
+	if((maxDeg+10) < 180)
 		maxDeg = maxDeg + 10;
 	else
 		maxDeg = 180;
@@ -1387,11 +1387,13 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 		UG_LOG("+++++++++++++++++" << endl << endl);
 		UG_LOG(table);
 
-		MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
-
 		if(goc.num_volumes(i) > 0)
 		{
 			MinAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, 10);
+		}
+		else
+		{
+			MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
 		}
 
 		UG_LOG(endl);
