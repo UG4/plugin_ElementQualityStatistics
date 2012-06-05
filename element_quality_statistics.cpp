@@ -33,9 +33,13 @@ inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, V
 		grid.mark(f->vertex(i));
 	}
 
-	Grid::AssociatedEdgeIterator iterEnd = grid.associated_edges_end(vrt);
-	for(Grid::AssociatedEdgeIterator iter = grid.associated_edges_begin(vrt);
-		iter != iterEnd; ++iter)
+	vector<EdgeBase*> vNeighbourEdgesToVertex;
+	CollectAssociated(vNeighbourEdgesToVertex, grid, vrt, true);
+
+	//Grid::AssociatedEdgeIterator iterEnd = grid.associated_edges_end(vrt);
+	Grid::AssociatedEdgeIterator iterEnd = vNeighbourEdgesToVertex.end();
+	//for(Grid::AssociatedEdgeIterator iter = grid.associated_edges_begin(vrt); iter != iterEnd; ++iter)
+	for(Grid::AssociatedEdgeIterator iter = vNeighbourEdgesToVertex.begin(); iter != iterEnd; ++iter)
 	{
 		EdgeBase* e = *iter;
 		if(grid.is_marked(e->vertex(0)) && grid.is_marked(e->vertex(1))){
@@ -68,9 +72,13 @@ inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, Edg
 	for(size_t i = 0; i < v->num_vertices(); ++i)
 		grid.mark(v->vertex(i));
 
-	Grid::AssociatedFaceIterator iterEnd = grid.associated_faces_end(e);
-	for(Grid::AssociatedFaceIterator iter = grid.associated_faces_begin(e);
-		iter != iterEnd; ++iter)
+	vector<Face*> vNeighbourFacesToEdge;
+	CollectAssociated(vNeighbourFacesToEdge, grid, e, true);
+
+	//Grid::AssociatedFaceIterator iterEnd = grid.associated_faces_end(e);
+	Grid::AssociatedFaceIterator iterEnd = vNeighbourFacesToEdge.end();
+	//for(Grid::AssociatedFaceIterator iter = grid.associated_faces_begin(e); iter != iterEnd; ++iter)
+	for(Grid::AssociatedFaceIterator iter = vNeighbourFacesToEdge.begin(); iter != iterEnd; ++iter)
 	{
 		Face* f = *iter;
 
