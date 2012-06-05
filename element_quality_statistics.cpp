@@ -33,13 +33,13 @@ inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, V
 		grid.mark(f->vertex(i));
 	}
 
-	vector<EdgeBase*> vNeighbourEdgesToVertex;
-	CollectAssociated(vNeighbourEdgesToVertex, grid, vrt, true);
+	//vector<EdgeBase*> vNeighbourEdgesToVertex;
+	//CollectAssociated(vNeighbourEdgesToVertex, grid, vrt, true);
 
-	//Grid::AssociatedEdgeIterator iterEnd = grid.associated_edges_end(vrt);
-	Grid::AssociatedEdgeIterator iterEnd = vNeighbourEdgesToVertex.end();
-	//for(Grid::AssociatedEdgeIterator iter = grid.associated_edges_begin(vrt); iter != iterEnd; ++iter)
-	for(Grid::AssociatedEdgeIterator iter = vNeighbourEdgesToVertex.begin(); iter != iterEnd; ++iter)
+	Grid::AssociatedEdgeIterator iterEnd = grid.associated_edges_end(vrt);
+	//Grid::AssociatedEdgeIterator iterEnd = vNeighbourEdgesToVertex.end();
+	for(Grid::AssociatedEdgeIterator iter = grid.associated_edges_begin(vrt); iter != iterEnd; ++iter)
+	//for(Grid::AssociatedEdgeIterator iter = vNeighbourEdgesToVertex.begin(); iter != iterEnd; ++iter)
 	{
 		EdgeBase* e = *iter;
 		if(grid.is_marked(e->vertex(0)) && grid.is_marked(e->vertex(1))){
