@@ -294,8 +294,9 @@ void ElementQualityStatistics(MultiGrid& mg);
 
 void ElementQualityStatistics(Grid& grid);
 
-//	Actual procedure
-void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc);
+//	Actual procedures
+void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc);
+void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc);
 
 
 

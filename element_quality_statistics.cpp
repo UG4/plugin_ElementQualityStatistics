@@ -210,7 +210,34 @@ number CalculateMinAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 //	Volume (For volume elements the minimum of dihedral and edge angle will be returned.)
 template <class TAAPosVRT>
 number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
+
+//	CORRECT VERSION BUT IN COMBINATION WITH SIMULATION ONLY UNDER DEBUG
 {
+	//PROFILE_FUNC();
+	number minDihedral;
+	number tmpMinEdgeAngle;
+	number minEdgeAngle = 360.0;
+
+//	Calculate the minimal dihedral
+	minDihedral = CalculateMinDihedral(grid, v, aaPos);
+
+//	Calculate the minimal edge angle
+	for(uint i = 0; i < v->num_faces(); ++i)
+	{
+		tmpMinEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
+		if(tmpMinEdgeAngle < minEdgeAngle)
+		{
+			minEdgeAngle = tmpMinEdgeAngle;
+		}
+	}
+
+//	return the minimum of minimal dihedral and minimal edge angle
+	return min(minDihedral, minEdgeAngle);
+}
+
+//	INCORRECT VERSION
+/*{
+	UG_LOG("------CalculateMinAngle() ------" << endl);
 	//PROFILE_FUNC();
 	number minDihedral;
 	number tmpMinEdgeAngle;
@@ -222,9 +249,9 @@ number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 //	Calculate the minimal edge angle
 	for(uint i = 0; i < v->num_faces(); ++i)
 	{
-		tmpMinEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
-
-		if(tmpMinEdgeAngle < minEdgeAngle)
+		minEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
+		UG_LOG("tmpMinEdgeAngle = " << tmpMinEdgeAngle << "minEdgeAngle = " << minEdgeAngle << endl);
+		if(minEdgeAngle < tmpMinEdgeAngle)
 		{
 			minEdgeAngle = tmpMinEdgeAngle;
 		}
@@ -232,7 +259,31 @@ number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 
 //	return the minimum of minimal dihedral and minimal edge angle
 	return min(minDihedral, minEdgeAngle);
-}
+}*/
+
+//	INCORRECT VERSION LOGGED
+/*{
+	//PROFILE_FUNC();
+	number minDihedral;
+	number tmpMinEdgeAngle;
+	number minEdgeAngle = 360;
+
+//	Calculate the minimal dihedral
+	minDihedral = CalculateMinDihedral(grid, v, aaPos);
+
+//	Calculate the minimal edge angle
+	for(uint i = 0; i < v->num_faces(); ++i)
+	{
+		minEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
+		if(minEdgeAngle < tmpMinEdgeAngle)
+		{
+			minEdgeAngle = tmpMinEdgeAngle;
+		}
+	}
+
+//	return the minimum of minimal dihedral and minimal edge angle
+	return min(minDihedral, minEdgeAngle);
+}*/
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -425,7 +476,7 @@ number CalculateMaxAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 	//PROFILE_FUNC();
 	number maxDihedral;
 	number tmpMaxEdgeAngle;
-	number maxEdgeAngle = 0;
+	number maxEdgeAngle = 0.0;
 
 //	Calculate the maximal dihedral
 	maxDihedral = CalculateMaxDihedral(grid, v, aaPos);
@@ -772,7 +823,6 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 
 		//	Calculate the aspect ratio
 			AspectRatio = minTriangleHeight / maxEdgeLength;
-
 			return AspectRatio;
 		}
 
@@ -1255,21 +1305,150 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 //void ElementQualityStatistics(MultiGrid& mg, int level)
 void ElementQualityStatistics(MultiGrid& mg)
 {
-	ElementQualityStatistics(mg, mg.get_geometric_objects());
+	if(mg.num_volumes() > 0)
+		ElementQualityStatistics3d(mg, mg.get_geometric_objects());
+	else
+		ElementQualityStatistics2d(mg, mg.get_geometric_objects());
 }
 
 //	Wrapper for grids
 void ElementQualityStatistics(Grid& grid)
 {
-	ElementQualityStatistics(grid, grid.get_geometric_objects());
+	if(grid.num_volumes() > 0)
+		ElementQualityStatistics3d(grid, grid.get_geometric_objects());
+	else
+		ElementQualityStatistics2d(grid, grid.get_geometric_objects());
 }
 
-
-void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
+//	Actual procedures
+void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc)
 {
 	//PROFILE_FUNC();
+	Grid::VertexAttachmentAccessor<APosition2> aaPos(grid, aPosition2);
 
+
+//	Numbers
+	number n_minEdge;
+	number n_maxEdge;
+	number n_minFace;
+	number n_maxFace;
+	number n_minFaceAngle;
+	number n_maxFaceAngle;
+	number n_minTriAspectRatio = 0.0;
+	number n_maxTriAspectRatio = 0.0;
+
+
+//	Elements
+	EdgeBase* minEdge;
+	EdgeBase* maxEdge;
+	Face* minFace;
+	Face* maxFace;
+	Face* minAngleFace;
+	Face* maxAngleFace;
+	Face* minAspectRatioTri;
+	Face* maxAspectRatioTri;
+
+
+//	Basic grid properties on level i
+	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl);
+	UG_LOG("GRID QUALITY STATISTICS" << endl << endl);
+	UG_LOG("*** Output info:" << endl);
+	UG_LOG("    - The 'aspect ratio' (AR) represents the ratio of minimal height and " << endl <<
+		   "      maximal edge length of a triangle or tetrahedron respectively." << endl);
+	UG_LOG("    - The MinAngle-Histogram lists the number of minimal element angles in " << endl <<
+		   "      different degree ranges." << endl << endl);
+	for(uint i = 0; i < goc.num_levels(); ++i)
+	{
+		//PROFILE_BEGIN(eqs_qualityStatistics2d);
+	//	----------
+	//	2D section
+	//	----------
+		minEdge = FindShortestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
+		maxEdge = FindLongestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
+		minFace = FindSmallestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
+		maxFace = FindLargestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
+		minAngleFace = FindElementWithSmallestMinAngle(	grid,
+														goc.begin<Face>(i),
+														goc.end<Face>(i),
+														aaPos);
+		maxAngleFace = FindElementWithLargestMaxAngle(	grid,
+														goc.begin<Face>(i),
+														goc.end<Face>(i),
+														aaPos);
+
+		n_minEdge = EdgeLength(minEdge, aaPos);
+		n_maxEdge = EdgeLength(maxEdge, aaPos);
+		n_minFace = FaceArea(minFace, aaPos);
+		n_maxFace = FaceArea(maxFace, aaPos);
+		n_minFaceAngle = CalculateMinAngle(grid, minAngleFace, aaPos);
+		n_maxFaceAngle = CalculateMaxAngle(grid, maxAngleFace, aaPos);
+
+	//	Check for triangles
+		if(goc.num<Triangle>(i) > 0)
+		{
+			minAspectRatioTri = FindElementWithSmallestAspectRatio(	grid,
+																	goc.begin<Face>(i),
+																	goc.end<Face>(i),
+																	aaPos);
+			maxAspectRatioTri = FindElementWithLargestAspectRatio(	grid,
+																	goc.begin<Face>(i),
+																	goc.end<Face>(i),
+																	aaPos);
+
+			n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
+			n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
+		}
+		//PROFILE_END();
+
+		//PROFILE_BEGIN(eqs_qualityStatisticsOutput);
+	//	Table summary
+		ug::Table<std::stringstream> table(8, 4);
+		table(0, 0) << "Number of volumes"; 	table(0, 1) << goc.num_volumes(i);
+		table(1, 0) << "Number of faces"; 		table(1, 1) << goc.num_faces(i);
+		table(2, 0) << "Number of vertices";	table(2, 1) << goc.num_vertices(i);
+
+		table(3, 0) << " "; table(3, 1) << " ";
+		table(3, 2) << " "; table(3, 3) << " ";
+
+		table(4, 0) << "Shortest edge";	table(4, 1) << n_minEdge;
+		table(4, 2) << "Longest edge";	table(4, 3) << n_maxEdge;
+
+		table(5, 0) << "Smallest face angle";	table(5, 1) << n_minFaceAngle;
+		table(5, 2) << "Largest face angle";	table(5, 3) << n_maxFaceAngle;
+
+		table(6, 0) << "Smallest face";	table(6, 1) << n_minFace;
+		table(6, 2) << "Largest face";	table(6, 3) << n_maxFace;
+
+		if(goc.num<Triangle>(i) > 0)
+		{
+			table(7, 0) << "Smallest triangle AR";	table(7, 1) << n_minTriAspectRatio;
+			table(7, 2) << "Largest triangle AR";	table(7, 3) << n_maxTriAspectRatio;
+		}
+
+
+	//	Output section
+		UG_LOG("+++++++++++++++++" << endl);
+		UG_LOG(" Grid level " << i << ":" << endl);
+		UG_LOG("+++++++++++++++++" << endl << endl);
+		UG_LOG(table);
+
+
+		//PROFILE_BEGIN(eqs_minAngleHistogram);
+		MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
+
+
+		//PROFILE_END();
+		UG_LOG(endl);
+	}
+
+	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);
+}
+
+void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
+{
+	//PROFILE_FUNC();
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
+
 
 //	Numbers
 	number n_minEdge;
@@ -1278,17 +1457,17 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 	//number n_maxFace;
 	number n_minFaceAngle;
 	number n_maxFaceAngle;
-	number n_minTriAspectRatio;
-	number n_maxTriAspectRatio;
+	number n_minTriAspectRatio = 0.0;
+	number n_maxTriAspectRatio = 0.0;
 
-	number n_minVolume;
-	number n_maxVolume;
-	number n_minVolAngle;
-	number n_maxVolAngle;
-	number n_minVolDihedral;
-	number n_maxVolDihedral;
-	number n_minTetAspectRatio;
-	number n_maxTetAspectRatio;
+	number n_minVolume = 0.0;
+	number n_maxVolume = 0.0;
+	number n_minVolAngle = 0.0;
+	number n_maxVolAngle = 0.0;
+	number n_minVolDihedral = 0.0;
+	number n_maxVolDihedral = 0.0;
+	number n_minTetAspectRatio = 0.0;
+	number n_maxTetAspectRatio = 0.0;
 
 
 //	Elements
@@ -1314,6 +1493,11 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 //	Basic grid properties on level i
 	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl);
 	UG_LOG("GRID QUALITY STATISTICS" << endl << endl);
+	UG_LOG("*** Output info:" << endl);
+	UG_LOG("    - The 'aspect ratio' (AR) represents the ratio of minimal height and " << endl <<
+		   "      maximal edge length of a triangle or tetrahedron respectively." << endl);
+	UG_LOG("    - The MinAngle-Histogram lists the number of minimal element angles in " << endl <<
+		   "      different degree ranges." << endl << endl);
 	for(uint i = 0; i < goc.num_levels(); ++i)
 	{
 		//PROFILE_BEGIN(eqs_qualityStatistics2d);
@@ -1353,7 +1537,6 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 			n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
 			n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
 		}
-
 		//PROFILE_END();
 
 	//	----------
@@ -1362,7 +1545,6 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 		if(goc.num<Volume>(i) > 0)
 		{
 			//PROFILE_BEGIN(eqs_qualityStatistics3d);
-
 			minVolume = FindSmallestVolume(	goc.begin<Volume>(i),
 											goc.end<Volume>(i),
 											aaPos);
@@ -1414,42 +1596,42 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 		}
 
 		//PROFILE_BEGIN(eqs_qualityStatisticsOutput);
-
 	//	Table summary
-		ug::Table<std::stringstream> table(10, 4);
+		ug::Table<std::stringstream> table(11, 4);
 		table(0, 0) << "Number of volumes"; 	table(0, 1) << goc.num_volumes(i);
 		table(1, 0) << "Number of faces"; 		table(1, 1) << goc.num_faces(i);
-		table(2, 0) << "Number of vertices";	table(2, 1) << goc.num_vertices(i) << endl;
+		table(2, 0) << "Number of vertices";	table(2, 1) << goc.num_vertices(i);
 
-		table(3, 0) << "Shortest edge";	table(3, 1) << n_minEdge;
-		table(3, 2) << "Longest edge";	table(3, 3) << n_maxEdge;
+		table(3, 0) << " "; table(3, 1) << " ";
+		table(3, 2) << " "; table(3, 3) << " ";
 
-		table(4, 0) << "Smallest face angle";	table(4, 1) << n_minFaceAngle;
-		table(4, 2) << "Largest face angle";	table(4, 3) << n_maxFaceAngle;
+		table(4, 0) << "Shortest edge";	table(4, 1) << n_minEdge;
+		table(4, 2) << "Longest edge";	table(4, 3) << n_maxEdge;
+
+		table(5, 0) << "Smallest face angle";	table(5, 1) << n_minFaceAngle;
+		table(5, 2) << "Largest face angle";	table(5, 3) << n_maxFaceAngle;
 
 		if(goc.num_volumes(i) > 0)
 		{
-			table(5, 0) << "Smallest volume";		table(5, 1) << n_minVolume;
-			table(5, 2) << "Largest volume";		table(5, 3) << n_maxVolume;
-			table(6, 0) << "Smallest volume angle";	table(6, 1) << n_minVolAngle;
-			table(6, 2) << "Largest volume angle";	table(6, 3) << n_maxVolAngle;
-			table(7, 0) << "Smallest volume dihedral";	table(7, 1) << n_minVolDihedral;
-			table(7, 2) << "Largest volume dihedral";	table(7, 3) << n_maxVolDihedral;
+			table(6, 0) << "Smallest volume";		table(6, 1) << n_minVolume;
+			table(6, 2) << "Largest volume";		table(6, 3) << n_maxVolume;
+			table(7, 0) << "Smallest volume angle";	table(7, 1) << n_minVolAngle;
+			table(7, 2) << "Largest volume angle";	table(7, 3) << n_maxVolAngle;
+			table(8, 0) << "Smallest volume dihedral";	table(8, 1) << n_minVolDihedral;
+			table(8, 2) << "Largest volume dihedral";	table(8, 3) << n_maxVolDihedral;
 
 			if(goc.num<Triangle>(i) > 0)
 			{
-				table(8, 0) << "Smallest triangle AR"; table(8, 1) << n_minTriAspectRatio;
-				table(8, 2) << "Largest triangle AR"; table(8, 3) << n_maxTriAspectRatio;
+				table(9, 0) << "Smallest triangle AR"; table(9, 1) << n_minTriAspectRatio;
+				table(9, 2) << "Largest triangle AR"; table(9, 3) << n_maxTriAspectRatio;
 			}
 
 			if(goc.num<Tetrahedron>(i) > 0)
 			{
-				table(9, 0) << "Smallest tetrahedron AR";	table(9, 1) << n_minTetAspectRatio;
-				table(9, 2) << "Largest tetrahedron AR";	table(9, 3) << n_maxTetAspectRatio;
+				table(10, 0) << "Smallest tetrahedron AR";	table(10, 1) << n_minTetAspectRatio;
+				table(10, 2) << "Largest tetrahedron AR";	table(10, 3) << n_maxTetAspectRatio;
 			}
 		}
-
-
 
 
 	//	Output section
@@ -1458,7 +1640,7 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 		UG_LOG("+++++++++++++++++" << endl << endl);
 		UG_LOG(table);
 
-		PROFILE_BEGIN(eqs_minAngleHistogram);
+		//PROFILE_BEGIN(eqs_minAngleHistogram);
 		if(goc.num_volumes(i) > 0)
 		{
 			MinAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, 10);
@@ -1467,16 +1649,13 @@ void ElementQualityStatistics(Grid& grid, GeometricObjectCollection goc)
 		{
 			MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
 		}
-
 		//PROFILE_END();
+
 		UG_LOG(endl);
 	}
 
 	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);
-
 }
-
-
 
 }
 
