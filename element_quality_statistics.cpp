@@ -222,9 +222,9 @@ number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 //	Calculate the minimal edge angle
 	for(uint i = 0; i < v->num_faces(); ++i)
 	{
-		minEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
+		tmpMinEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
 
-		if(minEdgeAngle < tmpMinEdgeAngle)
+		if(tmpMinEdgeAngle < minEdgeAngle)
 		{
 			minEdgeAngle = tmpMinEdgeAngle;
 		}
@@ -433,9 +433,9 @@ number CalculateMaxAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 //	Calculate the maximal edge angle
 	for(uint i = 0; i < v->num_faces(); ++i)
 	{
-		maxEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
+		tmpMaxEdgeAngle = CalculateMaxAngle(grid, grid.get_face(v, i), aaPos);
 
-		if(maxEdgeAngle > tmpMaxEdgeAngle)
+		if(tmpMaxEdgeAngle > maxEdgeAngle)
 		{
 			maxEdgeAngle = tmpMaxEdgeAngle;
 		}
