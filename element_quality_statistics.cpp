@@ -888,8 +888,8 @@ FindElementWithSmallestMinAngle(Grid& grid, TIterator elementsBegin, TIterator e
 	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
+	if(elementsBegin == elementsEnd)
+		return NULL;
 
 //	Initializations
 	typename TIterator::value_type elementWithSmallestMinAngle = *elementsBegin;
@@ -922,8 +922,8 @@ FindVolumeWithSmallestMinDihedral(Grid& grid, TIterator elementsBegin, TIterator
 	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
+	if(elementsBegin == elementsEnd)
+		return NULL;
 
 //	Initializations
 	typename TIterator::value_type elementWithSmallestMinDihedral = *elementsBegin;
@@ -956,8 +956,8 @@ FindElementWithLargestMaxAngle(Grid& grid, TIterator elementsBegin, TIterator el
 	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
+	if(elementsBegin == elementsEnd)
+		return NULL;
 
 //	Initializations
 	typename TIterator::value_type elementWithLargestMaxAngle = *elementsBegin;
@@ -990,8 +990,8 @@ FindVolumeWithLargestMaxDihedral(Grid& grid, TIterator elementsBegin, TIterator 
 	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
+	if(elementsBegin == elementsEnd)
+		return NULL;
 
 //	Initializations
 	typename TIterator::value_type elementWithLargestMaxDihedral = *elementsBegin;
@@ -1023,8 +1023,8 @@ Face* FindLargestFace(TIterator facesBegin, TIterator facesEnd, TAAPosVRT& aaPos
 	//PROFILE_FUNC();
 	//	if facesBegin equals facesEnd, then the list is empty and we can
 	//	immediately return NULL
-		if(facesBegin == facesEnd)
-			return NULL;
+	if(facesBegin == facesEnd)
+		return NULL;
 
 	//	the first face is the first candidate for the smallest face.
 		Face* largestFace = *facesBegin;
@@ -1053,8 +1053,8 @@ FindSmallestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPo
 	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
+	if(volumesBegin == volumesEnd)
+		return NULL;
 
 //	Initializations
 	typename TIterator::value_type smallestVolume = *volumesBegin;
@@ -1087,8 +1087,8 @@ FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos
 	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
+	if(volumesBegin == volumesEnd)
+		return NULL;
 
 //	Initializations
 	typename TIterator::value_type largestVolume = *volumesBegin;
@@ -1122,8 +1122,8 @@ FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator elemsBegin,
 	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
+	if(elemsBegin == elemsEnd)
+		return NULL;
 
 //	Initializations
 	typename TIterator::value_type elementWithSmallestAspectRatio = *elemsBegin;
@@ -1158,8 +1158,8 @@ FindElementWithLargestAspectRatio(Grid& grid,  	TIterator elemsBegin,
 	//PROFILE_FUNC();
 //	if volumesBegin equals volumesBegin, then the list is empty and we can
 //	immediately return NULL
-	//	if(volumesBegin == volumesBegin)
-	//		return NULL;
+	if(elemsBegin == elemsEnd)
+		return NULL;
 
 //	Initializations
 	typename TIterator::value_type elementWithLargestAspectRatio = *elemsBegin;
@@ -1376,12 +1376,36 @@ void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc)
 														goc.end<Face>(i),
 														aaPos);
 
-		n_minEdge = EdgeLength(minEdge, aaPos);
-		n_maxEdge = EdgeLength(maxEdge, aaPos);
-		n_minFace = FaceArea(minFace, aaPos);
-		n_maxFace = FaceArea(maxFace, aaPos);
-		n_minFaceAngle = CalculateMinAngle(grid, minAngleFace, aaPos);
-		n_maxFaceAngle = CalculateMaxAngle(grid, maxAngleFace, aaPos);
+		if(minEdge != NULL)
+			n_minEdge = EdgeLength(minEdge, aaPos);
+		else
+			n_minEdge = EdgeLength(*goc.begin<EdgeBase>(i), aaPos);
+
+		if(maxEdge != NULL)
+			n_maxEdge = EdgeLength(maxEdge, aaPos);
+		else
+			n_maxEdge = EdgeLength(*goc.begin<EdgeBase>(i), aaPos);
+
+		if(minFace != NULL)
+			n_minFace = FaceArea(minFace, aaPos);
+		else
+			n_minFace = FaceArea(*goc.begin<Face>(i), aaPos);
+
+		if(maxFace != NULL)
+			n_maxFace = FaceArea(maxFace, aaPos);
+		else
+			n_maxFace = FaceArea(*goc.begin<Face>(i), aaPos);
+
+		if(minAngleFace != NULL)
+			n_minFaceAngle = CalculateMinAngle(grid, minAngleFace, aaPos);
+		else
+			n_minFaceAngle = CalculateMinAngle(grid, *goc.begin<Face>(i), aaPos);
+
+		if(maxAngleFace != NULL)
+			n_maxFaceAngle = CalculateMaxAngle(grid, maxAngleFace, aaPos);
+		else
+			n_maxFaceAngle = CalculateMaxAngle(grid, *goc.begin<Face>(i), aaPos);
+
 
 	//	Check for triangles
 		if(goc.num<Triangle>(i) > 0)
@@ -1395,10 +1419,18 @@ void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc)
 																	goc.end<Face>(i),
 																	aaPos);
 
-			n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
-			n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
+			if(minAspectRatioTri != NULL)
+				n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
+			else
+				n_minTriAspectRatio = CalculateAspectRatio(grid, *goc.begin<Face>(i), aaPos);
+
+			if(maxAspectRatioTri != NULL)
+				n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
+			else
+				n_maxTriAspectRatio = CalculateAspectRatio(grid, *goc.begin<Face>(i), aaPos);
 		}
 		//PROFILE_END();
+
 
 		//PROFILE_BEGIN(eqs_qualityStatisticsOutput);
 	//	Table summary
@@ -1517,10 +1549,26 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 														goc.end<Face>(i),
 														aaPos);
 
-		n_minEdge = EdgeLength(minEdge, aaPos);
-		n_maxEdge = EdgeLength(maxEdge, aaPos);
-		n_minFaceAngle = CalculateMinAngle(grid, minAngleFace, aaPos);
-		n_maxFaceAngle = CalculateMaxAngle(grid, maxAngleFace, aaPos);
+		if(minEdge != NULL)
+			n_minEdge = EdgeLength(minEdge, aaPos);
+		else
+			n_minEdge = EdgeLength(*goc.begin<EdgeBase>(i), aaPos);
+
+		if(maxEdge != NULL)
+			n_maxEdge = EdgeLength(maxEdge, aaPos);
+		else
+			n_maxEdge = EdgeLength(*goc.begin<EdgeBase>(i), aaPos);
+
+		if(minAngleFace != NULL)
+			n_minFaceAngle = CalculateMinAngle(grid, minAngleFace, aaPos);
+		else
+			n_minFaceAngle = CalculateMinAngle(grid, *goc.begin<Face>(i), aaPos);
+
+		if(maxAngleFace != NULL)
+			n_maxFaceAngle = CalculateMaxAngle(grid, maxAngleFace, aaPos);
+		else
+			n_maxFaceAngle = CalculateMaxAngle(grid, *goc.begin<Face>(i), aaPos);
+
 
 	//	Check for triangles
 		if(goc.num<Triangle>(i) > 0)
@@ -1534,8 +1582,15 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 																	goc.end<Face>(i),
 																	aaPos);
 
-			n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
-			n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
+			if(minAspectRatioTri != NULL)
+				n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
+			else
+				n_minTriAspectRatio = CalculateAspectRatio(grid, *goc.begin<Face>(i), aaPos);
+
+			if(maxAspectRatioTri != NULL)
+				n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
+			else
+				n_maxTriAspectRatio = CalculateAspectRatio(grid, *goc.begin<Face>(i), aaPos);
 		}
 		//PROFILE_END();
 
@@ -1560,7 +1615,7 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 			maxAngleVol = FindElementWithLargestMaxAngle(	grid,
 															goc.volumes_begin(i),
 															goc.volumes_end(i),
-															aaPos);
+				 											aaPos);
 			minDihedralVol = FindVolumeWithSmallestMinDihedral(	grid,
 																goc.volumes_begin(i),
 																goc.volumes_end(i),
@@ -1570,12 +1625,35 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 																goc.volumes_end(i),
 																aaPos);
 
-			n_minVolume = CalculateVolume(*minVolume, aaPos);
-			n_maxVolume = CalculateVolume(*maxVolume, aaPos);
-			n_minVolAngle = CalculateMinAngle(grid, minAngleVol, aaPos);
-			n_maxVolAngle = CalculateMaxAngle(grid, maxAngleVol, aaPos);
-			n_minVolDihedral = CalculateMinDihedral(grid, minDihedralVol, aaPos);
-			n_maxVolDihedral = CalculateMaxDihedral(grid, maxDihedralVol, aaPos);
+			if(minVolume != NULL)
+				n_minVolume = CalculateVolume(*minVolume, aaPos);
+			else
+				n_minVolume = CalculateVolume(**goc.begin<Volume>(i), aaPos);
+
+			if(maxVolume != NULL)
+				n_maxVolume = CalculateVolume(*maxVolume, aaPos);
+			else
+				n_maxVolume = CalculateVolume(**goc.begin<Volume>(i), aaPos);
+
+			if(minAngleVol != NULL)
+				n_minVolAngle = CalculateMinAngle(grid, minAngleVol, aaPos);
+			else
+				n_minVolAngle = CalculateMinAngle(grid, *goc.volumes_begin(i), aaPos);
+
+			if(maxAngleVol != NULL)
+				n_maxVolAngle = CalculateMaxAngle(grid, maxAngleVol, aaPos);
+			else
+				n_maxVolAngle = CalculateMaxAngle(grid, *goc.volumes_begin(i), aaPos);
+
+			if(minDihedralVol != NULL)
+				n_minVolDihedral = CalculateMinDihedral(grid, minDihedralVol, aaPos);
+			else
+				n_minVolDihedral = CalculateMinDihedral(grid, *goc.volumes_begin(i), aaPos);
+
+			if(maxDihedralVol != NULL)
+				n_maxVolDihedral = CalculateMaxDihedral(grid, maxDihedralVol, aaPos);
+			else
+				n_maxVolDihedral = CalculateMaxDihedral(grid, *goc.volumes_begin(i), aaPos);
 
 
 		//	Tetrahedron section
@@ -1590,8 +1668,15 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 																		goc.end<Tetrahedron>(i),
 																		aaPos);
 
-				n_minTetAspectRatio = CalculateAspectRatio(grid, minAspectRatioTet, aaPos);
-				n_maxTetAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTet, aaPos);
+				if(minAspectRatioTet != NULL)
+					n_minTetAspectRatio = CalculateAspectRatio(grid, minAspectRatioTet, aaPos);
+				else
+					n_minTetAspectRatio = CalculateAspectRatio(grid, *goc.begin<Tetrahedron>(i), aaPos);
+
+				if(maxAspectRatioTet != NULL)
+					n_maxTetAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTet, aaPos);
+				else
+					n_maxTetAspectRatio = CalculateAspectRatio(grid, *goc.begin<Tetrahedron>(i), aaPos);
 			}
 		}
 
