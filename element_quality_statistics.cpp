@@ -1298,6 +1298,22 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateSubsetSurfaceArea
+number CalculateSubsetSurfaceArea(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh)
+{
+	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
+	number subsetSurfaceArea = 0.0;
+	for(FaceIterator fIter = sh.begin<Face>(subsetIndex, 0); fIter != sh.end<Face>(subsetIndex, 0); ++fIter)
+	{
+		Face* f = *fIter;
+		subsetSurfaceArea += FaceArea(f, aaPos);
+	}
+
+	return subsetSurfaceArea;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	ElementQualityStatistics
 ////////////////////////////////////////////////////////////////////////////////////////////
 

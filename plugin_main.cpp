@@ -27,5 +27,7 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 	reg->add_function(	"ElementQualityStatistics",
 						(void (*)(ug::MultiGrid&/*, int level*/)) (&ug::ElementQualityStatistics), grp);
 
+//	Register CalculateSubsetSurfaceArea
+	reg->add_function(	"get_subset_surface_area", &ug::CalculateSubsetSurfaceArea, grp);
 
 }
