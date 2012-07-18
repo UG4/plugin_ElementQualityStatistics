@@ -1344,12 +1344,12 @@ void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc)
 
 
 //	Numbers
-	number n_minEdge;
-	number n_maxEdge;
-	number n_minFace;
-	number n_maxFace;
-	number n_minFaceAngle;
-	number n_maxFaceAngle;
+	number n_minEdge = 0.0;
+	number n_maxEdge = 0.0;
+	number n_minFace = 0.0;
+	number n_maxFace = 0.0;
+	number n_minFaceAngle = 0.0;
+	number n_maxFaceAngle = 0.0;
 	number n_minTriAspectRatio = 0.0;
 	number n_maxTriAspectRatio = 0.0;
 
@@ -1391,37 +1391,18 @@ void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc)
 														goc.begin<Face>(i),
 														goc.end<Face>(i),
 														aaPos);
-
 		if(minEdge != NULL)
 			n_minEdge = EdgeLength(minEdge, aaPos);
-		else
-			n_minEdge = EdgeLength(*goc.begin<EdgeBase>(i), aaPos);
-
 		if(maxEdge != NULL)
 			n_maxEdge = EdgeLength(maxEdge, aaPos);
-		else
-			n_maxEdge = EdgeLength(*goc.begin<EdgeBase>(i), aaPos);
-
 		if(minFace != NULL)
 			n_minFace = FaceArea(minFace, aaPos);
-		else
-			n_minFace = FaceArea(*goc.begin<Face>(i), aaPos);
-
 		if(maxFace != NULL)
 			n_maxFace = FaceArea(maxFace, aaPos);
-		else
-			n_maxFace = FaceArea(*goc.begin<Face>(i), aaPos);
-
 		if(minAngleFace != NULL)
 			n_minFaceAngle = CalculateMinAngle(grid, minAngleFace, aaPos);
-		else
-			n_minFaceAngle = CalculateMinAngle(grid, *goc.begin<Face>(i), aaPos);
-
 		if(maxAngleFace != NULL)
 			n_maxFaceAngle = CalculateMaxAngle(grid, maxAngleFace, aaPos);
-		else
-			n_maxFaceAngle = CalculateMaxAngle(grid, *goc.begin<Face>(i), aaPos);
-
 
 	//	Check for triangles
 		if(goc.num<Triangle>(i) > 0)
@@ -1434,16 +1415,10 @@ void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc)
 																	goc.begin<Face>(i),
 																	goc.end<Face>(i),
 																	aaPos);
-
 			if(minAspectRatioTri != NULL)
 				n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
-			else
-				n_minTriAspectRatio = CalculateAspectRatio(grid, *goc.begin<Face>(i), aaPos);
-
 			if(maxAspectRatioTri != NULL)
 				n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
-			else
-				n_maxTriAspectRatio = CalculateAspectRatio(grid, *goc.begin<Face>(i), aaPos);
 		}
 		//PROFILE_END();
 
@@ -1499,12 +1474,12 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 
 
 //	Numbers
-	number n_minEdge;
-	number n_maxEdge;
+	number n_minEdge = 0.0;
+	number n_maxEdge = 0.0;
 	//number n_minFace;
 	//number n_maxFace;
-	number n_minFaceAngle;
-	number n_maxFaceAngle;
+	number n_minFaceAngle = 0.0;
+	number n_maxFaceAngle = 0.0;
 	number n_minTriAspectRatio = 0.0;
 	number n_maxTriAspectRatio = 0.0;
 
@@ -1564,27 +1539,14 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 														goc.begin<Face>(i),
 														goc.end<Face>(i),
 														aaPos);
-
 		if(minEdge != NULL)
 			n_minEdge = EdgeLength(minEdge, aaPos);
-		else
-			n_minEdge = EdgeLength(*goc.begin<EdgeBase>(i), aaPos);
-
 		if(maxEdge != NULL)
 			n_maxEdge = EdgeLength(maxEdge, aaPos);
-		else
-			n_maxEdge = EdgeLength(*goc.begin<EdgeBase>(i), aaPos);
-
 		if(minAngleFace != NULL)
 			n_minFaceAngle = CalculateMinAngle(grid, minAngleFace, aaPos);
-		else
-			n_minFaceAngle = CalculateMinAngle(grid, *goc.begin<Face>(i), aaPos);
-
 		if(maxAngleFace != NULL)
 			n_maxFaceAngle = CalculateMaxAngle(grid, maxAngleFace, aaPos);
-		else
-			n_maxFaceAngle = CalculateMaxAngle(grid, *goc.begin<Face>(i), aaPos);
-
 
 	//	Check for triangles
 		if(goc.num<Triangle>(i) > 0)
@@ -1597,16 +1559,10 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 																	goc.begin<Face>(i),
 																	goc.end<Face>(i),
 																	aaPos);
-
 			if(minAspectRatioTri != NULL)
 				n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
-			else
-				n_minTriAspectRatio = CalculateAspectRatio(grid, *goc.begin<Face>(i), aaPos);
-
 			if(maxAspectRatioTri != NULL)
 				n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
-			else
-				n_maxTriAspectRatio = CalculateAspectRatio(grid, *goc.begin<Face>(i), aaPos);
 		}
 		//PROFILE_END();
 
@@ -1640,37 +1596,18 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 																goc.volumes_begin(i),
 																goc.volumes_end(i),
 																aaPos);
-
 			if(minVolume != NULL)
 				n_minVolume = CalculateVolume(*minVolume, aaPos);
-			else
-				n_minVolume = CalculateVolume(**goc.begin<Volume>(i), aaPos);
-
 			if(maxVolume != NULL)
 				n_maxVolume = CalculateVolume(*maxVolume, aaPos);
-			else
-				n_maxVolume = CalculateVolume(**goc.begin<Volume>(i), aaPos);
-
 			if(minAngleVol != NULL)
 				n_minVolAngle = CalculateMinAngle(grid, minAngleVol, aaPos);
-			else
-				n_minVolAngle = CalculateMinAngle(grid, *goc.volumes_begin(i), aaPos);
-
 			if(maxAngleVol != NULL)
 				n_maxVolAngle = CalculateMaxAngle(grid, maxAngleVol, aaPos);
-			else
-				n_maxVolAngle = CalculateMaxAngle(grid, *goc.volumes_begin(i), aaPos);
-
 			if(minDihedralVol != NULL)
 				n_minVolDihedral = CalculateMinDihedral(grid, minDihedralVol, aaPos);
-			else
-				n_minVolDihedral = CalculateMinDihedral(grid, *goc.volumes_begin(i), aaPos);
-
 			if(maxDihedralVol != NULL)
 				n_maxVolDihedral = CalculateMaxDihedral(grid, maxDihedralVol, aaPos);
-			else
-				n_maxVolDihedral = CalculateMaxDihedral(grid, *goc.volumes_begin(i), aaPos);
-
 
 		//	Tetrahedron section
 			if(goc.num<Tetrahedron>(i) > 0)
@@ -1683,16 +1620,10 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 																		goc.begin<Tetrahedron>(i),
 																		goc.end<Tetrahedron>(i),
 																		aaPos);
-
 				if(minAspectRatioTet != NULL)
 					n_minTetAspectRatio = CalculateAspectRatio(grid, minAspectRatioTet, aaPos);
-				else
-					n_minTetAspectRatio = CalculateAspectRatio(grid, *goc.begin<Tetrahedron>(i), aaPos);
-
 				if(maxAspectRatioTet != NULL)
 					n_maxTetAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTet, aaPos);
-				else
-					n_maxTetAspectRatio = CalculateAspectRatio(grid, *goc.begin<Tetrahedron>(i), aaPos);
 			}
 		}
 
