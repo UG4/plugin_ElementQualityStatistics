@@ -29,5 +29,6 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 
 //	Register CalculateSubsetSurfaceArea
 	reg->add_function(	"get_subset_surface_area", &ug::CalculateSubsetSurfaceArea, grp);
+	reg->add_function(	"get_subset_volume", &ug::CalculateSubsetVolume, grp);
 
 }

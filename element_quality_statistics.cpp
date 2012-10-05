@@ -1314,6 +1314,22 @@ number CalculateSubsetSurfaceArea(MultiGrid& mg, int subsetIndex, MGSubsetHandle
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateSubsetVolume
+number CalculateSubsetVolume(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh)
+{
+	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
+	number subsetVolume = 0.0;
+	for(VolumeIterator vIter = sh.begin<Volume>(subsetIndex, 0); vIter != sh.end<Volume>(subsetIndex, 0); ++vIter)
+	{
+		Volume* v = *vIter;
+		subsetVolume += CalculateVolume(*v, aaPos);
+	}
+
+	return subsetVolume;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	ElementQualityStatistics
 ////////////////////////////////////////////////////////////////////////////////////////////
 

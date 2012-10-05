@@ -288,6 +288,10 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 //	CalculateSubsetSurfaceArea
 number CalculateSubsetSurfaceArea(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh);
 
+////////////////////////////////////////////////////////////////////////////////////////////
+//	CalculateSubsetVolume
+number CalculateSubsetVolume(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh);
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	ElementQualityStatistics
