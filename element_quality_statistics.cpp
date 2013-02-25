@@ -1705,6 +1705,51 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	BuildBouton
+////////////////////////////////////////////////////////////////////////////////////////////
+void BuildBouton()
+{
+	Grid grid;
+	SubsetHandler sh(grid);
+	Selector sel(grid);
+	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
+
+	vector3 center(0.0,0.0,0.0);
+
+	GenerateIcosphere(grid, center, 1.0, 1, aPosition);
+
+
+	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
+	{
+		VertexBase* vrt = *vIter;
+		sel.select(vrt);
+		sh.assign_subset(vrt, 0);
+	}
+
+	for(EdgeBaseIterator eIter = grid.edges_begin(); eIter != grid.edges_end(); ++eIter)
+	{
+		EdgeBase* e = *eIter;
+		sel.select(e);
+		sh.assign_subset(e, 0);
+	}
+
+	for(FaceIterator fIter = grid.faces_begin(); fIter != grid.faces_end(); ++fIter)
+	{
+		Face* f = *fIter;
+		sel.select(f);
+		sh.assign_subset(f, 0);
+	}
+
+
+
+	SaveGridToUGX(grid, sh, "test.ugx");
+}
+
+
+
+
 }
 
 
