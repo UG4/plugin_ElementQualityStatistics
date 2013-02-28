@@ -1718,7 +1718,7 @@ void BuildBouton()
 
 	vector3 center(0.0,0.0,0.0);
 
-	GenerateIcosphere(grid, center, 1.0, 1, aPosition);
+	GenerateIcosphere(grid, center, 1.0, 2, aPosition);
 
 
 	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
@@ -1743,6 +1743,43 @@ void BuildBouton()
 	}
 
 
+	int n = 12;
+	double r, phi;
+	vector3 tmpCoords;
+	vector<vector3> coords;
+	for(int i = 0; i<n; ++i)
+	{
+		tmpCoords.y 	= i*2/n - 1 + 1/n;
+		r 				= sqrt(1-tmpCoords.y*tmpCoords.y);
+		phi 			= i*M_PI*(3-sqrt(5));
+		tmpCoords.x		= r*cos(phi);
+		tmpCoords.z 	= r*sin(phi);
+
+		coords.push_back(tmpCoords);
+	}
+
+	number minDist, tmpMinDist;
+	VertexBase* tmpVrt;
+
+	for(int i = 1; i < coords.size(); ++i)
+	{
+		minDist = VecDistance(aaPos[*grid.vertices_begin()], coords[i]);
+		tmpVrt = *grid.vertices_begin();
+
+		for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
+		{
+			VertexBase* vrt = *vIter;
+			tmpMinDist = VecDistance(aaPos[vrt], coords[i]);
+
+			//if(tmpMinDist < minDist)
+			{
+				//minDist = tmpMinDist;
+				//tmpVrt = vrt;
+			}
+		}
+
+		sh.assign_subset(tmpVrt, 1);
+	}
 
 	SaveGridToUGX(grid, sh, "test.ugx");
 }
