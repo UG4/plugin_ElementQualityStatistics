@@ -1712,15 +1712,17 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 void BuildBouton()
 {
 	Grid grid;
+	grid.attach_to_vertices(aPosition);
 	SubsetHandler sh(grid);
 	Selector sel(grid);
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
 
+	sh.set_default_subset_index(0);
 	vector3 center(0.0,0.0,0.0);
+	number diameter = 2.0;
+	GenerateIcosphere(grid, center, 0.5*diameter, 2, aPosition);
 
-	GenerateIcosphere(grid, center, 1.0, 2, aPosition);
-
-
+	/*
 	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
 	{
 		VertexBase* vrt = *vIter;
@@ -1741,19 +1743,25 @@ void BuildBouton()
 		sel.select(f);
 		sh.assign_subset(f, 0);
 	}
+	*/
 
 
 	int n = 12;
 	double r, phi;
 	vector3 tmpCoords;
 	vector<vector3> coords;
+
 	for(int i = 0; i<n; ++i)
 	{
 		tmpCoords.y 	= i*2/n - 1 + 1/n;
-		r 				= sqrt(1-tmpCoords.y*tmpCoords.y);
+		r				= sqrt(1-tmpCoords.y*tmpCoords.y);
 		phi 			= i*M_PI*(3-sqrt(5));
 		tmpCoords.x		= r*cos(phi);
 		tmpCoords.z 	= r*sin(phi);
+
+		tmpCoords.x *= diameter;
+		tmpCoords.y *= diameter;
+		tmpCoords.z *= diameter;
 
 		coords.push_back(tmpCoords);
 	}
@@ -1761,25 +1769,38 @@ void BuildBouton()
 	number minDist, tmpMinDist;
 	VertexBase* tmpVrt;
 
-	for(int i = 1; i < coords.size(); ++i)
+	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
 	{
-		minDist = VecDistance(aaPos[*grid.vertices_begin()], coords[i]);
-		tmpVrt = *grid.vertices_begin();
-
-		for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
-		{
-			VertexBase* vrt = *vIter;
-			tmpMinDist = VecDistance(aaPos[vrt], coords[i]);
-
-			//if(tmpMinDist < minDist)
-			{
-				//minDist = tmpMinDist;
-				//tmpVrt = vrt;
-			}
-		}
-
-		sh.assign_subset(tmpVrt, 1);
+		VertexBase* vrt = *vIter;
+		sel.select(vrt);
 	}
+
+	if(grid.num<Vertex>() > 0)
+	{
+		for(size_t i = 0; i < coords.size(); ++i)
+		{
+			bool gotOne = false;
+			for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
+			{
+				VertexBase* vrt = *vIter;
+				tmpMinDist = VecDistance(aaPos[vrt], coords[i]);
+
+				if(((!gotOne) || (tmpMinDist < minDist)) && sel.is_selected(vrt))
+				{
+					minDist = tmpMinDist;
+					tmpVrt = vrt;
+					gotOne = true;
+				}
+			}
+
+			sel.deselect(tmpVrt);
+			sh.assign_subset(tmpVrt, 1);
+		}
+	}
+
+//	VertexBase* vrt;
+//	Grid::edge_traits::secure_container edges;
+//	grid.associated_elements(edges, vrt);
 
 	SaveGridToUGX(grid, sh, "test.ugx");
 }
