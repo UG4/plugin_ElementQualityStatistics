@@ -1709,7 +1709,7 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	BuildBouton
 ////////////////////////////////////////////////////////////////////////////////////////////
-void BuildBouton()
+void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 {
 //	Initial grid management setup
 	Grid grid;
@@ -1719,10 +1719,12 @@ void BuildBouton()
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
 	sh.set_default_subset_index(0);
 
+
 //	Generate raw icosphere
 	vector3 center(0.0,0.0,0.0);
-	number radius = 1.0;
-	GenerateIcosphere(grid, center, radius, 3, aPosition);
+	//number radius = 1.0;
+	GenerateIcosphere(grid, center, radius, numRefinements, aPosition);
+
 
 //	Initial assignment to subset 0 (vertices, edges, faces)
 	/*
@@ -1748,18 +1750,23 @@ void BuildBouton()
 	}
 	*/
 
+
 //	Distribute n points equally on a sphere
 
-	int n = 12;
+	/***********************
+	 * Golden spiral section
+	 **********************/
+	/*
+	int n = numReleaseSites;
 	double r, phi;
 	vector3 tmpCoords;
 	vector<vector3> coords;
 
 	for(int i = 0; i < n; i++)
 	{
-		tmpCoords.y 	= i * (double)2/n - 1 + 1/n;
-		r				= sqrt(1 - tmpCoords.y * tmpCoords.y);
-		phi 			= i * M_PI * (3 - sqrt(5));
+		tmpCoords.y 	= i * (double)2/n - 1 + (double)1/n;
+		r				= sqrt(1.0 - tmpCoords.y * tmpCoords.y);
+		phi 			= i * M_PI * (3.0 - sqrt(5));
 		tmpCoords.x		= r * cos(phi);
 		tmpCoords.z 	= r * sin(phi);
 
@@ -1769,41 +1776,33 @@ void BuildBouton()
 
 		coords.push_back(tmpCoords);
 	}
-
-
-
-
-
-/*
-    for k=1 to N do
-       h = -1 + 2*(k-1)/(N-1)
-       theta[k] = arccos(h)
-       if k=1 or k=N then phi[k] = 0
-       else phi[k] = (phi[k-1] + 3.6/sqrt(N*(1-h^2))) mod (2*pi)
-    endfor
-
-  In Cartesian coordinates the required point on a sphere of radius 1 is
-     (cos(theta)*sin(phi), sin(theta)*sin(phi), cos(phi))
 	*/
-/*
-	int n = 12;
-	double theta[n], phi[n], h;
+
+
+	/****************************************
+	 * "Distributing many points on a sphere"
+	 * by E.B. Saff and A.B.J. Kuijlaars
+	 ***************************************/
+
+	/*
+	int n = numReleaseSites;
+	double theta[n+1], phi[n+1], h;
 	vector3 tmpCoords;
 	vector<vector3> coords;
 
-	for(int i = 1; i < n+1; i++)
+	for(int i = 1; i <= n; i++)
 	{
 		h = -1 + 2 * (double)(i-1)/(n-1);
 		theta[i] = acos(h);
 
-		if(i == 0 || i == n)
+		if(i == 1 || i == n)
 			phi[i] = 0;
 		else
-			phi[i] = fmod(phi[i-1] + 3.6/sqrt(n*(1-h*h)), (2*M_PI));
+			phi[i] = fmod(phi[i-1] + 3.6/sqrt(n*(1.0-h*h)), (2*M_PI));
 
-		tmpCoords.x = cos(theta[i]*sin(phi[i]));
-		tmpCoords.y = sin(theta[i])*sin(phi[i]);
-		tmpCoords.z = cos(phi[i]);
+		tmpCoords.x = sin(theta[i])*cos(phi[i]);
+		tmpCoords.y = sin(phi[i])*sin(theta[i]);
+		tmpCoords.z = cos(theta[i]);
 
 		tmpCoords.x *= radius;
 		tmpCoords.y *= radius;
@@ -1811,16 +1810,70 @@ void BuildBouton()
 
 		coords.push_back(tmpCoords);
 	}
-*/
+	*/
 
+	/*
+	 *	ALTERNATIVE FORMULATION
+	 *
+	N = float(N) # in case we got an int which we surely got
 
+	s 	= 3.6 / math.sqrt(N)
+	phi = 0
+	pts = [[0, -1, 0]]
 
+	for k in range(1, N-1):{
+		y = -1 + 2 * k / (N-1)
+		r = math.sqrt(1 Ð y*y)
+		phi = phi + s / r
+	pts.append([math.cos(phi)*r, y, math.sin(phi)*r])
+	}
+	pts.append([0, 1, 0])
+	 *
+	 */
 
+		int n = numReleaseSites;
+		vector3 tmpCoords;
+		vector<vector3> coords;
 
+		double s = 3.6 / sqrt(n);
+		double r;
+		double phi = 0;
 
+		tmpCoords.x = 0.0;
+		tmpCoords.y = -1.0;
+		tmpCoords.z = 0.0;
 
+		tmpCoords.x *= radius;
+		tmpCoords.y *= radius;
+		tmpCoords.z *= radius;
 
+		coords.push_back(tmpCoords);
 
+		for(int i = 1; i < n-1; i++)
+		{
+			tmpCoords.y = -1 + 2 * (double)i/(n-1);
+			r = sqrt(1 - tmpCoords.y * tmpCoords.y);
+			phi = phi + s / r;
+
+			tmpCoords.x = r * cos(phi);
+			tmpCoords.z = r * sin(phi);
+
+			tmpCoords.x *= radius;
+			tmpCoords.y *= radius;
+			tmpCoords.z *= radius;
+
+			coords.push_back(tmpCoords);
+		}
+
+		tmpCoords.x = 0.0;
+		tmpCoords.y = 1.0;
+		tmpCoords.z = 0.0;
+
+		tmpCoords.x *= radius;
+		tmpCoords.y *= radius;
+		tmpCoords.z *= radius;
+
+		coords.push_back(tmpCoords);
 
 
 //	Testwise creation of equally distributed vertices
@@ -1832,6 +1885,7 @@ void BuildBouton()
 		aaPos[vrts[i]] = coords[i];
 	}
 	*/
+
 
 //	Find equally distributed vertices on icosphere
 	number minDist, tmpMinDist;
@@ -1865,6 +1919,7 @@ void BuildBouton()
 			sel.deselect(tmpVrt);
 			sh.assign_subset(tmpVrt, 1);
 
+
 			for(Grid::AssociatedFaceIterator fIter = grid.associated_faces_begin(tmpVrt); fIter != grid.associated_faces_end(tmpVrt); ++fIter)
 			{
 				Face* f = *fIter;
@@ -1873,7 +1928,9 @@ void BuildBouton()
 		}
 	}
 
+
 //	Divide equally spaced points into two separate subsets
+	/*
 	sel.clear();
 	int counter = 0;
 	for(VertexBaseIterator vIter = sh.begin<VertexBase>(1); vIter != sh.end<VertexBase>(1); ++vIter)
@@ -1898,7 +1955,7 @@ void BuildBouton()
 			sh.assign_subset(f, 2);
 		}
 	}
-
+	*/
 
 
 
@@ -1909,7 +1966,11 @@ void BuildBouton()
 //	Grid::edge_traits::secure_container edges;
 //	grid.associated_elements(edges, vrt);
 
-	SaveGridToUGX(grid, sh, "test.ugx");
+	stringstream ss;
+	ss << "bouton" << numReleaseSites << ".ugx";
+	string outfile = ss.str();
+
+	SaveGridToUGX(grid, sh, outfile.c_str());
 }
 
 
