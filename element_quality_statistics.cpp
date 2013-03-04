@@ -1711,17 +1711,20 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 ////////////////////////////////////////////////////////////////////////////////////////////
 void BuildBouton()
 {
+//	Initial grid management setup
 	Grid grid;
 	grid.attach_to_vertices(aPosition);
 	SubsetHandler sh(grid);
 	Selector sel(grid);
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
-
 	sh.set_default_subset_index(0);
-	vector3 center(0.0,0.0,0.0);
-	number diameter = 2.0;
-	GenerateIcosphere(grid, center, 0.5*diameter, 2, aPosition);
 
+//	Generate raw icosphere
+	vector3 center(0.0,0.0,0.0);
+	number radius = 1.0;
+	GenerateIcosphere(grid, center, radius, 3, aPosition);
+
+//	Initial assignment to subset 0 (vertices, edges, faces)
 	/*
 	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
 	{
@@ -1745,29 +1748,93 @@ void BuildBouton()
 	}
 	*/
 
+//	Distribute n points equally on a sphere
 
 	int n = 12;
 	double r, phi;
 	vector3 tmpCoords;
 	vector<vector3> coords;
 
-	for(int i = 0; i<n; ++i)
+	for(int i = 0; i < n; i++)
 	{
-		tmpCoords.y 	= i*2/n - 1 + 1/n;
-		r				= sqrt(1-tmpCoords.y*tmpCoords.y);
-		phi 			= i*M_PI*(3-sqrt(5));
-		tmpCoords.x		= r*cos(phi);
-		tmpCoords.z 	= r*sin(phi);
+		tmpCoords.y 	= i * (double)2/n - 1 + 1/n;
+		r				= sqrt(1 - tmpCoords.y * tmpCoords.y);
+		phi 			= i * M_PI * (3 - sqrt(5));
+		tmpCoords.x		= r * cos(phi);
+		tmpCoords.z 	= r * sin(phi);
 
-		tmpCoords.x *= diameter;
-		tmpCoords.y *= diameter;
-		tmpCoords.z *= diameter;
+		tmpCoords.x *= radius;
+		tmpCoords.y *= radius;
+		tmpCoords.z *= radius;
 
 		coords.push_back(tmpCoords);
 	}
 
+
+
+
+
+/*
+    for k=1 to N do
+       h = -1 + 2*(k-1)/(N-1)
+       theta[k] = arccos(h)
+       if k=1 or k=N then phi[k] = 0
+       else phi[k] = (phi[k-1] + 3.6/sqrt(N*(1-h^2))) mod (2*pi)
+    endfor
+
+  In Cartesian coordinates the required point on a sphere of radius 1 is
+     (cos(theta)*sin(phi), sin(theta)*sin(phi), cos(phi))
+	*/
+/*
+	int n = 12;
+	double theta[n], phi[n], h;
+	vector3 tmpCoords;
+	vector<vector3> coords;
+
+	for(int i = 1; i < n+1; i++)
+	{
+		h = -1 + 2 * (double)(i-1)/(n-1);
+		theta[i] = acos(h);
+
+		if(i == 0 || i == n)
+			phi[i] = 0;
+		else
+			phi[i] = fmod(phi[i-1] + 3.6/sqrt(n*(1-h*h)), (2*M_PI));
+
+		tmpCoords.x = cos(theta[i]*sin(phi[i]));
+		tmpCoords.y = sin(theta[i])*sin(phi[i]);
+		tmpCoords.z = cos(phi[i]);
+
+		tmpCoords.x *= radius;
+		tmpCoords.y *= radius;
+		tmpCoords.z *= radius;
+
+		coords.push_back(tmpCoords);
+	}
+*/
+
+
+
+
+
+
+
+
+
+
+
+//	Testwise creation of equally distributed vertices
+	/*
+	VertexBase* vrts[n];
+	for(size_t i = 0; i < n; ++i)
+	{
+		vrts[i] = *grid.create<Vertex>();
+		aaPos[vrts[i]] = coords[i];
+	}
+	*/
+
+//	Find equally distributed vertices on icosphere
 	number minDist, tmpMinDist;
-	VertexBase* tmpVrt;
 
 	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
 	{
@@ -1780,6 +1847,8 @@ void BuildBouton()
 		for(size_t i = 0; i < coords.size(); ++i)
 		{
 			bool gotOne = false;
+			VertexBase* tmpVrt;
+
 			for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
 			{
 				VertexBase* vrt = *vIter;
@@ -1795,8 +1864,46 @@ void BuildBouton()
 
 			sel.deselect(tmpVrt);
 			sh.assign_subset(tmpVrt, 1);
+
+			for(Grid::AssociatedFaceIterator fIter = grid.associated_faces_begin(tmpVrt); fIter != grid.associated_faces_end(tmpVrt); ++fIter)
+			{
+				Face* f = *fIter;
+				sh.assign_subset(f, 1);
+			}
 		}
 	}
+
+//	Divide equally spaced points into two separate subsets
+	sel.clear();
+	int counter = 0;
+	for(VertexBaseIterator vIter = sh.begin<VertexBase>(1); vIter != sh.end<VertexBase>(1); ++vIter)
+	{
+		VertexBase* vrt = *vIter;
+		if(counter % 2 == 0)
+		{
+			sel.select(vrt);
+		}
+
+		counter++;
+	}
+
+	for(VertexBaseIterator vIter = sel.begin<VertexBase>(); vIter != sel.end<VertexBase>(); ++vIter)
+	{
+		VertexBase* vrt = *vIter;
+		sh.assign_subset(vrt, 2);
+
+		for(Grid::AssociatedFaceIterator fIter = grid.associated_faces_begin(vrt); fIter != grid.associated_faces_end(vrt); ++fIter)
+		{
+			Face* f = *fIter;
+			sh.assign_subset(f, 2);
+		}
+	}
+
+
+
+
+
+
 
 //	VertexBase* vrt;
 //	Grid::edge_traits::secure_container edges;
