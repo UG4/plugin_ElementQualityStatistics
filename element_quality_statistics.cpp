@@ -1976,9 +1976,11 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 //	Initial grid management setup
 	Grid grid;
 	grid.attach_to_vertices(aPosition);
+	grid.attach_to_vertices(aNormal);
 	SubsetHandler sh(grid);
 	Selector sel(grid);
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
+	Grid::VertexAttachmentAccessor<ANormal> aaNorm(grid, aNormal);
 	sh.set_default_subset_index(0);
 
 
@@ -2040,16 +2042,17 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			sel.deselect(tmpVrt);
 			sh.assign_subset(tmpVrt, 1);
 
-
+			/*
 			for(Grid::AssociatedFaceIterator fIter = grid.associated_faces_begin(tmpVrt); fIter != grid.associated_faces_end(tmpVrt); ++fIter)
 			{
 				Face* f = *fIter;
 				sh.assign_subset(f, 1);
 			}
+			*/
 		}
 	}
 
-
+/*
 //	Rotate evenly distributed sphere coordinates around x axes by "a" degrees
 	for(int i = 0; i < coords.size(); ++i)
 	{
@@ -2059,14 +2062,14 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		coords[i].y = y * cos(a) - z * sin(a);
 		coords[i].z = y * sin(a) + z * cos(a);
 	}
-
+*/
 
 /*
  * 	Find corresponding vertices on the icospere and assign
  * 	a second set of evenly distributed vertices for
  * 	the immature release sites.
  */
-
+/*
 	sel.clear();
 	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
 	{
@@ -2097,15 +2100,17 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			sel.deselect(tmpVrt);
 			sh.assign_subset(tmpVrt, 2);
 
-
+			/*
 			for(Grid::AssociatedFaceIterator fIter = grid.associated_faces_begin(tmpVrt); fIter != grid.associated_faces_end(tmpVrt); ++fIter)
 			{
 				Face* f = *fIter;
 				sh.assign_subset(f, 2);
 			}
+			*/
+/*
 		}
 	}
-
+*/
 
 //	Divide evenly distributed vertices into two separate subsets
 	/*
@@ -2135,6 +2140,118 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	}
 	*/
 
+
+
+
+//	Create mature release sites
+	sel.clear();
+	CalculateVertexNormals(grid, aaPos, aaNorm);
+	vector<VertexBase*> vrts;
+	for(VertexBaseIterator vIter = sh.begin<VertexBase>(1); vIter != sh.end<VertexBase>(1); ++vIter)
+	{
+		VertexBase* vrt = *vIter;
+		vrts.push_back(vrt);
+	}
+
+	for(size_t i = 0; i < vrts.size(); ++i)
+	{
+		vector3 negNorm;
+		VertexBase* vrt = vrts[i];
+		VecScale(negNorm, aaNorm[vrt], -1.0);
+		AdaptSurfaceGridToCylinder(sel, grid, vrt, negNorm, 0.15, 0.03);
+
+		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
+		{
+			Face* f = *fIter;
+			sh.assign_subset(f, 1);
+			for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(f); eIter != grid.associated_edges_end(f); ++eIter)
+			{
+				EdgeBase* e = *eIter;
+				sh.assign_subset(e, 1);
+			}
+
+			for(size_t i = 0; i < f->num_vertices(); ++i)
+			{
+				VertexBase* vrt = f->vertex(i);
+				sh.assign_subset(vrt, 1);
+			}
+		}
+	}
+
+	for(size_t i = 0; i < vrts.size(); ++i)
+	{
+		vector3 negNorm;
+		VertexBase* vrt = vrts[i];
+		VecScale(negNorm, aaNorm[vrt], -1.0);
+		AdaptSurfaceGridToCylinder(sel, grid, vrt, negNorm, 0.035, 0.03);
+
+		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
+		{
+			Face* f = *fIter;
+			sh.assign_subset(f, 2);
+			for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(f); eIter != grid.associated_edges_end(f); ++eIter)
+			{
+				EdgeBase* e = *eIter;
+				sh.assign_subset(e, 2);
+			}
+
+			for(size_t i = 0; i < f->num_vertices(); ++i)
+			{
+				VertexBase* vrt = f->vertex(i);
+				sh.assign_subset(vrt, 2);
+			}
+		}
+	}
+
+	for(size_t i = 0; i < vrts.size(); ++i)
+	{
+		vector3 negNorm;
+		VertexBase* vrt = vrts[i];
+		VecScale(negNorm, aaNorm[vrt], -1.0);
+		AdaptSurfaceGridToCylinder(sel, grid, vrt, negNorm, 0.01, 0.03);
+
+		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
+		{
+			Face* f = *fIter;
+			sh.assign_subset(f, 3);
+			for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(f); eIter != grid.associated_edges_end(f); ++eIter)
+			{
+				EdgeBase* e = *eIter;
+				sh.assign_subset(e, 3);
+			}
+
+			for(size_t i = 0; i < f->num_vertices(); ++i)
+			{
+				VertexBase* vrt = f->vertex(i);
+				sh.assign_subset(vrt, 3);
+			}
+		}
+	}
+
+
+
+
+
+/*
+//	Extrude cylinders
+	CalculateVertexNormals(grid, aaPos, aaNorm);
+	vrts.clear();
+	//vector<VertexBase*> vrts;
+	for(VertexBaseIterator vIter = sh.begin<VertexBase>(1); vIter != sh.end<VertexBase>(1); ++vIter)
+	{
+		VertexBase* vrt = *vIter;
+		vrts.push_back(vrt);
+	}
+
+	for(size_t i = 0; i < vrts.size(); ++i)
+	{
+		vector3 negNorm;
+		VertexBase* vrt = vrts[i];
+		VecScale(negNorm, aaNorm[vrt], -1.0);
+		//ExtrudeCylinder(grid, sh, vrt, negNorm, 0.5, 0.05, 0.01, aaPos, 1, 1);
+		ExtrudeCylinder(grid, vrt, negNorm, 0.1, 0.05, 0.01, aaPos);
+	}
+*/
 
 
 
