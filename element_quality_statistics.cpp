@@ -1709,7 +1709,7 @@ void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	DistributeNPointsOnASphere
 ////////////////////////////////////////////////////////////////////////////////////////////
-void DistributeNPointsOnASphere(vector<vector3>& coords, int N, double radius)
+void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double radius)
 {
 /*
  * Check, if N defines a platonic solid
@@ -1987,12 +1987,12 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	GenerateIcosphere(grid, center, radius, numRefinements, aPosition);
 
 
-//	Distribute n points equally on a sphere
+//	Get evenly distributed sphere coordinates
 	vector<vector3> coords;
-	DistributeNPointsOnASphere(coords, numReleaseSites, radius);
+	GetNEvenlyDistributedSphereCoords(coords, numReleaseSites, radius);
 
 
-//	Testwise creation of equally distributed vertices
+//	Testwise creation of evenly distributed vertices
 	/*
 	VertexBase* vrts[numReleaseSites];
 	for(size_t i = 0; i < numReleaseSites; ++i)
@@ -2003,9 +2003,14 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	*/
 
 
-//	Find equally distributed vertices on icosphere
+/*
+ * 	Find corresponding vertices on the icospere and assign
+ * 	a first set of evenly distributed vertices for
+ * 	the mature release sites.
+ */
 	number minDist, tmpMinDist;
 
+	sel.clear();
 	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
 	{
 		VertexBase* vrt = *vIter;
@@ -2045,8 +2050,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	}
 
 
-/*
-//	Rotate equally distributed vertices a degrees around x axes
+//	Rotate evenly distributed sphere coordinates around x axes by "a" degrees
 	for(int i = 0; i < coords.size(); ++i)
 	{
 		double y, z;
@@ -2057,8 +2061,11 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	}
 
 
-//	Find equally distributed vertices on icosphere
-	//number minDist, tmpMinDist;
+/*
+ * 	Find corresponding vertices on the icospere and assign
+ * 	a second set of evenly distributed vertices for
+ * 	the immature release sites.
+ */
 
 	sel.clear();
 	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
@@ -2098,10 +2105,9 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			}
 		}
 	}
-*/
 
 
-//	Divide equally spaced points into two separate subsets
+//	Divide evenly distributed vertices into two separate subsets
 	/*
 	sel.clear();
 	int counter = 0;
