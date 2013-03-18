@@ -1977,11 +1977,13 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	Grid grid;
 	grid.attach_to_vertices(aPosition);
 	grid.attach_to_vertices(aNormal);
-	SubsetHandler sh(grid);
-	Selector sel(grid);
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
 	Grid::VertexAttachmentAccessor<ANormal> aaNorm(grid, aNormal);
+
+	SubsetHandler sh(grid);
 	sh.set_default_subset_index(0);
+
+	Selector sel(grid);
 
 
 //	Generate raw icosphere
@@ -2223,37 +2225,36 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	 * T-bars_bnd
 	 */
 
-	//vector<VertexBase*> vTmpVrts;
 	vector<EdgeBase*> vExtrusionEdges;
-	//vector<Face*> vTmpFaces;
 	vector3 scaledDir;
+	vector3 vZero(0.0,0.0,0.0);
+
+	vector3 c;
+	vector3 normal;
+	vector3 direction;
 
 	Selector tmpSel(grid);
 
 	for(size_t i = 0; i < vrts.size(); ++i)
 	{
-		//vTmpVrts.clear();
 		tmpSel.clear();
 		vExtrusionEdges.clear();
-		//vTmpFaces.clear();
 
+	//	create cylinder surface
 		VertexBase* vrt = vrts[i];
 		VecScale(scaledDir, aaNorm[vrt], -0.1);
 		AdaptSurfaceGridToCylinder(sel, grid, vrt, scaledDir, 0.02, 0.01);
 
-		//vTmpVrts.push_back(vrt);
-
+	//	assign closure of cylinder surface to subset "7 = T-bars_bnd"
 		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
 		{
 			Face* f = *fIter;
 			sh.assign_subset(f, 7);
-			//vTmpFaces.push_back(f);
 
 			for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(f); eIter != grid.associated_edges_end(f); ++eIter)
 			{
 				EdgeBase* e = *eIter;
 				sh.assign_subset(e, 7);
-				//vExtrusionEdges.push_back(e);
 			}
 
 			for(size_t i = 0; i < f->num_vertices(); ++i)
@@ -2263,17 +2264,65 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			}
 		}
 
+	//	select T-bars_bnd boundary edges and extrude them
 		SelectAreaBoundary(tmpSel, sel.begin<Face>(), sel.end<Face>());
 
 		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
 		{
 			EdgeBase* e = *eIter;
 			vExtrusionEdges.push_back(e);
-			sh.assign_subset(e, 8);
 		}
 
-		//Extrude(grid, NULL, &vExtrusionEdges, NULL, scaledDir, EO_CREATE_FACES);
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, scaledDir, EO_CREATE_FACES);
+
+
+
+	//	extrude and scale table top
+		tmpSel.clear();
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, EO_CREATE_FACES);
+
+		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
+		{
+			EdgeBase* e = vExtrusionEdges[i];
+			tmpSel.select(e->vertex(0));
+			tmpSel.select(e->vertex(1));
+		}
+
+
+		vector3 pointSet[tmpSel.num<VertexBase>()];
+		for(VertexBaseIterator vIter = tmpSel.begin<VertexBase>(); vIter != tmpSel.end<VertexBase>(); ++vIter)
+		{
+			size_t i = 0;
+			VertexBase* vrt = *vIter;
+
+			pointSet[i] = aaPos[vrt];
+			i++;
+
+			sh.assign_subset(vrt, 9);
+		}
+
+		/*
+		//FindClosestPlane(c, normal, pointSet, tmpSel.num<VertexBase>());
+		CalculateCenter(c, pointSet, tmpSel.num<VertexBase>());
+		UG_LOG(c.x << " ; " << c.y << " ; " << c.z << endl);
+
+		for(VertexBaseIterator vIter = tmpSel.begin<VertexBase>(); vIter != tmpSel.end<VertexBase>(); ++vIter)
+		{
+			VertexBase* vrt = *vIter;
+			VecSubtract(direction, aaPos[vrt], c);
+			VecScale(direction, direction, 1.2);
+			VecAdd(aaPos[vrt], aaPos[vrt], direction);
+		}
+		*/
+
+		/*
+		VertexBase* v;
+		v = *grid.create<Vertex>();
+		aaPos[v] = c;
+		sh.assign_subset(v, 9);
+		*/
+
+
 	}
 
 
