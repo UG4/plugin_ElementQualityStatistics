@@ -2288,8 +2288,10 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			tmpSel.select(e->vertex(1));
 		}
 
-
-		vector3 pointSet[tmpSel.num<VertexBase>()];
+		int n = tmpSel.num<VertexBase>();
+		//vector3 pointSet[tmpSel.num<VertexBase>()];
+		vector3 *pointSet = NULL;
+		pointSet = new vector3[n];
 		for(VertexBaseIterator vIter = tmpSel.begin<VertexBase>(); vIter != tmpSel.end<VertexBase>(); ++vIter)
 		{
 			size_t i = 0;
@@ -2300,6 +2302,9 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 
 			sh.assign_subset(vrt, 9);
 		}
+
+		delete [] pointSet;
+		pointSet = NULL;
 
 		/*
 		//FindClosestPlane(c, normal, pointSet, tmpSel.num<VertexBase>());
