@@ -156,7 +156,7 @@ number CalculateMinAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 	//	Get adjacent edges at the current vertex and calculate the angle between their normals
 		CollectAssociatedSides(vNeighbourEdgesToVertex, grid, f, vrt);
 
-	//	Calculate direction vectors of the current two adjacent edges
+	//	Calculate vExtrDir vectors of the current two adjacent edges
 	//	!!!	Beware of the correct order of the vertices	to get correct angle value !!!
 		VecSubtract(vDir1,
 					aaPos[vNeighbourEdgesToVertex[0]->vertex(0)],
@@ -347,7 +347,7 @@ number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 		CalculateNormal(vNorm1, vNeighbourFacesToEdge[0], aaPos);
 		CalculateNormal(vNorm2, vNeighbourFacesToEdge[1], aaPos);
 
-	/*	!!!	Beware of the correct direction normals to get correct angle value !!!
+	/*	!!!	Beware of the correct vExtrDir normals to get correct angle value !!!
 		INFO:	Angles of a regular tetrahedron:
 				- "Tetrahedron (dihedral) angle x" 	= 109,471...deg
 				- "Face-to-face angle y"			= 180deg - x = 70,52...deg
@@ -418,7 +418,7 @@ number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 	//	Get adjacent edges at the current vertex and calculate the angle between their normals
 		CollectAssociatedSides(vNeighbourEdgesToVertex, grid, f, vrt);
 
-	//	Calculate direction vectors of the current two adjacent edges
+	//	Calculate vExtrDir vectors of the current two adjacent edges
 	//	!!!	Beware of the correct order of the vertices	to get correct angle value !!!
 		VecSubtract(vDir1,
 					aaPos[vNeighbourEdgesToVertex[0]->vertex(0)],
@@ -558,7 +558,7 @@ number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 		CalculateNormal(vNorm1, vNeighbourFacesToEdge[0], aaPos);
 		CalculateNormal(vNorm2, vNeighbourFacesToEdge[1], aaPos);
 
-	/*	!!!	Beware of the correct direction normals to get correct angle value !!!
+	/*	!!!	Beware of the correct vExtrDir normals to get correct angle value !!!
 		INFO:	Angles of a regular tetrahedron:
 				- "Tetrahedron (dihedral) angle x" 	= 109,471...deg
 				- "Face-to-face angle y"			= 180deg - x = 70,52...deg
@@ -1977,8 +1977,11 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	Grid grid;
 	grid.attach_to_vertices(aPosition);
 	grid.attach_to_vertices(aNormal);
+	AInt aInt;
+	grid.attach_to_vertices(aInt);
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
 	Grid::VertexAttachmentAccessor<ANormal> aaNorm(grid, aNormal);
+	Grid::VertexAttachmentAccessor<AInt> aaInt(grid, aInt);
 
 	SubsetHandler sh(grid);
 	sh.set_default_subset_index(0);
@@ -2224,14 +2227,17 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	/*
 	 * T-bars_bnd
 	 */
+	number TBarHeight = 0.06;
+	number TableLegRadius = 0.02;
+	number TableTopRadius = 5 * TableLegRadius;
+	number TableTopHeight = 0.01;
 
 	vector<EdgeBase*> vExtrusionEdges;
-	vector3 scaledDir;
 	vector3 vZero(0.0,0.0,0.0);
 
-	vector3 c;
-	vector3 normal;
-	vector3 direction;
+	//vector3 c;
+	vector3 vExtrDir;
+	vector3 vUnitExtrDir;
 
 	Selector tmpSel(grid);
 
@@ -2242,8 +2248,9 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 
 	//	create cylinder surface
 		VertexBase* vrt = vrts[i];
-		VecScale(scaledDir, aaNorm[vrt], -0.1);
-		AdaptSurfaceGridToCylinder(sel, grid, vrt, scaledDir, 0.02, 0.01);
+		vUnitExtrDir = aaNorm[vrt];
+		VecScale(vExtrDir, vUnitExtrDir, -1.0 * TBarHeight);
+		AdaptSurfaceGridToCylinder(sel, grid, vrt, vExtrDir, TableLegRadius, 0.01);
 
 	//	assign closure of cylinder surface to subset "7 = T-bars_bnd"
 		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
@@ -2264,6 +2271,16 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			}
 		}
 
+
+
+
+
+
+
+
+
+
+
 	//	select T-bars_bnd boundary edges and extrude them
 		SelectAreaBoundary(tmpSel, sel.begin<Face>(), sel.end<Face>());
 
@@ -2273,61 +2290,98 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			vExtrusionEdges.push_back(e);
 		}
 
-		Extrude(grid, NULL, &vExtrusionEdges, NULL, scaledDir, EO_CREATE_FACES);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
 
-
-
-	//	extrude and scale table top
+		/*
+		 * additional edge select for delaunay triangulation
+		 */
+		/*
 		tmpSel.clear();
-		Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, EO_CREATE_FACES);
+		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
+		{
+			EdgeBase* e = vExtrusionEdges[i];
+			tmpSel.select(e);
+		}
+		*/
+
+	//	extrude and scale table top horizontally
+		tmpSel.clear();
+		//Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, EO_CREATE_FACES);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, NULL);
 
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
 		{
 			EdgeBase* e = vExtrusionEdges[i];
 			tmpSel.select(e->vertex(0));
 			tmpSel.select(e->vertex(1));
+
+			//
+			tmpSel.select(e);
 		}
 
-		int n = tmpSel.num<VertexBase>();
-		//vector3 pointSet[tmpSel.num<VertexBase>()];
-		vector3 *pointSet = NULL;
-		pointSet = new vector3[n];
-		for(VertexBaseIterator vIter = tmpSel.begin<VertexBase>(); vIter != tmpSel.end<VertexBase>(); ++vIter)
-		{
-			size_t i = 0;
-			VertexBase* vrt = *vIter;
-
-			pointSet[i] = aaPos[vrt];
-			i++;
-
-			sh.assign_subset(vrt, 9);
-		}
-
-		delete [] pointSet;
-		pointSet = NULL;
 
 		/*
-		//FindClosestPlane(c, normal, pointSet, tmpSel.num<VertexBase>());
-		CalculateCenter(c, pointSet, tmpSel.num<VertexBase>());
-		UG_LOG(c.x << " ; " << c.y << " ; " << c.z << endl);
+		 * test edge selection for delaunay triangulation
+		 */
+		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
+		{
+			EdgeBase* e = *eIter;
+			sh.assign_subset(e, 8);
+		}
+
+		//
+		TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 7);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		center = CalculateBarycenter(tmpSel.begin<VertexBase>(), tmpSel.end<VertexBase>(), aaPos);
 
 		for(VertexBaseIterator vIter = tmpSel.begin<VertexBase>(); vIter != tmpSel.end<VertexBase>(); ++vIter)
 		{
 			VertexBase* vrt = *vIter;
-			VecSubtract(direction, aaPos[vrt], c);
-			VecScale(direction, direction, 1.2);
-			VecAdd(aaPos[vrt], aaPos[vrt], direction);
+			VecSubtract(vExtrDir, aaPos[vrt], center);
+			VecNormalize(vExtrDir, vExtrDir);
+			VecScale(vExtrDir, vExtrDir, TableTopRadius);
+			VecAdd(aaPos[vrt], aaPos[vrt], vExtrDir);
 		}
-		*/
 
-		/*
-		VertexBase* v;
-		v = *grid.create<Vertex>();
-		aaPos[v] = c;
-		sh.assign_subset(v, 9);
-		*/
+	//	extrude table top vertically
+		VecScale(vExtrDir, vUnitExtrDir, -1.0 * TableTopHeight);
+		//Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, NULL);
+
+		tmpSel.clear();
+		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
+		{
+			EdgeBase* e = vExtrusionEdges[i];
+			tmpSel.select(e);
+		}
+
+		//sh.set_default_subset_index(7);
+		//TriangleFill(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>());
+
+		//TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 7);
 
 
+		sh.set_default_subset_index(0);
 	}
 
 
