@@ -2252,62 +2252,71 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		VecScale(vExtrDir, vUnitExtrDir, -1.0 * TBarHeight);
 		AdaptSurfaceGridToCylinder(sel, grid, vrt, vExtrDir, TableLegRadius, 0.01);
 
-	//	assign closure of cylinder surface to subset "7 = T-bars_bnd"
+	//	assign closure of cylinder surface to subset "8 = T-bars_bottom"
 		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
 		{
 			Face* f = *fIter;
-			sh.assign_subset(f, 7);
+			sh.assign_subset(f, 8);
 
 			for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(f); eIter != grid.associated_edges_end(f); ++eIter)
 			{
 				EdgeBase* e = *eIter;
-				sh.assign_subset(e, 7);
+				sh.assign_subset(e, 8);
 			}
 
 			for(size_t i = 0; i < f->num_vertices(); ++i)
 			{
 				VertexBase* vrt = f->vertex(i);
-				sh.assign_subset(vrt, 7);
+				sh.assign_subset(vrt, 8);
 			}
 		}
 
-
-
-
-
-
-
-
-
-
-
-	//	select T-bars_bnd boundary edges and extrude them
+	//	select T-bars_bottom boundary edges and extrude them
 		SelectAreaBoundary(tmpSel, sel.begin<Face>(), sel.end<Face>());
 
 		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
 		{
 			EdgeBase* e = *eIter;
 			vExtrusionEdges.push_back(e);
+
+			sh.assign_subset(e, 7);
+			sh.assign_subset(e->vertex(0), 7);
+			sh.assign_subset(e->vertex(1), 7);
 		}
+
+		tmpSel.clear();
+
+		UG_LOG("Vertex " << " :  " << i << " :  " << tmpSel.num<EdgeBase>() << " before." << endl);
 
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
 
-		/*
-		 * additional edge select for delaunay triangulation
-		 */
-		/*
-		tmpSel.clear();
+		UG_LOG("Vertex " << " :  " << i << " :  " << tmpSel.num<EdgeBase>() << " after." << endl);
+
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
 		{
 			EdgeBase* e = vExtrusionEdges[i];
 			tmpSel.select(e);
 		}
-		*/
 
+		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
+		{
+			EdgeBase* e = *eIter;
+			sh.assign_subset(e, 9);
+		}
+
+
+
+
+
+		//Triangulate(grid, sh.begin<Quadrilateral>(7), sh.end<Quadrilateral>(7));
+
+
+
+		/*
 	//	extrude and scale table top horizontally
 		tmpSel.clear();
-		//Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, EO_CREATE_FACES);
-		Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, NULL);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, EO_CREATE_FACES);
+		//Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, NULL);
 
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
 		{
@@ -2319,38 +2328,12 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			tmpSel.select(e);
 		}
 
+		//TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 7);
+		//TriangleFill_SweepLine(grid, sh.begin<EdgeBase>(8), sh.end<EdgeBase>(8), aPosition, aInt, &sh, 8);
 
-		/*
-		 * test edge selection for delaunay triangulation
-		 */
-		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
-		{
-			EdgeBase* e = *eIter;
-			sh.assign_subset(e, 8);
-		}
+		//Refine(grid, tmpSel);
 
-		//
-		TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 7);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		//Triangulate(grid, sh.begin<Quadrilateral>(7), sh.end<Quadrilateral>(7));
 
 		center = CalculateBarycenter(tmpSel.begin<VertexBase>(), tmpSel.end<VertexBase>(), aaPos);
 
@@ -2365,27 +2348,34 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 
 	//	extrude table top vertically
 		VecScale(vExtrDir, vUnitExtrDir, -1.0 * TableTopHeight);
-		//Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
-		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, NULL);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
+		//Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, NULL);
 
 		tmpSel.clear();
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
 		{
 			EdgeBase* e = vExtrusionEdges[i];
 			tmpSel.select(e);
+			sh.assign_subset(e, 9);
 		}
 
-		//sh.set_default_subset_index(7);
+		sh.set_default_subset_index(9);
 		//TriangleFill(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>());
 
-		//TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 7);
+		TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 9);
+		Refine(grid, tmpSel);
+		Refine(grid, tmpSel);
+
+		QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
 
 
 		sh.set_default_subset_index(0);
+
+
+		*/
 	}
 
-
-
+	sh.set_subset_name("T-bars_bottom", 8);
 
 
 
