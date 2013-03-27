@@ -2057,7 +2057,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		}
 	}
 
-	sh.set_subset_name("T-bars_bnd", 7);
+	sh.set_subset_name("T-bars_post", 7);
 
 /*
 //	Rotate evenly distributed sphere coordinates around x axes by "a" degrees
@@ -2284,35 +2284,40 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			sh.assign_subset(e->vertex(1), 7);
 		}
 
-		tmpSel.clear();
+		//tmpSel.clear();
 
-		UG_LOG("Vertex " << " :  " << i << " :  " << tmpSel.num<EdgeBase>() << " before." << endl);
+		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
+		{
+			EdgeBase* e = *eIter;
+			tmpSel.select(e);
+		}
 
+		//UG_LOG("Vertex " << " :  " << i << " :  " << tmpSel.num<EdgeBase>() << " before." << endl);
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
-
-		UG_LOG("Vertex " << " :  " << i << " :  " << tmpSel.num<EdgeBase>() << " after." << endl);
+		//UG_LOG("Vertex " << " :  " << i << " :  " << tmpSel.num<EdgeBase>() << " after." << endl);
 
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
 		{
 			EdgeBase* e = vExtrusionEdges[i];
-			tmpSel.select(e);
+			sh.assign_subset(e, 9);
 		}
 
+		/*
 		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
 		{
 			EdgeBase* e = *eIter;
 			sh.assign_subset(e, 9);
 		}
+		*/
 
-
-
-
+		//Refine(grid, tmpSel);
+		//Refine(grid, tmpSel);
 
 		//Triangulate(grid, sh.begin<Quadrilateral>(7), sh.end<Quadrilateral>(7));
 
 
 
-		/*
+
 	//	extrude and scale table top horizontally
 		tmpSel.clear();
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, EO_CREATE_FACES);
@@ -2346,6 +2351,22 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			VecAdd(aaPos[vrt], aaPos[vrt], vExtrDir);
 		}
 
+
+		Triangulate(grid, sh.begin<Quadrilateral>(9), sh.end<Quadrilateral>(9));
+		//QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
+
+		/*
+		tmpSel.clear();
+		vExtrusionEdges.clear();
+		SelectAreaBoundary(tmpSel, sh.begin<Face>(9), sh.end<Face>(9));
+		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
+		{
+			EdgeBase* e = *eIter;
+			vExtrusionEdges.push_back(e);
+		}
+		*/
+
+
 	//	extrude table top vertically
 		VecScale(vExtrDir, vUnitExtrDir, -1.0 * TableTopHeight);
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
@@ -2362,20 +2383,21 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		sh.set_default_subset_index(9);
 		//TriangleFill(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>());
 
-		TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 9);
-		Refine(grid, tmpSel);
-		Refine(grid, tmpSel);
+		//TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 9);
+		//Refine(grid, tmpSel);
+		//Refine(grid, tmpSel);
 
-		QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
+		//QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
 
 
 		sh.set_default_subset_index(0);
 
 
-		*/
+
 	}
 
 	sh.set_subset_name("T-bars_bottom", 8);
+	sh.set_subset_name("T-bars_bnd", 9);
 
 
 
