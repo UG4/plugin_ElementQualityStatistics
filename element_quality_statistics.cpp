@@ -2296,10 +2296,13 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
 		//UG_LOG("Vertex " << " :  " << i << " :  " << tmpSel.num<EdgeBase>() << " after." << endl);
 
+		vector<EdgeBase*> vTmpExtrusionEdges;
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
 		{
 			EdgeBase* e = vExtrusionEdges[i];
 			sh.assign_subset(e, 9);
+
+			vTmpExtrusionEdges.push_back(vExtrusionEdges[i]);
 		}
 
 		/*
@@ -2333,6 +2336,23 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			tmpSel.select(e);
 		}
 
+	//	seperate post from table top
+		for(size_t i = 0; i < vTmpExtrusionEdges.size(); i++)
+		{
+			EdgeBase* e = vTmpExtrusionEdges[i];
+			sh.assign_subset(e, 7);
+			sh.assign_subset(e->vertex(0), 7);
+			sh.assign_subset(e->vertex(1), 7);
+		}
+
+		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
+		{
+			EdgeBase* e = *eIter;
+			sh.assign_subset(e, 9);
+			sh.assign_subset(e->vertex(0), 9);
+			sh.assign_subset(e->vertex(1), 9);
+		}
+
 		//TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 7);
 		//TriangleFill_SweepLine(grid, sh.begin<EdgeBase>(8), sh.end<EdgeBase>(8), aPosition, aInt, &sh, 8);
 
@@ -2353,18 +2373,36 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 
 
 		Triangulate(grid, sh.begin<Quadrilateral>(9), sh.end<Quadrilateral>(9));
-		//QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
+		QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
 
-		/*
+
+	//	select edges to extrude vertically
 		tmpSel.clear();
 		vExtrusionEdges.clear();
 		SelectAreaBoundary(tmpSel, sh.begin<Face>(9), sh.end<Face>(9));
 		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
 		{
 			EdgeBase* e = *eIter;
-			vExtrusionEdges.push_back(e);
+			if(sh.get_subset_index(e) == 9)
+			{
+				vExtrusionEdges.push_back(e);
+			}
 		}
-		*/
+
+		stringstream s;
+		s << "test" << numReleaseSites << ".ugx";
+		string out = s.str();
+		SaveSelectionStatesToFile(grid, tmpSel, out.c_str());
+
+		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
+		{
+			EdgeBase* e = vExtrusionEdges[i];
+			/*
+			sh.assign_subset(e, 10);
+			sh.assign_subset(e->vertex(0), 10);
+			sh.assign_subset(e->vertex(1), 10);
+			*/
+		}
 
 
 	//	extrude table top vertically
@@ -2377,10 +2415,10 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		{
 			EdgeBase* e = vExtrusionEdges[i];
 			tmpSel.select(e);
-			sh.assign_subset(e, 9);
+			sh.assign_subset(e, 11);
 		}
 
-		sh.set_default_subset_index(9);
+		//sh.set_default_subset_index(9);
 		//TriangleFill(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>());
 
 		//TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 9);
@@ -2392,12 +2430,34 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 
 		sh.set_default_subset_index(0);
 
-
-
 	}
+
+
+	/*
+	tmpSel.clear();
+	for(FaceIterator fIter = sh.begin<Face>(9); fIter != sh.end<Face>(9); ++fIter)
+	{
+		Face* f = *fIter;
+		tmpSel.select(f);
+	}
+	Refine(grid, tmpSel);
+	QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
+
+	for(FaceIterator fIter = sh.begin<Face>(10); fIter != sh.end<Face>(10); ++fIter)
+	{
+		Face* f = *fIter;
+		QualityGridGeneration(grid, fIter, fIter, aaPos, 30.0);
+	}
+	*/
+
+
+
+
 
 	sh.set_subset_name("T-bars_bottom", 8);
 	sh.set_subset_name("T-bars_bnd", 9);
+
+	AssignSubsetColors(sh);
 
 
 
@@ -2411,6 +2471,54 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 
 	SaveGridToUGX(grid, sh, outfile.c_str());
 }
+
+
+
+
+static void SaveSelectionStatesToFile(Grid& mg, Selector& msel, const char* filename)
+{
+//	create a subset handler which holds different subsets for the different selection states
+	//MultiGrid& mg = *msel.multi_grid();
+	SubsetHandler sh(mg);
+
+
+	for(Selector::traits<Volume>::iterator iter = msel.begin<Volume>();
+		iter != msel.end<Volume>(); ++iter)
+	{
+		sh.assign_subset(*iter, msel.get_selection_status(*iter));
+	}
+
+	for(Selector::traits<Face>::iterator iter = msel.begin<Face>();
+		iter != msel.end<Face>(); ++iter)
+	{
+		sh.assign_subset(*iter, msel.get_selection_status(*iter));
+	}
+
+	for(Selector::traits<EdgeBase>::iterator iter = msel.begin<EdgeBase>();
+		iter != msel.end<EdgeBase>(); ++iter)
+	{
+		sh.assign_subset(*iter, msel.get_selection_status(*iter));
+	}
+
+	for(Selector::traits<VertexBase>::iterator iter = msel.begin<VertexBase>();
+		iter != msel.end<VertexBase>(); ++iter)
+	{
+		sh.assign_subset(*iter, msel.get_selection_status(*iter));
+	}
+
+
+	const char* subsetNames[] = {"one", "two"};
+
+	for(int i = 0; i < 2; ++i)
+		sh.subset_info(i).name = subsetNames[i];
+
+	AssignSubsetColors(sh);
+	EraseEmptySubsets(sh);
+	//SaveGridHierarchyTransformed(mg, sh, filename, LG_DISTRIBUTION_Z_OUTPUT_TRANSFORM);
+
+	SaveGridToUGX(mg, sh, filename);
+}
+
 
 
 
