@@ -23,14 +23,14 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 
 //	Register ElementQualityStatistics wrapper functions
 	reg->add_function(	"ElementQualityStatistics",
-						(void (*)(ug::Grid&)) (&ug::ElementQualityStatistics), grp);
+						(void (*)(ug::Grid&)) (&ug::ElementQualityStatistics), grp, "", "grid");
 	reg->add_function(	"ElementQualityStatistics",
-						(void (*)(ug::MultiGrid&/*, int level*/)) (&ug::ElementQualityStatistics), grp);
+						(void (*)(ug::MultiGrid&/*, int level*/)) (&ug::ElementQualityStatistics), grp, "", "mg");
 
 //	Register CalculateSubsetSurfaceArea
-	reg->add_function(	"get_subset_surface_area", &ug::CalculateSubsetSurfaceArea, grp);
-	reg->add_function(	"get_subset_volume", &ug::CalculateSubsetVolume, grp);
+	reg->add_function(	"get_subset_surface_area", &ug::CalculateSubsetSurfaceArea, grp, "", "mg#subsetIndex#sh");
+	reg->add_function(	"get_subset_volume", &ug::CalculateSubsetVolume, grp, "", "mg#subsetIndex#sh");
 
 //	Build Bouton
-	reg->add_function(	"BuildBouton", &ug::BuildBouton, grp);
+	reg->add_function(	"BuildBouton", &ug::BuildBouton, grp, "", "radius#numRefinements#numReleaseSites#a");
 }
