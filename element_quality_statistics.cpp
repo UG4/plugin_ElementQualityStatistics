@@ -1977,11 +1977,13 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	Grid grid;
 	grid.attach_to_vertices(aPosition);
 	grid.attach_to_vertices(aNormal);
+	//grid.attach_to_faces(aNormal);
 	AInt aInt;
 	grid.attach_to_vertices(aInt);
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
 	Grid::VertexAttachmentAccessor<ANormal> aaNorm(grid, aNormal);
 	Grid::VertexAttachmentAccessor<AInt> aaInt(grid, aInt);
+	//Grid::FaceAttachmentAccessor<ANormal> aaFaceNorm(grid, aNormal);
 
 	SubsetHandler sh(grid);
 	sh.set_default_subset_index(0);
@@ -2233,9 +2235,9 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	number TableTopHeight = 0.01;
 
 	vector<EdgeBase*> vExtrusionEdges;
+	vector<EdgeBase*> vTmpExtrusionEdges;
 	vector3 vZero(0.0,0.0,0.0);
 
-	//vector3 c;
 	vector3 vExtrDir;
 	vector3 vUnitExtrDir;
 
@@ -2245,6 +2247,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	{
 		tmpSel.clear();
 		vExtrusionEdges.clear();
+		vTmpExtrusionEdges.clear();
 
 	//	create cylinder surface
 		VertexBase* vrt = vrts[i];
@@ -2278,25 +2281,25 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		{
 			EdgeBase* e = *eIter;
 			vExtrusionEdges.push_back(e);
+			vTmpExtrusionEdges.push_back(e);
 
 			sh.assign_subset(e, 7);
 			sh.assign_subset(e->vertex(0), 7);
 			sh.assign_subset(e->vertex(1), 7);
 		}
 
-		//tmpSel.clear();
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
 
-		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
+	//	assign T-bar_bottom surrounding edges and vertices to CChCl subset (#4)
+		for(size_t i = 0; i < vTmpExtrusionEdges.size(); i++)
 		{
-			EdgeBase* e = *eIter;
-			tmpSel.select(e);
+			EdgeBase* e = vTmpExtrusionEdges[i];
+			sh.assign_subset(e, 4);
+			sh.assign_subset(e->vertex(0), 4);
+			sh.assign_subset(e->vertex(1), 4);
 		}
 
-		//UG_LOG("Vertex " << " :  " << i << " :  " << tmpSel.num<EdgeBase>() << " before." << endl);
-		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
-		//UG_LOG("Vertex " << " :  " << i << " :  " << tmpSel.num<EdgeBase>() << " after." << endl);
-
-		vector<EdgeBase*> vTmpExtrusionEdges;
+		vTmpExtrusionEdges.clear();
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
 		{
 			EdgeBase* e = vExtrusionEdges[i];
@@ -2306,34 +2309,26 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		}
 
 		/*
-		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
-		{
-			EdgeBase* e = *eIter;
-			sh.assign_subset(e, 9);
-		}
+		stringstream s;
+		s << "test_nRS" << numReleaseSites << "nVRTS" << i << ".ugx";
+		string out = s.str();
+		SaveGridToUGX(grid, sh, out.c_str());
 		*/
-
-		//Refine(grid, tmpSel);
-		//Refine(grid, tmpSel);
-
-		//Triangulate(grid, sh.begin<Quadrilateral>(7), sh.end<Quadrilateral>(7));
-
-
-
 
 	//	extrude and scale table top horizontally
 		tmpSel.clear();
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, EO_CREATE_FACES);
-		//Extrude(grid, NULL, &vExtrusionEdges, NULL, vZero, NULL);
 
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
 		{
 			EdgeBase* e = vExtrusionEdges[i];
 			tmpSel.select(e->vertex(0));
 			tmpSel.select(e->vertex(1));
-
-			//
 			tmpSel.select(e);
+
+			sh.assign_subset(e, 9);
+			sh.assign_subset(e->vertex(0), 9);
+			sh.assign_subset(e->vertex(1), 9);
 		}
 
 	//	seperate post from table top
@@ -2344,21 +2339,6 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			sh.assign_subset(e->vertex(0), 7);
 			sh.assign_subset(e->vertex(1), 7);
 		}
-
-		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
-		{
-			EdgeBase* e = *eIter;
-			sh.assign_subset(e, 9);
-			sh.assign_subset(e->vertex(0), 9);
-			sh.assign_subset(e->vertex(1), 9);
-		}
-
-		//TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 7);
-		//TriangleFill_SweepLine(grid, sh.begin<EdgeBase>(8), sh.end<EdgeBase>(8), aPosition, aInt, &sh, 8);
-
-		//Refine(grid, tmpSel);
-
-		//Triangulate(grid, sh.begin<Quadrilateral>(7), sh.end<Quadrilateral>(7));
 
 		center = CalculateBarycenter(tmpSel.begin<VertexBase>(), tmpSel.end<VertexBase>(), aaPos);
 
@@ -2371,10 +2351,8 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			VecAdd(aaPos[vrt], aaPos[vrt], vExtrDir);
 		}
 
-
-		Triangulate(grid, sh.begin<Quadrilateral>(9), sh.end<Quadrilateral>(9));
-		QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
-
+		//Triangulate(grid, sh.begin<Quadrilateral>(9), sh.end<Quadrilateral>(9));
+		//QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
 
 	//	select edges to extrude vertically
 		tmpSel.clear();
@@ -2383,32 +2361,36 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
 		{
 			EdgeBase* e = *eIter;
-			if(sh.get_subset_index(e) == 9)
+			if(NumAssociatedFaces(grid, e) == 1)
 			{
 				vExtrusionEdges.push_back(e);
+				sh.assign_subset(e, 10);
+				sh.assign_subset(e->vertex(0), 10);
+				sh.assign_subset(e->vertex(1), 10);
 			}
 		}
 
+		/*
 		stringstream s;
-		s << "test" << numReleaseSites << ".ugx";
+		s << "test_no" << i << "-nRS" << numReleaseSites << ".ugx";
 		string out = s.str();
 		SaveSelectionStatesToFile(grid, tmpSel, out.c_str());
 
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
 		{
 			EdgeBase* e = vExtrusionEdges[i];
-			/*
 			sh.assign_subset(e, 10);
 			sh.assign_subset(e->vertex(0), 10);
 			sh.assign_subset(e->vertex(1), 10);
-			*/
 		}
-
+		*/
 
 	//	extrude table top vertically
 		VecScale(vExtrDir, vUnitExtrDir, -1.0 * TableTopHeight);
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
-		//Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, NULL);
+
+
+
 
 		tmpSel.clear();
 		for(size_t i = 0; i < vExtrusionEdges.size(); i++)
@@ -2418,31 +2400,72 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			sh.assign_subset(e, 11);
 		}
 
-		//sh.set_default_subset_index(9);
+
+		sh.set_default_subset_index(11);
 		//TriangleFill(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>());
-
-		//TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 9);
+		TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, 11);
 		//Refine(grid, tmpSel);
 		//Refine(grid, tmpSel);
-
 		//QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
 
 
-		sh.set_default_subset_index(0);
+		sh.set_default_subset_index(-1);
 
 	}
 
 
+
+	/*
+	 * table post
+	 */
 	/*
 	tmpSel.clear();
+	Triangulate(grid, sh.begin<Quadrilateral>(7), sh.end<Quadrilateral>(7));
+	for(FaceIterator fIter = sh.begin<Face>(7); fIter != sh.end<Face>(7); ++fIter)
+	{
+		Face* f = *fIter;
+		tmpSel.select(f);
+	}
+	sh.set_default_subset_index(7);
+	Refine(grid, tmpSel);
+	//QualityGridGeneration(grid, sh.begin<Face>(7), sh.end<Face>(7), aaPos, 30.0);
+	*/
+
+
+	/*
+	 * table bottom
+	 */
+	tmpSel.clear();
+	Triangulate(grid, sh.begin<Quadrilateral>(9), sh.end<Quadrilateral>(9));
 	for(FaceIterator fIter = sh.begin<Face>(9); fIter != sh.end<Face>(9); ++fIter)
 	{
 		Face* f = *fIter;
 		tmpSel.select(f);
 	}
+	sh.set_default_subset_index(9);
 	Refine(grid, tmpSel);
 	QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
 
+
+	/*
+	 * table top
+	 */
+	tmpSel.clear();
+	for(FaceIterator fIter = sh.begin<Face>(11); fIter != sh.end<Face>(11); ++fIter)
+	{
+		Face* f = *fIter;
+		tmpSel.select(f);
+	}
+	sh.set_default_subset_index(11);
+	Refine(grid, tmpSel);
+	QualityGridGeneration(grid, sh.begin<Face>(11), sh.end<Face>(11), aaPos, 30.0);
+
+	/*
+	 * table sides
+	 */
+	/*
+	sh.set_default_subset_index(10);
+	Triangulate(grid, sh.begin<Quadrilateral>(10), sh.end<Quadrilateral>(10));
 	for(FaceIterator fIter = sh.begin<Face>(10); fIter != sh.end<Face>(10); ++fIter)
 	{
 		Face* f = *fIter;
@@ -2454,6 +2477,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 
 
 
+	sh.set_subset_name("T-bars_post", 7);
 	sh.set_subset_name("T-bars_bottom", 8);
 	sh.set_subset_name("T-bars_bnd", 9);
 
