@@ -2229,7 +2229,8 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	/*
 	 * T-bars_bnd
 	 */
-	number TBarHeight = 0.06;
+	//number TBarHeight = 0.06;
+	number TBarHeight = 0.02;
 	number TableLegRadius = 0.02;
 	number TableTopRadius = 5 * TableLegRadius;
 	number TableTopHeight = 0.01;
@@ -2288,6 +2289,8 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			sh.assign_subset(e->vertex(1), 7);
 		}
 
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
 
 	//	assign T-bar_bottom surrounding edges and vertices to CChCl subset (#4)
@@ -2414,13 +2417,16 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	}
 
 
+	/************************************
+	 * Optimization of the triangulation
+	 ***********************************/
 
 	/*
 	 * table post
 	 */
+	Triangulate(grid, sh.begin<Quadrilateral>(7), sh.end<Quadrilateral>(7));
 	/*
 	tmpSel.clear();
-	Triangulate(grid, sh.begin<Quadrilateral>(7), sh.end<Quadrilateral>(7));
 	for(FaceIterator fIter = sh.begin<Face>(7); fIter != sh.end<Face>(7); ++fIter)
 	{
 		Face* f = *fIter;
@@ -2428,15 +2434,17 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	}
 	sh.set_default_subset_index(7);
 	Refine(grid, tmpSel);
-	//QualityGridGeneration(grid, sh.begin<Face>(7), sh.end<Face>(7), aaPos, 30.0);
+	QualityGridGeneration(grid, sh.begin<Face>(7), sh.end<Face>(7), aaPos, 30.0);
 	*/
-
 
 	/*
 	 * table bottom
 	 */
 	tmpSel.clear();
 	Triangulate(grid, sh.begin<Quadrilateral>(9), sh.end<Quadrilateral>(9));
+
+	QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 10.0);
+
 	for(FaceIterator fIter = sh.begin<Face>(9); fIter != sh.end<Face>(9); ++fIter)
 	{
 		Face* f = *fIter;
@@ -2444,7 +2452,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	}
 	sh.set_default_subset_index(9);
 	Refine(grid, tmpSel);
-	QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 30.0);
+	QualityGridGeneration(grid, sh.begin<Face>(9), sh.end<Face>(9), aaPos, 20.0);
 
 
 	/*
@@ -2460,21 +2468,63 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	Refine(grid, tmpSel);
 	QualityGridGeneration(grid, sh.begin<Face>(11), sh.end<Face>(11), aaPos, 30.0);
 
+
 	/*
 	 * table sides
 	 */
-	/*
+	sel.clear();
+	sel.enable_autoselection(true);
+	tmpSel.clear();
+
+	ABool aBoolMarked = false;
+	grid.attach_to_faces(aBoolMarked);
+	Grid::FaceAttachmentAccessor<ABool> aaBoolMarked(grid, aBoolMarked);
+
+	int counter = 1;
+
 	sh.set_default_subset_index(10);
 	Triangulate(grid, sh.begin<Quadrilateral>(10), sh.end<Quadrilateral>(10));
+
 	for(FaceIterator fIter = sh.begin<Face>(10); fIter != sh.end<Face>(10); ++fIter)
 	{
 		Face* f = *fIter;
-		QualityGridGeneration(grid, fIter, fIter, aaPos, 30.0);
+		sel.select(f);
 	}
+
+	for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
+	{
+		Face* f = *fIter;
+
+		if(aaBoolMarked[f] == false)
+		{
+			tmpSel.select(f);
+			SelectLinkedFlatFaces(tmpSel, 1.0);
+			//QualityGridGeneration(grid, tmpSel.begin<Face>(), tmpSel.end<Face>(), aaPos, 10.0);
+
+			for(FaceIterator fMarkedIter = tmpSel.begin<Face>(); fMarkedIter != tmpSel.end<Face>(); ++fMarkedIter)
+			{
+				aaBoolMarked[*fMarkedIter] = true;
+				sh.assign_subset(*fMarkedIter, counter + 11);
+			}
+
+			tmpSel.clear();
+			counter++;
+		}
+	}
+
+	/*
+	for(int i = 0; i < counter; i++)
+		QualityGridGeneration(grid, sh.begin<Face>(i + 11), sh.end<Face>(i + 11), aaPos, 10.0);
 	*/
 
+	/*
+	for(int i = 8; i < sh.num_subsets(); i++)
+		sh.move_subset(i, 7);
+	*/
 
-
+	//sh.join_subsets(7,7,8,true);
+	//sh.join_subsets(7,7,9,true);
+	//sh.join_subsets(34,34,35,false);
 
 
 	sh.set_subset_name("T-bars_post", 7);
