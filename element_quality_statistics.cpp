@@ -2109,7 +2109,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 			sel.deselect(tmpVrt);
 			sh.assign_subset(tmpVrt, 2);
 
-			/*
+			*//*
 			for(Grid::AssociatedFaceIterator fIter = grid.associated_faces_begin(tmpVrt); fIter != grid.associated_faces_end(tmpVrt); ++fIter)
 			{
 				Face* f = *fIter;
@@ -2549,7 +2549,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 
 
 
-static void SaveSelectionStatesToFile(Grid& mg, Selector& msel, const char* filename)
+void SaveSelectionStatesToFile(Grid& mg, Selector& msel, const char* filename)
 {
 //	create a subset handler which holds different subsets for the different selection states
 	//MultiGrid& mg = *msel.multi_grid();

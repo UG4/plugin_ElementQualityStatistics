@@ -319,7 +319,7 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 ////////////////////////////////////////////////////////////////////////////////////////////
 void BuildBouton(number radius, int numRefinements, int numReleaseSites, double a);
 
-static void SaveSelectionStatesToFile(Grid& mg, Selector& msel, const char* filename);
+void SaveSelectionStatesToFile(Grid& mg, Selector& msel, const char* filename);
 
 
 }	 
