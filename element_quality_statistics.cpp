@@ -2512,15 +2512,33 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 		}
 	}
 
-	/*
 	for(int i = 0; i < counter; i++)
 		QualityGridGeneration(grid, sh.begin<Face>(i + 11), sh.end<Face>(i + 11), aaPos, 10.0);
+
+
+	for(int i = 1; i <= sh.num_subsets() - 8; i++)
+		sh.join_subsets(7,7,sh.num_subsets() - i, false);
+
+	/*
+	while(sh.num_subsets() > 8)
+		sh.join_subsets(7, 7, 8, true);
 	*/
 
 	/*
 	for(int i = 8; i < sh.num_subsets(); i++)
-		sh.move_subset(i, 7);
+	{
+		sh.erase_subset(i);
+	}
 	*/
+
+	for(int i = 1; i <= sh.num_subsets() - 8; i++)
+	{
+		sh.erase_subset(sh.num_subsets() - i);
+	}
+
+
+
+
 
 	//sh.join_subsets(7,7,8,true);
 	//sh.join_subsets(7,7,9,true);
