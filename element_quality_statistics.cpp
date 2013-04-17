@@ -2515,39 +2515,52 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites, double 
 	for(int i = 0; i < counter; i++)
 		QualityGridGeneration(grid, sh.begin<Face>(i + 11), sh.end<Face>(i + 11), aaPos, 10.0);
 
-
-	for(int i = 1; i <= sh.num_subsets() - 8; i++)
-		sh.join_subsets(7,7,sh.num_subsets() - i, false);
-
-	/*
 	while(sh.num_subsets() > 8)
+	{
 		sh.join_subsets(7, 7, 8, true);
-	*/
-
-	/*
-	for(int i = 8; i < sh.num_subsets(); i++)
-	{
-		sh.erase_subset(i);
-	}
-	*/
-
-	for(int i = 1; i <= sh.num_subsets() - 8; i++)
-	{
-		sh.erase_subset(sh.num_subsets() - i);
 	}
 
 
 
+	/************************************
+	 * Volume grid generation
+	 ***********************************/
+	Tetrahedralize(grid, sh, 18.0, true, true);
 
+	for(size_t i = 0; i < sh.num_subsets(); i++)
+	{
+		sel.clear();
 
-	//sh.join_subsets(7,7,8,true);
-	//sh.join_subsets(7,7,9,true);
-	//sh.join_subsets(34,34,35,false);
+		for(FaceIterator fIter = sh.begin<Face>(i); fIter != sh.end<Face>(i); ++fIter)
+		{
+			Face* f = *fIter;
+			sel.select(f);
+			sh.assign_subset(f, i);
+		}
+
+		SelectAssociatedGeometricObjects(sel);
+
+		for(VertexBaseIterator vIter = sel.begin<VertexBase>(); vIter != sel.end<VertexBase>(); ++vIter)
+		{
+			VertexBase* vrt = *vIter;
+			sh.assign_subset(vrt, i);
+		}
+
+		for(EdgeBaseIterator eIter = sel.begin<EdgeBase>(); eIter != sel.end<EdgeBase>(); ++eIter)
+		{
+			EdgeBase* e = *eIter;
+			sh.assign_subset(e, i);
+		}
+	}
+
+	//SeparateSubsetsByLowerDimSubsets<Volume>(grid, sh, true);
+	//AdjustSubsetsForSimulation(sh, true);
+
 
 
 	sh.set_subset_name("T-bars_post", 7);
-	sh.set_subset_name("T-bars_bottom", 8);
-	sh.set_subset_name("T-bars_bnd", 9);
+	//sh.set_subset_name("T-bars_bottom", 8);
+	//sh.set_subset_name("T-bars_bnd", 9);
 
 	AssignSubsetColors(sh);
 
