@@ -2013,6 +2013,23 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 
 	Selector sel(grid);
 
+//	Final subsets
+	const int si_bouton_bnd 	= 0;
+	const int si_mature_AZ 		= 1;
+	const int si_immature_AZ 	= 2;
+	const int si_CChCl 			= 3;
+	const int si_Tbars_bnd 		= 4;
+	const int si_mit_bnd 		= 5;
+	const int si_cyt_int 		= 6;
+	const int si_Tbars_int 		= 7;
+
+//	Temporal subsets
+	const int si_Tbars_post 	= 5;
+	const int si_Tbars_bottom 	= 6;
+	const int si_Tbars_sides 	= 7;
+	const int si_Tbars_tabletop	= 8;
+
+
 
 //	Generate raw icosphere
 	vector3 center(0.0, 0.0, 0.0);
@@ -2409,12 +2426,12 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 			sh.assign_subset(e->vertex(1), 4);
 		}
 
-		center = CalculateBarycenter(tmpSel.begin<VertexBase>(), tmpSel.end<VertexBase>(), aaPos);
+		vector3 baryCenter = CalculateBarycenter(tmpSel.begin<VertexBase>(), tmpSel.end<VertexBase>(), aaPos);
 
 		for(VertexBaseIterator vIter = tmpSel.begin<VertexBase>(); vIter != tmpSel.end<VertexBase>(); ++vIter)
 		{
 			VertexBase* vrt = *vIter;
-			VecSubtract(vExtrDir, aaPos[vrt], center);
+			VecSubtract(vExtrDir, aaPos[vrt], baryCenter);
 			VecNormalize(vExtrDir, vExtrDir);
 			VecScale(vExtrDir, vExtrDir, TableTopRadius);
 			VecAdd(aaPos[vrt], aaPos[vrt], vExtrDir);
@@ -2506,10 +2523,6 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	/************************************
 	 * Optimization of the triangulation
 	 ************************************/
-
-
-
-
 
 	/*
 	 * table top
@@ -2623,14 +2636,45 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 
 
 	/************************************
+	 * Add mitochondrium
+	 ***********************************/
+	sh.set_default_subset_index(5);
+	GenerateIcosphere(grid, center, 0.25, numRefinements-2, aPosition);
+	sh.set_subset_name("mit_bnd", 5);
+
+
+
+	/************************************
 	 * Volume grid generation
 	 ***********************************/
-	/*
 	sh.set_default_subset_index(-1);
 	Tetrahedralize(grid, sh, 18.0, true, true);
 	SeparateSubsetsByLowerDimSubsets<Volume>(grid, sh, true);
 	AdjustSubsetsForSimulation(sh, true);
-	*/
+
+
+	int maxNum = 0;
+	int cyt_int_subset_index;
+	for(size_t i = 6; i < sh.num_subsets(); ++i)
+	{
+		if(sh.num<Volume>(i) > maxNum)
+		{
+			maxNum = sh.num<Volume>(i);
+			cyt_int_subset_index = i;
+		}
+	}
+
+	sh.swap_subsets(6, cyt_int_subset_index);
+
+	while(sh.num_subsets() > 8)
+	{
+		sh.join_subsets(7, 7, 8, true);
+	}
+
+	sh.set_subset_name("cyt_int", 6);
+	sh.set_subset_name("T-bars_int", 7);
+
+
 
 	AssignSubsetColors(sh);
 
