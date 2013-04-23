@@ -2024,6 +2024,20 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	vector<vector3> coords;
 	GetNEvenlyDistributedSphereCoords(coords, numReleaseSites, radius);
 
+/*
+ * 	Rotate evenly distributed sphere coordinates around x axes by "a" degrees
+ * 	so that every t-bar is of hexagonal shape
+ */
+	double a = 10.0;
+	for(int i = 0; i < coords.size(); ++i)
+	{
+		double y, z;
+		y = coords[i].y;
+		z = coords[i].z;
+		coords[i].y = y * cos(a) - z * sin(a);
+		coords[i].z = y * sin(a) + z * cos(a);
+	}
+
 
 //	Testwise creation of evenly distributed vertices
 	/*
@@ -2085,6 +2099,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	sh.set_subset_name("T-bars_bnd", 4);
 	sh.set_subset_name("immature_AZ", 2);
 
+	/*
 	for(VertexBaseIterator vIter = sh.begin<VertexBase>(2); vIter != sh.end<VertexBase>(2); ++vIter)
 	{
 		VertexBase* vrt = *vIter;
@@ -2110,6 +2125,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 			sh.assign_subset(vrt, 2);
 		}
 	}
+	*/
 
 
 
@@ -2204,7 +2220,6 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 
 
 //	Create mature release sites
-	sel.clear();
 	CalculateVertexNormals(grid, aaPos, aaNorm);
 	vector<VertexBase*> vrts;
 	for(VertexBaseIterator vIter = sh.begin<VertexBase>(4); vIter != sh.end<VertexBase>(4); ++vIter)
@@ -2216,6 +2231,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	/*
 	 * "mature_AZ"
 	 */
+	sel.clear();
 	for(size_t i = 0; i < vrts.size(); ++i)
 	{
 		vector3 negNorm;
@@ -2249,6 +2265,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	/*
 	 * CChCl
 	 */
+	sel.clear();
 	for(size_t i = 0; i < vrts.size(); ++i)
 	{
 		vector3 negNorm;
@@ -2444,28 +2461,54 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	sh.set_subset_name("T-bars_tabletop", 8);
 
 
+	/*
+	 * "immature_AZ"
+	 */
+	sel.clear();
+	vrts.clear();
+	for(VertexBaseIterator vIter = sh.begin<VertexBase>(2); vIter != sh.end<VertexBase>(2); ++vIter)
+	{
+		VertexBase* vrt = *vIter;
+		vrts.push_back(vrt);
+	}
+
+	for(size_t i = 0; i < vrts.size(); ++i)
+	{
+		vector3 negNorm;
+		VertexBase* vrt = vrts[i];
+		VecScale(negNorm, aaNorm[vrt], -1.0);
+		AdaptSurfaceGridToCylinder(sel, grid, vrt, negNorm, 0.15, 0.03);
+
+		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
+		{
+			Face* f = *fIter;
+			sh.assign_subset(f, 2);
+
+			for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(f); eIter != grid.associated_edges_end(f); ++eIter)
+			{
+				EdgeBase* e = *eIter;
+				sh.assign_subset(e, 2);
+			}
+
+			for(size_t i = 0; i < f->num_vertices(); ++i)
+			{
+				VertexBase* vrt = f->vertex(i);
+				sh.assign_subset(vrt, 2);
+			}
+
+		}
+
+		Refine(grid, sel);
+	}
+
+
 
 	/************************************
 	 * Optimization of the triangulation
 	 ************************************/
 
 
-	/*
-	 * table bottom
-	 */
-	tmpSel.clear();
-	Triangulate(grid, sh.begin<Quadrilateral>(6), sh.end<Quadrilateral>(6));
 
-	QualityGridGeneration(grid, sh.begin<Face>(6), sh.end<Face>(6), aaPos, 10.0);
-
-	for(FaceIterator fIter = sh.begin<Face>(6); fIter != sh.end<Face>(6); ++fIter)
-	{
-		Face* f = *fIter;
-		tmpSel.select(f);
-	}
-	sh.set_default_subset_index(6);
-	Refine(grid, tmpSel);
-	QualityGridGeneration(grid, sh.begin<Face>(6), sh.end<Face>(6), aaPos, 20.0);
 
 
 	/*
@@ -2480,6 +2523,21 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	sh.set_default_subset_index(8);
 	Refine(grid, tmpSel);
 	QualityGridGeneration(grid, sh.begin<Face>(8), sh.end<Face>(8), aaPos, 30.0);
+
+
+	/*
+	 * table bottom
+	 */
+	tmpSel.clear();
+	Triangulate(grid, sh.begin<Quadrilateral>(6), sh.end<Quadrilateral>(6));
+
+	for(FaceIterator fIter = sh.begin<Face>(6); fIter != sh.end<Face>(6); ++fIter)
+	{
+		Face* f = *fIter;
+		tmpSel.select(f);
+	}
+	sh.set_default_subset_index(6);
+	QualityGridGeneration(grid, sh.begin<Face>(6), sh.end<Face>(6), aaPos, 20.0);
 
 
 	/*
@@ -2504,10 +2562,11 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 		sel.select(f);
 	}
 
+	//Refine(grid, sel);
+
 	for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
 	{
 		Face* f = *fIter;
-
 		if(aaBoolMarked[f] == false)
 		{
 			tmpSel.select(f);
@@ -2525,7 +2584,18 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	}
 
 	for(int i = 0; i < counter; i++)
-		QualityGridGeneration(grid, sh.begin<Face>(i + 8), sh.end<Face>(i + 8), aaPos, 10.0);
+		QualityGridGeneration(grid, sh.begin<Face>(i + 8), sh.end<Face>(i + 8), aaPos, 30.0);
+
+
+	/*
+	 * Table top and bottom again
+	 */
+	tmpSel.clear();
+	SelectAreaBoundary(tmpSel, sh.begin<Face>(8), sh.end<Face>(8));
+	SelectAreaBoundary(tmpSel, sh.begin<Face>(6), sh.end<Face>(6));
+	QualityGridGeneration(grid, sh.begin<Face>(8), sh.end<Face>(8), aaPos, 25.0, IsSelected(tmpSel));
+	QualityGridGeneration(grid, sh.begin<Face>(6), sh.end<Face>(6), aaPos, 30.0, IsSelected(tmpSel));
+
 
 
 	/*
@@ -2537,6 +2607,7 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	/*
 	 * RR
 	 */
+	QualityGridGeneration(grid, sh.begin<Face>(2), sh.end<Face>(2), aaPos, 30.0);
 	QualityGridGeneration(grid, sh.begin<Face>(1), sh.end<Face>(1), aaPos, 30.0);
 	QualityGridGeneration(grid, sh.begin<Face>(0), sh.end<Face>(0), aaPos, 25.0);
 
@@ -2554,38 +2625,12 @@ void BuildBouton(number radius, int numRefinements, int numReleaseSites)
 	/************************************
 	 * Volume grid generation
 	 ***********************************/
-	//Tetrahedralize(grid, sh, 18.0, true, true);
-
 	/*
-	for(size_t i = 0; i < sh.num_subsets(); i++)
-	{
-		sel.clear();
-
-		for(FaceIterator fIter = sh.begin<Face>(i); fIter != sh.end<Face>(i); ++fIter)
-		{
-			Face* f = *fIter;
-			sel.select(f);
-			sh.assign_subset(f, i);
-		}
-
-		SelectAssociatedGeometricObjects(sel);
-
-		for(VertexBaseIterator vIter = sel.begin<VertexBase>(); vIter != sel.end<VertexBase>(); ++vIter)
-		{
-			VertexBase* vrt = *vIter;
-			sh.assign_subset(vrt, i);
-		}
-
-		for(EdgeBaseIterator eIter = sel.begin<EdgeBase>(); eIter != sel.end<EdgeBase>(); ++eIter)
-		{
-			EdgeBase* e = *eIter;
-			sh.assign_subset(e, i);
-		}
-	}
+	sh.set_default_subset_index(-1);
+	Tetrahedralize(grid, sh, 18.0, true, true);
+	SeparateSubsetsByLowerDimSubsets<Volume>(grid, sh, true);
+	AdjustSubsetsForSimulation(sh, true);
 	*/
-
-	//SeparateSubsetsByLowerDimSubsets<Volume>(grid, sh, true);
-	//AdjustSubsetsForSimulation(sh, true);
 
 	AssignSubsetColors(sh);
 
