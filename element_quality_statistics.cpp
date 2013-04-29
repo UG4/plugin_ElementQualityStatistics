@@ -2008,7 +2008,6 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	Grid::VertexAttachmentAccessor<ANormal> aaNorm(grid, aNormal);
 
 	SubsetHandler sh(grid);
-	sh.set_default_subset_index(0);
 
 	Selector sel(grid);
 
@@ -2022,11 +2021,18 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	const int si_mit_bnd 		= 5;
 	const int si_cyt_int 		= 6;
 	const int si_Tbars_int 		= 7;
+	const int si_mit_int		= 8;
 
 
 //	Generate raw icosphere
 	vector3 center(0.0, 0.0, 0.0);
+	sh.set_default_subset_index(si_bouton_bnd);
 	GenerateIcosphere(grid, center, radius, numRefinements, aPosition);
+
+//	Create mitochondrium
+	number mit_radius = 0.25;
+	sh.set_default_subset_index(si_mit_bnd);
+	GenerateIcosphere(grid, center, mit_radius, 2, aPosition);
 
 
 //	Get #numReleaseSites evenly distributed sphere coordinates
@@ -2237,17 +2243,55 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	QualityGridGeneration(grid, sh.begin<Face>(si_bouton_bnd), sh.end<Face>(si_bouton_bnd), aaPos, 25.0);
 
 
-//	Create mitochondrium
-	sh.set_default_subset_index(si_mit_bnd);
-	GenerateIcosphere(grid, center, 0.25, numRefinements-2, aPosition);
-
-
 //	Volume grid generation
 	sh.set_default_subset_index(-1);
 	Tetrahedralize(grid, sh, 18.0, true, true);
 	//SeparateSubsetsByLowerDimSubsets<Volume>(grid, sh, true);
 
 
+//	New volume subset separation with SelectRegion
+	tmpSel.clear();
+	for(FaceIterator fIter = sh.begin<Face>(si_mit_bnd); fIter != sh.end<Face>(si_mit_bnd); ++fIter)
+	{
+		Face* f = *fIter;
+		tmpSel.select(f);
+	}
+
+	sel.clear();
+	//SelectRegion<Volume>(sel, vector3(0, 0, 0), aaPos, IsNotInSubset(sh, si_Tbars_bnd));
+	SelectRegion<Volume>(sel, vector3(0, 0, 0), aaPos, IsSelected(tmpSel));
+	for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
+	{
+		Volume* v = *vIter;
+		sh.assign_subset(v, si_mit_int);
+	}
+
+	for(FaceIterator fIter = sh.begin<Face>(si_Tbars_bnd); fIter != sh.end<Face>(si_Tbars_bnd); ++fIter)
+	{
+		Face* f = *fIter;
+		tmpSel.select(f);
+	}
+
+	sel.clear();
+	number x = (radius + mit_radius) / 2;
+	vector3 coord_in_cyt_int(x, 0, 0);
+	SelectRegion<Volume>(sel, coord_in_cyt_int, aaPos, IsSelected(tmpSel));
+	for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
+	{
+		Volume* v = *vIter;
+		sh.assign_subset(v, si_cyt_int);
+	}
+
+	for(VolumeIterator vIter = grid.begin<Volume>(); vIter != grid.end<Volume>(); ++vIter)
+	{
+		Volume* v = *vIter;
+		if(IsInSubset(sh, si_mit_int)(v) == false && IsInSubset(sh, si_cyt_int)(v) == false)
+			sh.assign_subset(v, si_Tbars_int);
+	}
+
+
+//	Old volume subset separation
+/*
 //	Select Tbars_bnd subset faces for separation of Tbars volumes from the rest
 	sel.clear();
 	for(FaceIterator fIter = sh.begin<Face>(si_Tbars_bnd); fIter != sh.end<Face>(si_Tbars_bnd); ++fIter)
@@ -2329,6 +2373,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		else
 			sh.assign_subset(v, si_Tbars_int);
 	}
+*/
 
 
 //	Final subset management
@@ -2345,6 +2390,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	sh.set_subset_name("mit_bnd", 		si_mit_bnd);
 	sh.set_subset_name("cyt_int", 		si_cyt_int);
 	sh.set_subset_name("T-bars_int", 	si_Tbars_int);
+	sh.set_subset_name("mit_int", 		si_mit_int);
 
 
 //	VertexBase* vrt;
