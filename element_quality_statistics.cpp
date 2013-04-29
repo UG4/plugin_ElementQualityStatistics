@@ -2248,25 +2248,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	//SeparateSubsetsByLowerDimSubsets<Volume>(grid, sh, true);
 
 
-
-
-//	Find out cyt_int subset index
-	/*
-	int numMax = 0;
-	int cyt_int_si;
-	for(size_t i = 6; i < sh.num_subsets(); ++i)
-	{
-		if(sh.num<Volume>(i) > numMax)
-		{
-			numMax = sh.num<Volume>(i);
-			cyt_int_si = i;
-		}
-	}
-
-	sh.swap_subsets(6, cyt_int_si);
-	*/
-
-
+//	Select Tbars_bnd subset faces for separation of Tbars volumes from the rest
 	sel.clear();
 	for(FaceIterator fIter = sh.begin<Face>(si_Tbars_bnd); fIter != sh.end<Face>(si_Tbars_bnd); ++fIter)
 	{
@@ -2274,25 +2256,30 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		sel.select(f);
 	}
 
-
-
 	SubsetHandler sh2(grid);
 	SeparateSubsetsByLowerDimSelection<Volume>(grid, sh2, sel, true);
-	//SaveGridToUGX(grid, sh2, "test.ugx");
-	//UG_LOG(sh2.num_subsets() << endl);
 	int numMax = sh2.num<Volume>(0);
-	int Tbars_int_si = 0;
+	int cyt_mit_int_si = 0;
 	for(size_t i = 0; i < sh2.num_subsets(); ++i)
 	{
 		if(sh2.num<Volume>(i) > numMax)
 		{
 			numMax = sh2.num<Volume>(i);
-			Tbars_int_si = i;
+			cyt_mit_int_si = i;
 		}
 	}
 
 
+//	Select cytosolic and mitochondrial volumes
+	tmpSel.clear();
+	for(VolumeIterator vIter = sh2.begin<Volume>(cyt_mit_int_si); vIter != sh2.end<Volume>(cyt_mit_int_si); ++vIter)
+	{
+		Volume* v = *vIter;
+		tmpSel.select(v);
+	}
 
+
+//	Select mit_bnd subset faces for separation of mitochondrium volumes from the rest
 	sel.clear();
 	for(FaceIterator fIter = sh.begin<Face>(si_mit_bnd); fIter != sh.end<Face>(si_mit_bnd); ++fIter)
 	{
@@ -2304,59 +2291,52 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	SeparateSubsetsByLowerDimSelection<Volume>(grid, sh3, sel, true);
 	int numMin = sh3.num<Volume>(0);
 	int mit_int_si = 0;
-	int cyt_int_si = 1;
+	int cyt_tbar_int_si = 1;
 	for(size_t i = 0; i < sh3.num_subsets(); ++i)
 	{
 		if(sh3.num<Volume>(i) < numMin)
 		{
 			numMin = sh3.num<Volume>(i);
 			mit_int_si = i;
-			cyt_int_si = 1-i;
+			cyt_tbar_int_si = 1-i;
 		}
 	}
 
-
-
-	for(VolumeIterator vIter = sh2.begin<Volume>(Tbars_int_si); vIter != sh2.end<Volume>(Tbars_int_si); ++vIter)
-	{
-		Volume* v = *vIter;
-		sh.assign_subset(v, si_Tbars_int);
-	}
-
+//	Select mitochondrial volumes
+	Selector tmpSel2(grid);
 	for(VolumeIterator vIter = sh3.begin<Volume>(mit_int_si); vIter != sh3.end<Volume>(mit_int_si); ++vIter)
 	{
 		Volume* v = *vIter;
-		sh.assign_subset(v, 8);
+		tmpSel2.select(v);
 	}
 
-	for(VolumeIterator vIter = sh3.begin<Volume>(cyt_int_si); vIter != sh3.end<Volume>(cyt_int_si); ++vIter)
+//	Deselect mitochondrial volumes from cytosolic and mitochondrial volumes selection
+	for(VolumeIterator vIter = tmpSel2.begin<Volume>(); vIter != tmpSel2.end<Volume>(); ++vIter)
 	{
 		Volume* v = *vIter;
-		sh.assign_subset(v, 8);
+		tmpSel.deselect(v);
 	}
 
-
-
-
-
-
-	AdjustSubsetsForSimulation(sh, true);
-
-
-//	Join all T-bar subsets to one
-	/*
-	while(sh.num_subsets() > 8)
+//	Assign separated volumes to correct subsets
+	for(VolumeIterator vIter = grid.volumes_begin(); vIter != grid.volumes_end(); ++vIter)
 	{
-		sh.join_subsets(7, 7, 8, true);
+		Volume* v = *vIter;
+
+		if(tmpSel.is_selected(v))
+			sh.assign_subset(v, si_cyt_int);
+		else if(tmpSel2.is_selected(v))
+			sh.assign_subset(v, si_mit_bnd);
+		else
+			sh.assign_subset(v, si_Tbars_int);
 	}
-	*/
 
 
-
+//	Final subset management
+	AdjustSubsetsForSimulation(sh, true);
+	AssignSubsetColors(sh);
 
 
 //	Name subsets
-	/*
 	sh.set_subset_name("bouton_bnd", 	si_bouton_bnd);
 	sh.set_subset_name("mature_AZ",	 	si_mature_AZ);
 	sh.set_subset_name("immature_AZ", 	si_immature_AZ);
@@ -2365,9 +2345,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	sh.set_subset_name("mit_bnd", 		si_mit_bnd);
 	sh.set_subset_name("cyt_int", 		si_cyt_int);
 	sh.set_subset_name("T-bars_int", 	si_Tbars_int);
-	*/
 
-	AssignSubsetColors(sh);
 
 //	VertexBase* vrt;
 //	Grid::edge_traits::secure_container edges;
