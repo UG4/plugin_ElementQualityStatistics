@@ -2032,7 +2032,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 //	Create mitochondrium
 	number mit_radius = 0.25;
 	sh.set_default_subset_index(si_mit_bnd);
-	GenerateIcosphere(grid, center, mit_radius, 2, aPosition);
+	GenerateIcosphere(grid, center, mit_radius, 1, aPosition);
 
 
 //	Get #numReleaseSites evenly distributed sphere coordinates
