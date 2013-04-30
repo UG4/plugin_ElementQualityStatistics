@@ -2249,7 +2249,35 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	//SeparateSubsetsByLowerDimSubsets<Volume>(grid, sh, true);
 
 
-//	New volume subset separation with SelectRegion
+//	New volume subset separation with SelectRegion using IsNotInSubset callback
+	sel.clear();
+	SelectRegion<Volume>(sel, center, aaPos, IsNotInSubset(sh, -1));
+	for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
+	{
+		Volume* v = *vIter;
+		sh.assign_subset(v, si_mit_int);
+	}
+
+	sel.clear();
+	number x = (radius + mit_radius) / 2;
+	vector3 coord_in_cyt_int(x, 0, 0);
+	SelectRegion<Volume>(sel, coord_in_cyt_int, aaPos, IsNotInSubset(sh, -1));
+	for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
+	{
+		Volume* v = *vIter;
+		sh.assign_subset(v, si_cyt_int);
+	}
+
+	for(VolumeIterator vIter = grid.begin<Volume>(); vIter != grid.end<Volume>(); ++vIter)
+	{
+		Volume* v = *vIter;
+		if(IsInSubset(sh, si_mit_int)(v) == false && IsInSubset(sh, si_cyt_int)(v) == false)
+			sh.assign_subset(v, si_Tbars_int);
+	}
+
+
+//	New volume subset separation with SelectRegion using IsSelected callback
+/*
 	tmpSel.clear();
 	for(FaceIterator fIter = sh.begin<Face>(si_mit_bnd); fIter != sh.end<Face>(si_mit_bnd); ++fIter)
 	{
@@ -2288,6 +2316,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		if(IsInSubset(sh, si_mit_int)(v) == false && IsInSubset(sh, si_cyt_int)(v) == false)
 			sh.assign_subset(v, si_Tbars_int);
 	}
+*/
 
 
 //	Old volume subset separation
