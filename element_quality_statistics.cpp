@@ -1995,13 +1995,15 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 //	BuildBouton
 ////////////////////////////////////////////////////////////////////////////////////////////
 void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
-					number TBarHeight,
-					number TableLegRadius,
-					number TableTopRadius,
-					number TableTopHeight)
+					number TbarHeight,
+					number TbarLegRadius,
+					number TbarTopRadius,
+					number TbarTopHeight)
 {
 //	Initial grid management setup
 	Grid grid;
+	AInt aInt;
+	grid.attach_to_vertices(aInt);
 	grid.attach_to_vertices(aPosition);
 	grid.attach_to_vertices(aNormal);
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
@@ -2010,6 +2012,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	SubsetHandler sh(grid);
 
 	Selector sel(grid);
+	Selector tmpSel(grid);
 
 
 //	Final subset management
@@ -2022,14 +2025,20 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	const int si_cyt_int 		= 6;
 	const int si_Tbars_int 		= 7;
 	const int si_mit_int		= 8;
+	const int si_probe			= 9;
 
 
+////
 //	Generate raw icosphere
+////
 	vector3 center(0.0, 0.0, 0.0);
 	sh.set_default_subset_index(si_bouton_bnd);
 	GenerateIcosphere(grid, center, radius, numRefinements, aPosition);
 
+
+////
 //	Create mitochondrium
+////
 	number mit_radius = 0.25;
 	sh.set_default_subset_index(si_mit_bnd);
 	GenerateIcosphere(grid, center, mit_radius, 1, aPosition);
@@ -2068,7 +2077,6 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 //	Find corresponding vertices on the icosphere and assign evenly distributed vertices for release sites
 	number minDist, tmpMinDist;
 
-	sel.clear();
 	for(VertexBaseIterator vIter = grid.vertices_begin(); vIter != grid.vertices_end(); ++vIter)
 	{
 		VertexBase* vrt = *vIter;
@@ -2100,11 +2108,11 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		//	spiral distribution of mature and immature release sites
 			if(i % 2 == 0)
 			{
-				sh.assign_subset(tmpVrt, 4);
+				sh.assign_subset(tmpVrt, si_Tbars_bnd);
 			}
 			else
 			{
-				sh.assign_subset(tmpVrt, 2);
+				sh.assign_subset(tmpVrt, si_immature_AZ);
 			}
 		}
 	}
@@ -2123,10 +2131,21 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	}
 
 
+////
 //	Create mature release sites
-	sel.clear();
+////
+	vector3 vExtrDir;
+	vector3 vUnitExtrDir;
+	vector<EdgeBase*> vExtrusionEdges;
+	vector<EdgeBase*> vTmpExtrusionEdges;
+
 	for(size_t i = 0; i < vrts.size(); ++i)
 	{
+		tmpSel.clear();
+		vExtrusionEdges.clear();
+		vTmpExtrusionEdges.clear();
+
+	//	Calculate extrusion norm for probe subset
 		vector3 negNorm;
 		VertexBase* vrt = vrts[i];
 		VecScale(negNorm, aaNorm[vrt], -1.0);
@@ -2135,25 +2154,77 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
 		{
 			Face* f = *fIter;
-			sh.assign_subset(f, 1);
+			sh.assign_subset(f, si_mature_AZ);
 			for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(f); eIter != grid.associated_edges_end(f); ++eIter)
 			{
 				EdgeBase* e = *eIter;
-				sh.assign_subset(e, 1);
+				sh.assign_subset(e, si_mature_AZ);
 			}
 
 			for(size_t i = 0; i < f->num_vertices(); ++i)
 			{
 				VertexBase* vrt = f->vertex(i);
-				sh.assign_subset(vrt, 1);
+				sh.assign_subset(vrt, si_mature_AZ);
 			}
 		}
 
+	//	Select mature_AZ boundary for extrusion of probe subset
+		SelectAreaBoundary(tmpSel, sel.begin<Face>(), sel.end<Face>());
 		Refine(grid, sel);
+		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
+		{
+			EdgeBase* e = *eIter;
+			vExtrusionEdges.push_back(e);
+			vTmpExtrusionEdges.push_back(e);
+
+			sh.assign_subset(e, si_probe);
+			sh.assign_subset(e->vertex(0), si_probe);
+			sh.assign_subset(e->vertex(1), si_probe);
+		}
+
+		vUnitExtrDir = aaNorm[vrt];
+		VecScale(vExtrDir, vUnitExtrDir, -1.0 * 0.05);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
+
+	//	Reassign root extrusion edges to mature_AZ subset
+		for(size_t i = 0; i < vTmpExtrusionEdges.size(); ++i)
+		{
+			EdgeBase* e = vTmpExtrusionEdges[i];
+
+			sh.assign_subset(e, si_mature_AZ);
+			sh.assign_subset(e->vertex(0), si_mature_AZ);
+			sh.assign_subset(e->vertex(1), si_mature_AZ);
+		}
+
+	//	Triangulate top of probe subset
+		tmpSel.clear();
+		for(size_t i = 0; i < vExtrusionEdges.size(); ++i)
+		{
+			EdgeBase* e = vExtrusionEdges[i];
+			tmpSel.select(e);
+		}
+		sh.set_default_subset_index(si_probe);
+		TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, si_probe);
+
+		//Refine(grid, sel);
 	}
 
+//	Optimize probe subset triangulation
+	sel.clear();
+	for(FaceIterator fIter = sh.begin<Face>(si_probe); fIter != sh.end<Face>(si_probe); ++fIter)
+	{
+		Face* f = *fIter;
+		sel.select(f);
+	}
+	sh.set_default_subset_index(si_probe);
+	Refine(grid, sel);
+	QualityGridGeneration(grid, sh.begin<Face>(si_probe), sh.end<Face>(si_probe), aaPos, 30.0);
 
+
+////
 //	Create CChCl
+////
 	sel.clear();
 	for(size_t i = 0; i < vrts.size(); ++i)
 	{
@@ -2165,17 +2236,17 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
 		{
 			Face* f = *fIter;
-			sh.assign_subset(f, 3);
+			sh.assign_subset(f, si_CChCl);
 			for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(f); eIter != grid.associated_edges_end(f); ++eIter)
 			{
 				EdgeBase* e = *eIter;
-				sh.assign_subset(e, 3);
+				sh.assign_subset(e, si_CChCl);
 			}
 
 			for(size_t i = 0; i < f->num_vertices(); ++i)
 			{
 				VertexBase* vrt = f->vertex(i);
-				sh.assign_subset(vrt, 3);
+				sh.assign_subset(vrt, si_CChCl);
 			}
 		}
 
@@ -2183,52 +2254,65 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	}
 
 
+////
 //	Create T-bars_bnd
-	//TBarHeight = 0.06;
-	TBarHeight = 0.015;
-	TableLegRadius = 0.02;
-	TableTopRadius = 5 * TableLegRadius;
-	TableTopHeight = 0.01;
-	Selector tmpSel(grid);
+////
+	//TbarHeight = 0.06;
+	TbarHeight = 0.015;
+	TbarLegRadius = 0.02;
+	TbarTopRadius = 5 * TbarLegRadius;
+	TbarTopHeight = 0.01;
 
 	for(size_t i = 0; i < vrts.size(); ++i)
 	{
 		VertexBase* vrt = vrts[i];
-		BuildTbar(grid, sh, vrt, aaPos, aaNorm, si_Tbars_bnd, TBarHeight, TableLegRadius, TableTopRadius, TableTopHeight);
+		BuildTbar(grid, sh, vrt, aaPos, aaNorm, si_Tbars_bnd, TbarHeight, TbarLegRadius, TbarTopRadius, TbarTopHeight);
+	}
+
+//	Reassign CChCl boundary edges to CChCl subset
+	sel.clear();
+	SelectAreaBoundary(sel, sh.begin<Face>(si_CChCl), sh.end<Face>(si_CChCl));
+	for(EdgeBaseIterator eIter = sel.begin<EdgeBase>(); eIter != sel.end<EdgeBase>(); ++eIter)
+	{
+		EdgeBase* e = *eIter;
+		sh.assign_subset(e, si_CChCl);
+		sh.assign_subset(e->vertex(0), si_CChCl);
+		sh.assign_subset(e->vertex(1), si_CChCl);
 	}
 
 
+////
 //	Create immature_AZ
-	sel.clear();
-	vrts.clear();
+////
+	vector<VertexBase*> immature_vrts;
 	for(VertexBaseIterator vIter = sh.begin<VertexBase>(2); vIter != sh.end<VertexBase>(2); ++vIter)
 	{
 		VertexBase* vrt = *vIter;
-		vrts.push_back(vrt);
+		immature_vrts.push_back(vrt);
 	}
 
-	for(size_t i = 0; i < vrts.size(); ++i)
+	for(size_t i = 0; i < immature_vrts.size(); ++i)
 	{
 		vector3 negNorm;
-		VertexBase* vrt = vrts[i];
+		VertexBase* vrt = immature_vrts[i];
 		VecScale(negNorm, aaNorm[vrt], -1.0);
 		AdaptSurfaceGridToCylinder(sel, grid, vrt, negNorm, 0.15, 0.03);
 
 		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
 		{
 			Face* f = *fIter;
-			sh.assign_subset(f, 2);
+			sh.assign_subset(f, si_immature_AZ);
 
 			for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(f); eIter != grid.associated_edges_end(f); ++eIter)
 			{
 				EdgeBase* e = *eIter;
-				sh.assign_subset(e, 2);
+				sh.assign_subset(e, si_immature_AZ);
 			}
 
 			for(size_t i = 0; i < f->num_vertices(); ++i)
 			{
 				VertexBase* vrt = f->vertex(i);
-				sh.assign_subset(vrt, 2);
+				sh.assign_subset(vrt, si_immature_AZ);
 			}
 
 		}
@@ -2237,20 +2321,27 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	}
 
 
+////
 //	Optimize triangulation
+////
 	QualityGridGeneration(grid, sh.begin<Face>(si_immature_AZ), sh.end<Face>(si_immature_AZ), aaPos, 30.0);
 	QualityGridGeneration(grid, sh.begin<Face>(si_mature_AZ), sh.end<Face>(si_mature_AZ), aaPos, 30.0);
 	QualityGridGeneration(grid, sh.begin<Face>(si_bouton_bnd), sh.end<Face>(si_bouton_bnd), aaPos, 25.0);
 
 
+////
 //	Volume grid generation
+////
 	sh.set_default_subset_index(-1);
 	Tetrahedralize(grid, sh, 18.0, true, true);
 	//SeparateSubsetsByLowerDimSubsets<Volume>(grid, sh, true);
 
 
+////
 //	New volume subset separation with SelectRegion using IsNotInSubset callback
-	sel.clear();
+////
+
+//	si_mit_int
 	SelectRegion<Volume>(sel, center, aaPos, IsNotInSubset(sh, -1));
 	for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
 	{
@@ -2258,7 +2349,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		sh.assign_subset(v, si_mit_int);
 	}
 
-	sel.clear();
+//	si_cyt_int
 	number x = (radius + mit_radius) / 2;
 	vector3 coord_in_cyt_int(x, 0, 0);
 	SelectRegion<Volume>(sel, coord_in_cyt_int, aaPos, IsNotInSubset(sh, -1));
@@ -2268,141 +2359,31 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		sh.assign_subset(v, si_cyt_int);
 	}
 
-	for(VolumeIterator vIter = grid.begin<Volume>(); vIter != grid.end<Volume>(); ++vIter)
+//	si_Tbars_int
+	vector3 coord;
+	for(size_t i = 0; i < vrts.size(); i++)
 	{
-		Volume* v = *vIter;
-		if(IsInSubset(sh, si_mit_int)(v) == false && IsInSubset(sh, si_cyt_int)(v) == false)
-			sh.assign_subset(v, si_Tbars_int);
-	}
+		sel.clear();
+		VecScale(coord, aaNorm[vrts[i]], -0.5*TbarHeight);
+		VecAdd(coord, aaPos[vrts[i]], coord);
+		SelectRegion<Volume>(sel, coord, aaPos, IsNotInSubset(sh, -1));
 
-
-//	New volume subset separation with SelectRegion using IsSelected callback
-/*
-	tmpSel.clear();
-	for(FaceIterator fIter = sh.begin<Face>(si_mit_bnd); fIter != sh.end<Face>(si_mit_bnd); ++fIter)
-	{
-		Face* f = *fIter;
-		tmpSel.select(f);
-	}
-
-	sel.clear();
-	//SelectRegion<Volume>(sel, vector3(0, 0, 0), aaPos, IsNotInSubset(sh, si_Tbars_bnd));
-	SelectRegion<Volume>(sel, vector3(0, 0, 0), aaPos, IsSelected(tmpSel));
-	for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
-	{
-		Volume* v = *vIter;
-		sh.assign_subset(v, si_mit_int);
-	}
-
-	for(FaceIterator fIter = sh.begin<Face>(si_Tbars_bnd); fIter != sh.end<Face>(si_Tbars_bnd); ++fIter)
-	{
-		Face* f = *fIter;
-		tmpSel.select(f);
-	}
-
-	sel.clear();
-	number x = (radius + mit_radius) / 2;
-	vector3 coord_in_cyt_int(x, 0, 0);
-	SelectRegion<Volume>(sel, coord_in_cyt_int, aaPos, IsSelected(tmpSel));
-	for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
-	{
-		Volume* v = *vIter;
-		sh.assign_subset(v, si_cyt_int);
-	}
-
-	for(VolumeIterator vIter = grid.begin<Volume>(); vIter != grid.end<Volume>(); ++vIter)
-	{
-		Volume* v = *vIter;
-		if(IsInSubset(sh, si_mit_int)(v) == false && IsInSubset(sh, si_cyt_int)(v) == false)
-			sh.assign_subset(v, si_Tbars_int);
-	}
-*/
-
-
-//	Old volume subset separation
-/*
-//	Select Tbars_bnd subset faces for separation of Tbars volumes from the rest
-	sel.clear();
-	for(FaceIterator fIter = sh.begin<Face>(si_Tbars_bnd); fIter != sh.end<Face>(si_Tbars_bnd); ++fIter)
-	{
-		Face* f = *fIter;
-		sel.select(f);
-	}
-
-	SubsetHandler sh2(grid);
-	SeparateSubsetsByLowerDimSelection<Volume>(grid, sh2, sel, true);
-	int numMax = sh2.num<Volume>(0);
-	int cyt_mit_int_si = 0;
-	for(size_t i = 0; i < sh2.num_subsets(); ++i)
-	{
-		if(sh2.num<Volume>(i) > numMax)
+		for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
 		{
-			numMax = sh2.num<Volume>(i);
-			cyt_mit_int_si = i;
+			Volume* v = *vIter;
+			sh.assign_subset(v, si_Tbars_int);
 		}
 	}
 
-
-//	Select cytosolic and mitochondrial volumes
-	tmpSel.clear();
-	for(VolumeIterator vIter = sh2.begin<Volume>(cyt_mit_int_si); vIter != sh2.end<Volume>(cyt_mit_int_si); ++vIter)
+//	si_probe
+	for(VolumeIterator vIter = grid.begin<Volume>(); vIter != grid.end<Volume>(); ++vIter)
 	{
 		Volume* v = *vIter;
-		tmpSel.select(v);
+		if(	IsInSubset(sh, si_mit_int)(v) == false &&
+			IsInSubset(sh, si_cyt_int)(v) == false &&
+			IsInSubset(sh, si_Tbars_int)(v) == false )
+				sh.assign_subset(v, si_probe);
 	}
-
-
-//	Select mit_bnd subset faces for separation of mitochondrium volumes from the rest
-	sel.clear();
-	for(FaceIterator fIter = sh.begin<Face>(si_mit_bnd); fIter != sh.end<Face>(si_mit_bnd); ++fIter)
-	{
-		Face* f = *fIter;
-		sel.select(f);
-	}
-
-	SubsetHandler sh3(grid);
-	SeparateSubsetsByLowerDimSelection<Volume>(grid, sh3, sel, true);
-	int numMin = sh3.num<Volume>(0);
-	int mit_int_si = 0;
-	int cyt_tbar_int_si = 1;
-	for(size_t i = 0; i < sh3.num_subsets(); ++i)
-	{
-		if(sh3.num<Volume>(i) < numMin)
-		{
-			numMin = sh3.num<Volume>(i);
-			mit_int_si = i;
-			cyt_tbar_int_si = 1-i;
-		}
-	}
-
-//	Select mitochondrial volumes
-	Selector tmpSel2(grid);
-	for(VolumeIterator vIter = sh3.begin<Volume>(mit_int_si); vIter != sh3.end<Volume>(mit_int_si); ++vIter)
-	{
-		Volume* v = *vIter;
-		tmpSel2.select(v);
-	}
-
-//	Deselect mitochondrial volumes from cytosolic and mitochondrial volumes selection
-	for(VolumeIterator vIter = tmpSel2.begin<Volume>(); vIter != tmpSel2.end<Volume>(); ++vIter)
-	{
-		Volume* v = *vIter;
-		tmpSel.deselect(v);
-	}
-
-//	Assign separated volumes to correct subsets
-	for(VolumeIterator vIter = grid.volumes_begin(); vIter != grid.volumes_end(); ++vIter)
-	{
-		Volume* v = *vIter;
-
-		if(tmpSel.is_selected(v))
-			sh.assign_subset(v, si_cyt_int);
-		else if(tmpSel2.is_selected(v))
-			sh.assign_subset(v, si_mit_bnd);
-		else
-			sh.assign_subset(v, si_Tbars_int);
-	}
-*/
 
 
 //	Final subset management
@@ -2420,6 +2401,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	sh.set_subset_name("cyt_int", 		si_cyt_int);
 	sh.set_subset_name("T-bars_int", 	si_Tbars_int);
 	sh.set_subset_name("mit_int", 		si_mit_int);
+	sh.set_subset_name("probe", 		si_probe);
 
 
 //	VertexBase* vrt;
@@ -2442,10 +2424,10 @@ void BuildTbar(	Grid& grid, SubsetHandler& sh_orig, VertexBase* vrt,
 				Grid::VertexAttachmentAccessor<APosition>& aaPos,
 				Grid::VertexAttachmentAccessor<ANormal>& aaNorm,
 				int si,
-				number TBarHeight,
-				number TableLegRadius,
-				number TableTopRadius,
-				number TableTopHeight)
+				number TbarHeight,
+				number TbarLegRadius,
+				number TbarTopRadius,
+				number TbarTopHeight)
 {
 	SubsetHandler sh(grid);
 	AInt aInt;
@@ -2499,8 +2481,8 @@ void BuildTbar(	Grid& grid, SubsetHandler& sh_orig, VertexBase* vrt,
 
 //	create cylinder surface around specified vertex
 	vUnitExtrDir = aaNorm[vrt];
-	VecScale(vExtrDir, vUnitExtrDir, -1.0 * TBarHeight);
-	AdaptSurfaceGridToCylinder(sel, grid, vrt, vExtrDir, TableLegRadius, 0.01);
+	VecScale(vExtrDir, vUnitExtrDir, -1.0 * TbarHeight);
+	AdaptSurfaceGridToCylinder(sel, grid, vrt, vExtrDir, TbarLegRadius, 0.01);
 
 
 //	assign closure of cylinder surface to subset si_Tbars_post
@@ -2587,7 +2569,7 @@ void BuildTbar(	Grid& grid, SubsetHandler& sh_orig, VertexBase* vrt,
 		VertexBase* vrt = *vIter;
 		VecSubtract(vExtrDir, aaPos[vrt], baryCenter);
 		VecNormalize(vExtrDir, vExtrDir);
-		VecScale(vExtrDir, vExtrDir, TableTopRadius);
+		VecScale(vExtrDir, vExtrDir, TbarTopRadius);
 		VecAdd(aaPos[vrt], aaPos[vrt], vExtrDir);
 	}
 
@@ -2610,7 +2592,7 @@ void BuildTbar(	Grid& grid, SubsetHandler& sh_orig, VertexBase* vrt,
 
 
 //	extrude table top vertically and assign upper edge ring to subset si_Tbars_tabletop
-	VecScale(vExtrDir, vUnitExtrDir, -1.0 * TableTopHeight);
+	VecScale(vExtrDir, vUnitExtrDir, -1.0 * TbarTopHeight);
 	Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
 
 	tmpSel.clear();

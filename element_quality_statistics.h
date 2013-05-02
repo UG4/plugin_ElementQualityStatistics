@@ -318,10 +318,10 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 //	BuildBouton
 ////////////////////////////////////////////////////////////////////////////////////////////
 void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
-					number TBarHeight,
-					number TableLegRadius,
-					number TableTopRadius,
-					number TableTopHeight);
+					number TbarHeight,
+					number TbarLegRadius,
+					number TbarTopRadius,
+					number TbarTopHeight);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -331,10 +331,10 @@ void BuildTbar(	Grid& grid, SubsetHandler& sh_orig, VertexBase* vrt,
 				Grid::VertexAttachmentAccessor<APosition>& aaPos,
 				Grid::VertexAttachmentAccessor<ANormal>& aaNorm,
 				int si,
-				number TBarHeight,
-				number TableLegRadius,
-				number TableTopRadius,
-				number TableTopHeight);
+				number TbarHeight,
+				number TbarLegRadius,
+				number TbarTopRadius,
+				number TbarTopHeight);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
