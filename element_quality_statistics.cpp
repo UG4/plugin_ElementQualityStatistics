@@ -2410,7 +2410,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 
 //	Write file
 	stringstream ss;
-	ss << "bouton" << numReleaseSites << ".ugx";
+	ss << "bouton" << "_" << numReleaseSites << "AZ" << ".ugx";
 	string outfile = ss.str();
 
 	SaveGridToUGX(grid, sh, outfile.c_str());
