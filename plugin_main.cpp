@@ -23,14 +23,20 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 
 //	Register ElementQualityStatistics wrapper functions
 	reg->add_function(	"ElementQualityStatistics",
-						(void (*)(ug::Grid&)) (&ug::ElementQualityStatistics), grp, "", "grid");
+						(void (*)(ug::Grid&)) (&ug::ElementQualityStatistics),
+						grp, "", "grid", "Prints element quality statistics for a grid object");
 	reg->add_function(	"ElementQualityStatistics",
-						(void (*)(ug::MultiGrid&/*, int level*/)) (&ug::ElementQualityStatistics), grp, "", "mg");
+						(void (*)(ug::MultiGrid&/*, int level*/)) (&ug::ElementQualityStatistics),
+						grp, "", "mg", "Prints element quality statistics for a multigrid object");
 
 //	Register CalculateSubsetSurfaceArea
-	reg->add_function(	"get_subset_surface_area", &ug::CalculateSubsetSurfaceArea, grp, "", "mg#subsetIndex#sh");
-	reg->add_function(	"get_subset_volume", &ug::CalculateSubsetVolume, grp, "", "mg#subsetIndex#sh");
+	reg->add_function(	"get_subset_surface_area", &ug::CalculateSubsetSurfaceArea,
+						grp, "Subset surface area", "mg#subsetIndex#sh", "Returns subset surface area.");
+	reg->add_function(	"get_subset_volume", &ug::CalculateSubsetVolume,
+						grp, "Subset volume", "mg#subsetIndex#sh", "Returns subset volume.");
 
 //	Build Bouton
-	reg->add_function(	"BuildBouton", &ug::BuildBouton, grp, "", "radius#numRefinements#numReleaseSites#a");
+	reg->add_function(	"BuildBouton", &ug::BuildBouton, grp,
+						"", "radius#numRefinements#numReleaseSites#TbarHeight#TbarLegRadius#TbarTopRadiusTbarTopHeight",
+						"Generates a drosophila NMJ bouton volume grid.");
 }
