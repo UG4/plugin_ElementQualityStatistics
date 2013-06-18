@@ -2026,6 +2026,8 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	const int si_Tbars_int 		= 7;
 	const int si_mit_int		= 8;
 	const int si_probe			= 9;
+	const int si_ext_int		=10;
+	const int si_ext_bnd		=11;
 
 
 ////
@@ -2330,6 +2332,13 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 
 
 ////
+//	Create extracellular space
+////
+	sh.set_default_subset_index(si_ext_bnd);
+	GenerateIcosphere(grid, center, 2*radius, numRefinements, aPosition);
+
+
+////
 //	Volume grid generation
 ////
 	sh.set_default_subset_index(-1);
@@ -2375,13 +2384,24 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		}
 	}
 
+//	si_ext_int
+	x = (radius + 2*radius) / 2;
+	vector3 coord_in_ext_int(x, 0, 0);
+	SelectRegion<Volume>(sel, coord_in_ext_int, aaPos, IsNotInSubset(sh, -1));
+	for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
+	{
+		Volume* v = *vIter;
+		sh.assign_subset(v, si_ext_int);
+	}
+
 //	si_probe
 	for(VolumeIterator vIter = grid.begin<Volume>(); vIter != grid.end<Volume>(); ++vIter)
 	{
 		Volume* v = *vIter;
 		if(	IsInSubset(sh, si_mit_int)(v) == false &&
 			IsInSubset(sh, si_cyt_int)(v) == false &&
-			IsInSubset(sh, si_Tbars_int)(v) == false )
+			IsInSubset(sh, si_Tbars_int)(v) == false &&
+			IsInSubset(sh, si_ext_int)(v) == false)
 				sh.assign_subset(v, si_probe);
 	}
 
@@ -2402,6 +2422,8 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	sh.set_subset_name("T-bars_int", 	si_Tbars_int);
 	sh.set_subset_name("mit_int", 		si_mit_int);
 	sh.set_subset_name("probe", 		si_probe);
+	sh.set_subset_name("ext_bnd", 		si_ext_bnd);
+	sh.set_subset_name("ext_int", 		si_ext_int);
 
 
 //	VertexBase* vrt;
