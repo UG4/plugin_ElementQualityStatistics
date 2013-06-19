@@ -2028,6 +2028,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	const int si_probe			= 9;
 	const int si_ext_int		=10;
 	const int si_ext_bnd		=11;
+	const int si_locks			=12;
 
 
 ////
@@ -2282,6 +2283,24 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		sh.assign_subset(e->vertex(1), si_CChCl);
 	}
 
+//	Reassign T-bars_bottom
+	for(size_t i = 0; i < vrts.size(); ++i)
+	{
+		for(Grid::AssociatedEdgeIterator eIter = grid.associated_edges_begin(vrts[i]); eIter != grid.associated_edges_end(vrts[i]); ++eIter)
+		{
+			EdgeBase* e = *eIter;
+			sh.assign_subset(e, si_locks);
+		}
+
+		for(Grid::AssociatedFaceIterator fIter = grid.associated_faces_begin(vrts[i]); fIter != grid.associated_faces_end(vrts[i]); ++fIter)
+		{
+			Face* f = *fIter;
+			sh.assign_subset(f, si_locks);
+		}
+
+		sh.assign_subset(vrts[i], si_locks);
+	}
+
 
 ////
 //	Create immature_AZ
@@ -2424,6 +2443,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	sh.set_subset_name("probe", 		si_probe);
 	sh.set_subset_name("ext_bnd", 		si_ext_bnd);
 	sh.set_subset_name("ext_int", 		si_ext_int);
+	sh.set_subset_name("locks", 		si_locks);
 
 
 //	VertexBase* vrt;
