@@ -357,8 +357,8 @@ number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 		//tmpAngle = acos(VecDot(vNorm1, vNorm2));
 
 		--> New version:
-			(s.	"QualitŠts-Metriken und Optimierung von Tetraeder-Netzen",
-				 Seminararbeit von Johannes Ahlmann, UniversitŠt Karlsruhe)
+			(s.	"Qualitï¿½ts-Metriken und Optimierung von Tetraeder-Netzen",
+				 Seminararbeit von Johannes Ahlmann, Universitï¿½t Karlsruhe)
 	*/
 		tmpAngle = acos(VecDot(vNorm1, vNorm2));
 		tmpAngle = PI - tmpAngle;
@@ -568,8 +568,8 @@ number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 		//tmpAngle = acos(VecDot(vNorm1, vNorm2));
 
 		--> New version:
-			(s.	"QualitŠts-Metriken und Optimierung von Tetraeder-Netzen",
-				 Seminararbeit von Johannes Ahlmann, UniversitŠt Karlsruhe)
+			(s.	"Qualitï¿½ts-Metriken und Optimierung von Tetraeder-Netzen",
+				 Seminararbeit von Johannes Ahlmann, Universitï¿½t Karlsruhe)
 	*/
 		tmpAngle = acos(VecDot(vNorm1, vNorm2));
 		tmpAngle = PI - tmpAngle;
@@ -1730,9 +1730,9 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 		for(int i = 0; i < N; i++)
 		{
 			tmpCoords = vector3(vrts[i][0], vrts[i][1], vrts[i][2]);
-			tmpCoords.x *= radius;
-			tmpCoords.y *= radius;
-			tmpCoords.z *= radius;
+			tmpCoords.x() *= radius;
+			tmpCoords.y() *= radius;
+			tmpCoords.z() *= radius;
 			coords.push_back(tmpCoords);
 		}
 	}
@@ -1753,9 +1753,9 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 		for(int i = 0; i < N; i++)
 		{
 			tmpCoords = vector3(vrts[i][0], vrts[i][1], vrts[i][2]);
-			tmpCoords.x *= radius;
-			tmpCoords.y *= radius;
-			tmpCoords.z *= radius;
+			tmpCoords.x() *= radius;
+			tmpCoords.y() *= radius;
+			tmpCoords.z() *= radius;
 			coords.push_back(tmpCoords);
 		}
 	}
@@ -1779,9 +1779,9 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 		for(int i = 0; i < N; i++)
 		{
 			tmpCoords = vector3(vrts[i][0], vrts[i][1], vrts[i][2]);
-			tmpCoords.x *= radius;
-			tmpCoords.y *= radius;
-			tmpCoords.z *= radius;
+			tmpCoords.x() *= radius;
+			tmpCoords.y() *= radius;
+			tmpCoords.z() *= radius;
 			coords.push_back(tmpCoords);
 		}
 	}
@@ -1810,9 +1810,9 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 		for(int i = 0; i < N; i++)
 		{
 			tmpCoords = vector3(vrts[i][0], vrts[i][1], vrts[i][2]);
-			tmpCoords.x *= radius;
-			tmpCoords.y *= radius;
-			tmpCoords.z *= radius;
+			tmpCoords.x() *= radius;
+			tmpCoords.y() *= radius;
+			tmpCoords.z() *= radius;
 			coords.push_back(tmpCoords);
 		}
 	}
@@ -1834,9 +1834,9 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 		for(int i = 0; i < N; i++)
 		{
 			tmpCoords = vector3(vrts[i][0], vrts[i][1], vrts[i][2]);
-			tmpCoords.x *= radius;
-			tmpCoords.y *= radius;
-			tmpCoords.z *= radius;
+			tmpCoords.x() *= radius;
+			tmpCoords.y() *= radius;
+			tmpCoords.z() *= radius;
 			coords.push_back(tmpCoords);
 		}
 	}
@@ -1859,15 +1859,15 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 
 		for(int i = 0; i < n; i++)
 		{
-			tmpCoords.y 	= i * (double)2/n - 1 + (double)1/n;
-			r				= sqrt(1.0 - tmpCoords.y * tmpCoords.y);
+			tmpCoords.y() 	= i * (double)2/n - 1 + (double)1/n;
+			r				= sqrt(1.0 - tmpCoords.y() * tmpCoords.y());
 			phi 			= i * M_PI * (3.0 - sqrt(5));
 			tmpCoords.x		= r * cos(phi);
-			tmpCoords.z 	= r * sin(phi);
+			tmpCoords.z() 	= r * sin(phi);
 
-			tmpCoords.x *= radius;
-			tmpCoords.y *= radius;
-			tmpCoords.z *= radius;
+			tmpCoords.x() *= radius;
+			tmpCoords.y() *= radius;
+			tmpCoords.z() *= radius;
 
 			coords.push_back(tmpCoords);
 		}
@@ -1894,13 +1894,13 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 			else
 				phi[i] = fmod(phi[i-1] + 3.6/sqrt(n*(1.0-h*h)), (2*M_PI));
 
-			tmpCoords.x = sin(theta[i])*cos(phi[i]);
-			tmpCoords.y = sin(phi[i])*sin(theta[i]);
-			tmpCoords.z = cos(theta[i]);
+			tmpCoords.x() = sin(theta[i])*cos(phi[i]);
+			tmpCoords.y() = sin(phi[i])*sin(theta[i]);
+			tmpCoords.z() = cos(theta[i]);
 
-			tmpCoords.x *= radius;
-			tmpCoords.y *= radius;
-			tmpCoords.z *= radius;
+			tmpCoords.x() *= radius;
+			tmpCoords.y() *= radius;
+			tmpCoords.z() *= radius;
 
 			coords.push_back(tmpCoords);
 		}
@@ -1946,13 +1946,13 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 				phi[i] 		= fmod(phi[i-1] + 3.6/sqrt(n)*(double)2/(r[i-1]+r[i]), (2*M_PI));
 			}
 
-			tmpCoords.x = sin(theta[i])*cos(phi[i]);
-			tmpCoords.y = sin(phi[i])*sin(theta[i]);
-			tmpCoords.z = cos(theta[i]);
+			tmpCoords.x() = sin(theta[i])*cos(phi[i]);
+			tmpCoords.y() = sin(phi[i])*sin(theta[i]);
+			tmpCoords.z() = cos(theta[i]);
 
-			tmpCoords.x *= radius;
-			tmpCoords.y *= radius;
-			tmpCoords.z *= radius;
+			tmpCoords.x() *= radius;
+			tmpCoords.y() *= radius;
+			tmpCoords.z() *= radius;
 
 			coords.push_back(tmpCoords);
 		}
@@ -1977,13 +1977,13 @@ void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double ra
 			theta[i] 	= acos(h[i]);
 			phi[i] 		= sqrt(n*M_PI)*theta[i];
 
-			tmpCoords.x = sin(theta[i])*cos(phi[i]);
-			tmpCoords.y = sin(phi[i])*sin(theta[i]);
-			tmpCoords.z = cos(theta[i]);
+			tmpCoords.x() = sin(theta[i])*cos(phi[i]);
+			tmpCoords.y() = sin(phi[i])*sin(theta[i]);
+			tmpCoords.z() = cos(theta[i]);
 
-			tmpCoords.x *= radius;
-			tmpCoords.y *= radius;
-			tmpCoords.z *= radius;
+			tmpCoords.x() *= radius;
+			tmpCoords.y() *= radius;
+			tmpCoords.z() *= radius;
 
 			coords.push_back(tmpCoords);
 		}
@@ -2059,10 +2059,10 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	for(int i = 0; i < coords.size(); ++i)
 	{
 		double y, z;
-		y = coords[i].y;
-		z = coords[i].z;
-		coords[i].y = y * cos(a) - z * sin(a);
-		coords[i].z = y * sin(a) + z * cos(a);
+		y = coords[i].y();
+		z = coords[i].z();
+		coords[i].y() = y * cos(a) - z * sin(a);
+		coords[i].z() = y * sin(a) + z * cos(a);
 	}
 
 
