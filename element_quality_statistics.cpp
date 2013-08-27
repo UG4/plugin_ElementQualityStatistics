@@ -2068,7 +2068,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
  * 	so that every t-bar is of hexagonal shape
  */
 	double a = 10.0;
-	for(int i = 0; i < coords.size(); ++i)
+	for(size_t i = 0; i < coords.size(); ++i)
 	{
 		double y, z;
 		y = coords[i].y();
