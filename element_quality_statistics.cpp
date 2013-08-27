@@ -2025,10 +2025,22 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	const int si_cyt_int 		= 6;
 	const int si_Tbars_int 		= 7;
 	const int si_mit_int		= 8;
-	const int si_probe			= 9;
-	const int si_ext_int		=10;
-	const int si_ext_bnd		=11;
-	const int si_locks			=12;
+	const int si_ext_int		= 9;
+	const int si_ext_bnd		=10;
+	const int si_locks			=11;
+
+	int si_probe[numReleaseSites/2];
+	int si_recycling[numReleaseSites/2];
+
+	for(int i = 0; i < numReleaseSites/2; ++i)
+	{
+		si_probe[i] = i + 12;
+	}
+
+	for(int i = 0; i < numReleaseSites/2; ++i)
+	{
+		si_recycling[i] = i + 12 + numReleaseSites/2;
+	}
 
 
 ////
@@ -2180,13 +2192,13 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 			vExtrusionEdges.push_back(e);
 			vTmpExtrusionEdges.push_back(e);
 
-			sh.assign_subset(e, si_probe);
-			sh.assign_subset(e->vertex(0), si_probe);
-			sh.assign_subset(e->vertex(1), si_probe);
+			sh.assign_subset(e, si_probe[i]);
+			sh.assign_subset(e->vertex(0), si_probe[i]);
+			sh.assign_subset(e->vertex(1), si_probe[i]);
 		}
 
 		vUnitExtrDir = aaNorm[vrt];
-		VecScale(vExtrDir, vUnitExtrDir, -1.0 * 0.05);
+		VecScale(vExtrDir, vUnitExtrDir, -1.0 * (TbarHeight+TbarTopHeight+0.03)*0.5);
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
 		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
 
@@ -2207,22 +2219,25 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 			EdgeBase* e = vExtrusionEdges[i];
 			tmpSel.select(e);
 		}
-		sh.set_default_subset_index(si_probe);
-		TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, si_probe);
+		sh.set_default_subset_index(si_probe[i]);
+		TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, si_probe[i]);
 
 		//Refine(grid, sel);
 	}
 
 //	Optimize probe subset triangulation
-	sel.clear();
-	for(FaceIterator fIter = sh.begin<Face>(si_probe); fIter != sh.end<Face>(si_probe); ++fIter)
+	for(size_t i = 0; i < vrts.size(); ++i)
 	{
-		Face* f = *fIter;
-		sel.select(f);
+		sel.clear();
+		for(FaceIterator fIter = sh.begin<Face>(si_probe[i]); fIter != sh.end<Face>(si_probe[i]); ++fIter)
+		{
+			Face* f = *fIter;
+			sel.select(f);
+		}
+		sh.set_default_subset_index(si_probe[i]);
+		Refine(grid, sel);
+		QualityGridGeneration(grid, sh.begin<Face>(si_probe[i]), sh.end<Face>(si_probe[i]), aaPos, 30.0);
 	}
-	sh.set_default_subset_index(si_probe);
-	Refine(grid, sel);
-	QualityGridGeneration(grid, sh.begin<Face>(si_probe), sh.end<Face>(si_probe), aaPos, 30.0);
 
 
 ////
@@ -2260,16 +2275,10 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 ////
 //	Create T-bars_bnd
 ////
-	//TbarHeight = 0.06;
-	TbarHeight = 0.015;
-	TbarLegRadius = 0.02;
-	TbarTopRadius = 5 * TbarLegRadius;
-	TbarTopHeight = 0.01;
-
 	for(size_t i = 0; i < vrts.size(); ++i)
 	{
 		VertexBase* vrt = vrts[i];
-		BuildTbar(grid, sh, vrt, aaPos, aaNorm, si_Tbars_bnd, TbarHeight, TbarLegRadius, TbarTopRadius, TbarTopHeight);
+		BuildTbar(grid, sh, vrt, aaPos, aaNorm, si_Tbars_bnd, TbarHeight*0.25, TbarLegRadius, TbarTopRadius, TbarTopHeight);
 	}
 
 //	Reassign CChCl boundary edges to CChCl subset
@@ -2306,7 +2315,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 //	Create immature_AZ
 ////
 	vector<VertexBase*> immature_vrts;
-	for(VertexBaseIterator vIter = sh.begin<VertexBase>(2); vIter != sh.end<VertexBase>(2); ++vIter)
+	for(VertexBaseIterator vIter = sh.begin<VertexBase>(si_immature_AZ); vIter != sh.end<VertexBase>(si_immature_AZ); ++vIter)
 	{
 		VertexBase* vrt = *vIter;
 		immature_vrts.push_back(vrt);
@@ -2314,6 +2323,7 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 
 	for(size_t i = 0; i < immature_vrts.size(); ++i)
 	{
+	//	Calculate extrusion norm of immatureAZ subset for procedure AdaptSurfaceGridToCylinder
 		vector3 negNorm;
 		VertexBase* vrt = immature_vrts[i];
 		VecScale(negNorm, aaNorm[vrt], -1.0);
@@ -2338,7 +2348,64 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 
 		}
 
+	//	WARNING: use of refine procedure before SelectAreaBoundary doesn't result in the expected way
+		//Refine(grid, sel);
+
+	//	Select immature_AZ boundary for extrusion of recycling subset
+		tmpSel.clear();
+		vExtrusionEdges.clear();
+		vTmpExtrusionEdges.clear();
+		SelectAreaBoundary(tmpSel, sel.begin<Face>(), sel.end<Face>());
 		Refine(grid, sel);
+		for(EdgeBaseIterator eIter = tmpSel.begin<EdgeBase>(); eIter != tmpSel.end<EdgeBase>(); ++eIter)
+		{
+			EdgeBase* e = *eIter;
+			vExtrusionEdges.push_back(e);
+			vTmpExtrusionEdges.push_back(e);
+
+			sh.assign_subset(e, si_recycling[i]);
+			sh.assign_subset(e->vertex(0), si_recycling[i]);
+			sh.assign_subset(e->vertex(1), si_recycling[i]);
+		}
+
+		vUnitExtrDir = aaNorm[vrt];
+		VecScale(vExtrDir, vUnitExtrDir, -1.0 * (TbarHeight+TbarTopHeight+0.03)*0.5);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
+		Extrude(grid, NULL, &vExtrusionEdges, NULL, vExtrDir, EO_CREATE_FACES);
+
+	//	Reassign root extrusion edges to mature_AZ subset
+		for(size_t i = 0; i < vTmpExtrusionEdges.size(); ++i)
+		{
+			EdgeBase* e = vTmpExtrusionEdges[i];
+
+			sh.assign_subset(e, si_immature_AZ);
+			sh.assign_subset(e->vertex(0), si_immature_AZ);
+			sh.assign_subset(e->vertex(1), si_immature_AZ);
+		}
+
+	//	Triangulate top of probe subset
+		tmpSel.clear();
+		for(size_t i = 0; i < vExtrusionEdges.size(); ++i)
+		{
+			EdgeBase* e = vExtrusionEdges[i];
+			tmpSel.select(e);
+		}
+		sh.set_default_subset_index(si_recycling[i]);
+		TriangleFill_SweepLine(grid, tmpSel.begin<EdgeBase>(), tmpSel.end<EdgeBase>(), aPosition, aInt, &sh, si_recycling[i]);
+	}
+
+//	Optimize recycling subset triangulation
+	for(size_t i = 0; i < immature_vrts.size(); ++i)
+	{
+		sel.clear();
+		for(FaceIterator fIter = sh.begin<Face>(si_recycling[i]); fIter != sh.end<Face>(si_recycling[i]); ++fIter)
+		{
+			Face* f = *fIter;
+			sel.select(f);
+		}
+		sh.set_default_subset_index(si_recycling[i]);
+		Refine(grid, sel);
+		QualityGridGeneration(grid, sh.begin<Face>(si_recycling[i]), sh.end<Face>(si_recycling[i]), aaPos, 30.0);
 	}
 
 
@@ -2413,15 +2480,34 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 		sh.assign_subset(v, si_ext_int);
 	}
 
-//	si_probe
-	for(VolumeIterator vIter = grid.begin<Volume>(); vIter != grid.end<Volume>(); ++vIter)
+//	si_recycling
+	for(size_t i = 0; i < immature_vrts.size(); ++i)
 	{
-		Volume* v = *vIter;
-		if(	IsInSubset(sh, si_mit_int)(v) == false &&
-			IsInSubset(sh, si_cyt_int)(v) == false &&
-			IsInSubset(sh, si_Tbars_int)(v) == false &&
-			IsInSubset(sh, si_ext_int)(v) == false)
-				sh.assign_subset(v, si_probe);
+		sel.clear();
+		VecScale(coord, aaNorm[immature_vrts[i]], -0.5*TbarHeight);
+		VecAdd(coord, aaPos[immature_vrts[i]], coord);
+		SelectRegion<Volume>(sel, coord, aaPos, IsNotInSubset(sh, -1));
+
+		for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
+		{
+			Volume* v = *vIter;
+			sh.assign_subset(v, si_recycling[i]);
+		}
+	}
+
+//	si_probe
+	for(size_t i = 0; i < vrts.size(); ++i)
+	{
+		sel.clear();
+		VecScale(coord, aaNorm[vrts[i]], -1.0*(0.1+TbarHeight)*0.5);
+		VecAdd(coord, aaPos[vrts[i]], coord);
+		SelectRegion<Volume>(sel, coord, aaPos, IsNotInSubset(sh, -1));
+
+		for(VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter)
+		{
+			Volume* v = *vIter;
+			sh.assign_subset(v, si_probe[i]);
+		}
 	}
 
 
@@ -2440,10 +2526,25 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	sh.set_subset_name("cyt_int", 		si_cyt_int);
 	sh.set_subset_name("T-bars_int", 	si_Tbars_int);
 	sh.set_subset_name("mit_int", 		si_mit_int);
-	sh.set_subset_name("probe", 		si_probe);
 	sh.set_subset_name("ext_bnd", 		si_ext_bnd);
 	sh.set_subset_name("ext_int", 		si_ext_int);
 	sh.set_subset_name("locks", 		si_locks);
+
+	stringstream probeStream;
+	stringstream recyclingStream;
+
+	for(int i = 0; i < numReleaseSites/2; ++i)
+	{
+		probeStream << "probe_" << i;
+		recyclingStream << "recycling_" << i;
+
+		sh.set_subset_name(probeStream.str().c_str(), 		si_probe[i]);
+		sh.set_subset_name(recyclingStream.str().c_str(),	si_recycling[i]);
+
+	//	Clear stringstreams
+		probeStream.str(std::string());
+		recyclingStream.str(std::string());
+	}
 
 
 //	VertexBase* vrt;
