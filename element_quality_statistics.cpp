@@ -9,6 +9,10 @@
 #include "element_quality_statistics.h"
 #include "common/util/table.h"
 
+#ifdef UG_PARALLEL
+#include "lib_grid/parallelization/distributed_grid.h"
+#endif
+
 
 namespace ug
 {
@@ -1319,11 +1323,28 @@ number CalculateSubsetVolume(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh
 {
 	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
 	number subsetVolume = 0.0;
+
+	DistributedGridManager* dgm = mg.distributed_grid_manager();//NULL if not parallel
 	for(VolumeIterator vIter = sh.begin<Volume>(subsetIndex, 0); vIter != sh.end<Volume>(subsetIndex, 0); ++vIter)
 	{
 		Volume* v = *vIter;
+		#ifdef UG_PARALLEL
+		//	ghosts have to be ignored, since they have a copy on another process and
+		//	since we alread consider that copy...
+			if(dgm->is_ghost(v))
+				continue;
+		#endif
 		subsetVolume += CalculateVolume(*v, aaPos);
 	}
+
+	#ifdef UG_PARALLEL
+		if(pcl::GetNumProcesses() > 1){
+		//	sum the volumes of all involved processes. Since we ignored ghosts,
+		//	each process contributes the volume of a unique part of the grid.
+			pcl::ProcessCommunicator pc;
+			subsetVolume = pc.allreduce(subsetVolume, PCL_RO_SUM);
+		}
+	#endif
 
 	return subsetVolume;
 }
