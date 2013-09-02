@@ -1307,11 +1307,26 @@ number CalculateSubsetSurfaceArea(MultiGrid& mg, int subsetIndex, MGSubsetHandle
 {
 	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
 	number subsetSurfaceArea = 0.0;
+
+	DistributedGridManager* dgm = mg.distributed_grid_manager();
 	for(FaceIterator fIter = sh.begin<Face>(subsetIndex, 0); fIter != sh.end<Face>(subsetIndex, 0); ++fIter)
 	{
 		Face* f = *fIter;
+		#ifdef UG_PARALLEL
+			if(dgm->is_ghost(f))
+				continue;
+		#endif
 		subsetSurfaceArea += FaceArea(f, aaPos);
 	}
+
+	#ifdef UG_PARALLEL
+		if(pcl::GetNumProcesses() > 1){
+		//	sum the volumes of all involved processes. Since we ignored ghosts,
+		//	each process contributes the volume of a unique part of the grid.
+			pcl::ProcessCommunicator pc;
+			subsetSurfaceArea = pc.allreduce(subsetSurfaceArea, PCL_RO_SUM);
+		}
+	#endif
 
 	return subsetSurfaceArea;
 }
