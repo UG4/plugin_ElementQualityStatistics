@@ -36,7 +36,9 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 						grp, "Subset volume", "mg#subsetIndex#sh", "Returns subset volume.");
 
 //	Build Bouton
+	/*
 	reg->add_function(	"BuildBouton", &ug::BuildBouton, grp,
 						"", "radius#numRefinements#numReleaseSites#TbarHeight#TbarLegRadius#TbarTopRadiusTbarTopHeight",
 						"Generates a drosophila NMJ bouton volume grid.");
+	*/
 }
