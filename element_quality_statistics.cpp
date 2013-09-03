@@ -2059,11 +2059,11 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 	const int si_Tbars_bnd 		= 4;
 	const int si_mit_bnd 		= 5;
 	const int si_cyt_int 		= 6;
-	const int si_Tbars_int 		= 7;
-	const int si_mit_int		= 8;
-	const int si_ext_int		= 9;
-	const int si_ext_bnd		=10;
-	const int si_locks			=11;
+	const int si_ext_int		= 7;
+	const int si_ext_bnd		= 8;
+	const int si_locks			= 9;
+	const int si_Tbars_int 		=10;
+	const int si_mit_int		=11;
 
 	int si_probe[numReleaseSites/2];
 	int si_recycling[numReleaseSites/2];
@@ -2464,7 +2464,9 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 //	Volume grid generation
 ////
 	sh.set_default_subset_index(-1);
-	Tetrahedralize(grid, sh, 18.0, true, true);
+	SaveGridToFile(grid, sh, "debug-before-tet.ugx");
+	Tetrahedralize(grid, sh, 18.0, false, false);
+	//Tetrahedralize(grid, sh, 5.0, false, false);
 	//SeparateSubsetsByLowerDimSubsets<Volume>(grid, sh, true);
 
 
@@ -2548,7 +2550,32 @@ void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
 
 
 //	Final subset management
-	AdjustSubsetsForSimulation(sh, true);
+	//AdjustSubsetsForSimulation(sh, true);
+
+
+
+	//	faces subsets indices have priority over volume subset indices.
+	//	Thus copy faces subset indices to sides first and perform the copy-mechanism
+	//	on the whole grid afterwards
+	//	(note that we only copy subset-indices to unassigned sides)
+
+	sh.assign_subset(grid.vertices_begin(), grid.vertices_end(), -1);
+	sh.assign_subset(grid.edges_begin(), grid.edges_end(), -1);
+
+	for(int i = 0; i < sh.num_subsets(); ++i){
+		CopySubsetIndicesToSides(sh, sh.begin<Face>(i), sh.end<Face>(i), true);
+		CopySubsetIndicesToSides(sh, sh.begin<EdgeBase>(i), sh.end<EdgeBase>(i), true);
+		CopySubsetIndicesToSides(sh, sh.begin<VertexBase>(i), sh.end<VertexBase>(i), true);
+	}
+
+	for(int i = 0; i < sh.num_subsets(); ++i){
+		CopySubsetIndicesToSides(sh, sh.begin<Volume>(i), sh.end<Volume>(i), true);
+		CopySubsetIndicesToSides(sh, sh.begin<Face>(i), sh.end<Face>(i), true);
+		CopySubsetIndicesToSides(sh, sh.begin<EdgeBase>(i), sh.end<EdgeBase>(i), true);
+		CopySubsetIndicesToSides(sh, sh.begin<VertexBase>(i), sh.end<VertexBase>(i), true);
+	}
+
+
 	AssignSubsetColors(sh);
 
 
