@@ -11,6 +11,7 @@
 #include "lib_disc/domain.h"
 #include "lib_grid/lib_grid.h"
 #include "element_quality_statistics.h"
+#include "eqs_util.h"
 
 #include <string>
 
@@ -35,10 +36,4 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 	reg->add_function(	"get_subset_volume", &ug::CalculateSubsetVolume,
 						grp, "Subset volume", "mg#subsetIndex#sh", "Returns subset volume.");
 
-//	Build Bouton
-	/*
-	reg->add_function(	"BuildBouton", &ug::BuildBouton, grp,
-						"", "radius#numRefinements#numReleaseSites#TbarHeight#TbarLegRadius#TbarTopRadiusTbarTopHeight",
-						"Generates a drosophila NMJ bouton volume grid.");
-	*/
 }

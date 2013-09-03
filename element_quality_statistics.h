@@ -21,6 +21,7 @@
 #include <algorithm>
 
 #include "lib_grid/lib_grid.h"
+#include "eqs_util.h"
 #include "volume_calculation.h"
 
 
@@ -32,265 +33,112 @@ namespace ug {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	CollectAssociatedSides
-////////////////////////////////////////////////////////////////////////////////////////////
-
-///	Collects all edges (= 2) which exist in the given face and which share the given vertex.
-UG_API
-inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, VertexBase* vrt);
-
-///	Collects all faces (= 2) which exist in the given volume and which share the given edge.
-UG_API
-inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, EdgeBase* e);
-
-
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateMinAngle
-////////////////////////////////////////////////////////////////////////////////////////////
-
-//	An unimplemented version, so that a compile error occurs if no overload exists.
-template <class TElem, class TAAPosVRT>
-number CalculateMinAngle(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
-
-//	Face (Triangles and Quadrilaterals)
-template <class TAAPosVRT>
-number CalculateMinAngle(Grid& grid, Face* f, TAAPosVRT& aaPos);
-
-//	Tetrahedron
-template <class TAAPosVRT>
-number CalculateMinAngle(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
-
-//	Prism
-template <class TAAPosVRT>
-number CalculateMinAngle(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
-
-//	Pyramid
-template <class TAAPosVRT>
-number CalculateMinAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
-
-//	Volume
-template <class TAAPosVRT>
-number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateMinDihedral
-////////////////////////////////////////////////////////////////////////////////////////////
-
-//	An unimplemented version, so that a compile error occurs if no overload exists.
-template <class TElem, class TAAPosVRT>
-number CalculateMinDihedral(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
-
-//	Face (Triangles and Quadrilaterals)
-template <class TAAPosVRT>
-number CalculateMinDihedral(Grid& grid, Face* f, TAAPosVRT& aaPos);
-
-//	Tetrahedron
-template <class TAAPosVRT>
-number CalculateMinDihedral(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
-
-//	Prism
-template <class TAAPosVRT>
-number CalculateMinDihedral(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
-
-//	Pyramid
-template <class TAAPosVRT>
-number CalculateMinDihedral(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
-
-//	Volume
-template <class TAAPosVRT>
-number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateMaxAngle
-////////////////////////////////////////////////////////////////////////////////////////////
-
-//	An unimplemented version, so that a compile error occurs if no overload exists.
-template <class TElem, class TAAPosVRT>
-number CalculateMaxAngle(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
-
-//	Face (Triangles and Quadrilaterals)
-template <class TAAPosVRT>
-number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos);
-
-//	Tetrahedron
-template <class TAAPosVRT>
-number CalculateMaxAngle(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
-
-//	Prism
-template <class TAAPosVRT>
-number CalculateMaxAngle(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
-
-//	Pyramid
-template <class TAAPosVRT>
-number CalculateMaxAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
-
-//	Volume
-template <class TAAPosVRT>
-number CalculateMaxAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateMaxDihedral
-////////////////////////////////////////////////////////////////////////////////////////////
-
-//	An unimplemented version, so that a compile error occurs if no overload exists.
-template <class TElem, class TAAPosVRT>
-number CalculateMaxDihedral(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
-
-//	Face (Triangles and Quadrilaterals)
-template <class TAAPosVRT>
-number CalculateMaxDihedral(Grid& grid, Face* f, TAAPosVRT& aaPos);
-
-//	Tetrahedron
-template <class TAAPosVRT>
-number CalculateMaxDihedral(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
-
-//	Prism
-template <class TAAPosVRT>
-number CalculateMaxDihedral(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
-
-//	Pyramid
-template <class TAAPosVRT>
-number CalculateMaxDihedral(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
-
-//	Volume
-template <class TAAPosVRT>
-number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateMinTriangleHeight
-template <class TAAPosVRT>
-number CalculateMinTriangleHeight(Face* face, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateAspectRatio
-////////////////////////////////////////////////////////////////////////////////////////////
-
-//	An unimplemented version, so that a compile error occurs if no overload exists.
-template <class TElem, class TAAPosVRT>
-number CalculateAspectRatio(Grid& grid, TElem* elem, TAAPosVRT& aaPos);
-
-//	Face (Triangles and Constrained Triangles)
-template <class TAAPosVRT>
-number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos);
-
-//	Tetrahedron
-template <class TAAPosVRT>
-number CalculateAspectRatio(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos);
-
-/*
-//	Prism
-template <class TAAPosVRT>
-number CalculateAspectRatio(Grid& grid, Prism* prism, TAAPosVRT& aaPos);
-
-//	Pyramid
-template <class TAAPosVRT>
-number CalculateAspectRatio(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos);
-*/
-
-//	Volume
-template <class TAAPosVRT>
-number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos);
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindElementWithSmallestMinAngle
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindElementWithSmallestMinAngle(Grid& grid, 	TIterator volumesBegin,
-												TIterator volumesEnd, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindVolumeWithSmallestMinDihedral
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindVolumeWithSmallestMinDihedral(Grid& grid, 	TIterator elementsBegin,
-												TIterator elementsEnd, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindElementWithLargestMaxAngle
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindElementWithLargestMaxAngle(Grid& grid, 	TIterator volumesBegin,
-											TIterator volumesEnd, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindVolumeWithLargestMaxDihedral
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindVolumeWithLargestMaxDihedral(Grid& grid, 	TIterator elementsBegin,
-												TIterator elementsEnd, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindLargestFace
-template <class TIterator, class TAAPosVRT>
-Face* FindLargestFace(TIterator facesBegin, TIterator facesEnd, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindSmallestVolume
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindSmallestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindLargestVolume
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindElementWithSmallestAspectRatio
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindElementWithSmallestAspectRatio(Grid& grid, 	TIterator elemsBegin,
-												TIterator elemsEnd, TAAPosVRT& aaPos);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindElementWithLargestAspectRatio
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindElementWithLargestAspectRatio(Grid& grid, 	TIterator elemsBegin,
-												TIterator elemsEnd, TAAPosVRT& aaPos);
-
-
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
 //	MinAngleHistogram
 template <class TIterator, class TAAPosVRT>
 void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 									TIterator elementsEnd,
 									TAAPosVRT& aaPos,
-									uint stepSize);
+									uint stepSize)
+{
+	//PROFILE_FUNC();
+//	Initialization
+	vector<number> minAngles;
+	typename TIterator::value_type refElem = *elementsBegin;
+
+//	Calculate the minAngle of every element
+	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
+	{
+		number curMinAngle = CalculateMinAngle(grid, *iter, aaPos);
+		minAngles.push_back(curMinAngle);
+	}
+
+//	Sort the calculated minAngles in an ascending way
+	sort (minAngles.begin(), minAngles.end());
 
 
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateSubsetSurfaceArea
-number CalculateSubsetSurfaceArea(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh);
+//	Evaluate the minimal and maximal degree rounding to 10
+	int minDeg = round(number(minAngles.front()) / 10.0) * 10;
+	int maxDeg = round(number(minAngles.back()) / 10.0) * 10;
 
-////////////////////////////////////////////////////////////////////////////////////////////
-//	CalculateSubsetVolume
-number CalculateSubsetVolume(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh);
+//	Expand minDeg and maxDeg by plus minus 10 degrees or at least to 0 or 180 degress
+	if((minDeg-10) > 0)
+		minDeg = minDeg - 10;
+	else
+		minDeg = 0;
+
+	if((maxDeg+10) < 180)
+		maxDeg = maxDeg + 10;
+	else
+		maxDeg = 180;
+
+//	Evaluate the number of ranges in respect to the specified step size
+	uint numRanges = floor((maxDeg-minDeg) / stepSize);
+	vector<uint> counter(numRanges, 0);
+
+//	Count the elements in their corresponding minAngle range
+	for(uint i = 0; i < minAngles.size(); ++i)
+	{
+		number minAngle = minAngles[i];
+		for (uint range = 0; range < numRanges; range++)
+		{
+			if (minAngle < minDeg + (range+1)*stepSize)
+			{
+				++counter[range];
+				break;
+			}
+		}
+	}
+
+//	----------------------------------------
+//	Histogram table output section: (THIRDS)
+//	----------------------------------------
+
+//	Divide the output table into three thirds (columnwise)
+	uint numRows = ceil(number(numRanges) / 3.0);
+
+//	Create table object
+	ug::Table<std::stringstream> minAngleTable(numRows, 6);
+
+//	Specific element header
+	//UG_LOG(endl << "MinAngle-Histogram for '" << refElem->reference_object_id() << "' elements");
+	UG_LOG(endl << "MinAngle-Histogram for '" << refElem->base_object_id() << "d' elements");
+	UG_LOG(endl);
+
+//	First third
+	uint i = 0;
+	for(; i < numRows; ++i)
+	{
+		minAngleTable(i, 0) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
+		minAngleTable(i, 1) << counter[i];
+	}
+
+//	Second third
+//	Check, if second third of table is needed
+	if(i < counter.size())
+	{
+		for(; i < 2*numRows; ++i)
+		{
+			minAngleTable(i-numRows, 2) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
+			minAngleTable(i-numRows, 3) << counter[i];
+		}
+	}
+
+//	Third third
+	if(i < counter.size())
+//	Check, if third third of table is needed
+	{
+		for(; i < numRanges; ++i)
+		{
+			minAngleTable(i-2*numRows, 4) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
+			minAngleTable(i-2*numRows, 5) << counter[i];
+		}
+	}
+
+//	Output table
+	UG_LOG(endl << minAngleTable);
+
+
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -306,41 +154,6 @@ void ElementQualityStatistics(Grid& grid);
 //	Actual procedures
 void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc);
 void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	DistributeNPointsOnASphere
-////////////////////////////////////////////////////////////////////////////////////////////
-void GetNEvenlyDistributedSphereCoords(vector<vector3>& coords, int N, double radius);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	BuildBouton
-////////////////////////////////////////////////////////////////////////////////////////////
-void BuildBouton(	number radius, int numRefinements, int numReleaseSites,
-					number TbarHeight,
-					number TbarLegRadius,
-					number TbarTopRadius,
-					number TbarTopHeight);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	BuildTbar
-////////////////////////////////////////////////////////////////////////////////////////////
-void BuildTbar(	Grid& grid, SubsetHandler& sh_orig, VertexBase* vrt,
-				Grid::VertexAttachmentAccessor<APosition>& aaPos,
-				Grid::VertexAttachmentAccessor<ANormal>& aaNorm,
-				int si,
-				number TbarHeight,
-				number TbarLegRadius,
-				number TbarTopRadius,
-				number TbarTopHeight);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	SaveSelectionStatesToFile
-////////////////////////////////////////////////////////////////////////////////////////////
-void SaveSelectionStatesToFile(Grid& mg, Selector& msel, const char* filename);
 
 
 }	 

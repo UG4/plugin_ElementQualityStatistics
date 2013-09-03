@@ -13,6 +13,7 @@ include("../../../cmake/ug_plugin_includes.cmake")
 # sources
 set(SOURCES	plugin_main.cpp
 			element_quality_statistics.cpp
+			eqs_util.cpp
 			volume_calculation.cpp)
 
 
