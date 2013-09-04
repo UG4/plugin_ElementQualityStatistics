@@ -1,5 +1,5 @@
 /*
- * eqs_util.cpp
+ * elem_stat_util.cpp
  *
  *  Created on: 03.09.2013
  *      Author: Martin Stepniewski
