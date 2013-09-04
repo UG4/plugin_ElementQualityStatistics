@@ -6,8 +6,8 @@
  */
 
 
-#ifndef __ElementQualityStatistics_h__
-#define __ElementQualityStatistics_h__
+#ifndef __ELEMENT_QUALITY_STATISTICS_h__
+#define __ELEMENT_QUALITY_STATISTICS__
 
 /* system includes */
 #include <stddef.h>
@@ -21,7 +21,7 @@
 #include <algorithm>
 
 #include "lib_grid/lib_grid.h"
-#include "eqs_util.h"
+#include "elem_stat_util.h"
 #include "volume_calculation.h"
 
 

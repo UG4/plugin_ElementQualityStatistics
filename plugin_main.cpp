@@ -11,7 +11,7 @@
 #include "lib_disc/domain.h"
 #include "lib_grid/lib_grid.h"
 #include "element_quality_statistics.h"
-#include "eqs_util.h"
+#include "elem_stat_util.h"
 
 #include <string>
 

@@ -6,8 +6,8 @@
  */
 
 
-#ifndef __EQS_UTIL_h__
-#define __EQS_UTIL_h__
+#ifndef __ELEM_STAT_UTIL_h__
+#define __ELEM_STAT_UTIL_h__
 
 #ifdef UG_PARALLEL
 #include "lib_grid/parallelization/distributed_grid.h"
