@@ -32,7 +32,7 @@ number CalculateSubsetSurfaceArea(MultiGrid& mg, int subsetIndex, MGSubsetHandle
 	}
 
 	#ifdef UG_PARALLEL
-		if(pcl::GetNumProcesses() > 1){
+		if(pcl::NumProcs() > 1){
 		//	sum the volumes of all involved processes. Since we ignored ghosts,
 		//	each process contributes the volume of a unique part of the grid.
 			pcl::ProcessCommunicator pc;
@@ -65,7 +65,7 @@ number CalculateSubsetVolume(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh
 	}
 
 	#ifdef UG_PARALLEL
-		if(pcl::GetNumProcesses() > 1){
+		if(pcl::NumProcs() > 1){
 		//	sum the volumes of all involved processes. Since we ignored ghosts,
 		//	each process contributes the volume of a unique part of the grid.
 			pcl::ProcessCommunicator pc;
