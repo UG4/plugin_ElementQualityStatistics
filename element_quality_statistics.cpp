@@ -23,22 +23,22 @@ namespace ug
 void ElementQualityStatistics(MultiGrid& mg)
 {
 	if(mg.num_volumes() > 0)
-		ElementQualityStatistics3d(mg, mg.get_geometric_objects());
+		ElementQualityStatistics3d(mg, mg.get_grid_objects());
 	else
-		ElementQualityStatistics2d(mg, mg.get_geometric_objects());
+		ElementQualityStatistics2d(mg, mg.get_grid_objects());
 }
 
 //	Wrapper for grids
 void ElementQualityStatistics(Grid& grid)
 {
 	if(grid.num_volumes() > 0)
-		ElementQualityStatistics3d(grid, grid.get_geometric_objects());
+		ElementQualityStatistics3d(grid, grid.get_grid_objects());
 	else
-		ElementQualityStatistics2d(grid, grid.get_geometric_objects());
+		ElementQualityStatistics2d(grid, grid.get_grid_objects());
 }
 
 //	Actual procedures
-void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc)
+void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc)
 {
 	//PROFILE_FUNC();
 	Grid::VertexAttachmentAccessor<APosition2> aaPos(grid, aPosition2);
@@ -168,7 +168,7 @@ void ElementQualityStatistics2d(Grid& grid, GeometricObjectCollection goc)
 	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);
 }
 
-void ElementQualityStatistics3d(Grid& grid, GeometricObjectCollection goc)
+void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 {
 	//PROFILE_FUNC();
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
