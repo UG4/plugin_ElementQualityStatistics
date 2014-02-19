@@ -42,7 +42,7 @@ namespace ug {
 ///	Collects all edges (= 2) which exist in the given face and which share the given vertex.
 /**	This method uses Grid::mark **/
 UG_API
-inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, VertexBase* vrt)
+inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, Vertex* vrt)
 {
 	//PROFILE_BEGIN(CollectAssociatedSides_VERTEX);
 	sidesOut[0] = NULL;
@@ -178,7 +178,7 @@ number CalculateMinAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 //	Iterate over all face vertices
 	for(uint vrtIter = 0; vrtIter < numFaceVrts; ++vrtIter)
 	{
-		VertexBase* vrt = f->vertex(vrtIter);
+		Vertex* vrt = f->vertex(vrtIter);
 
 	//	Get adjacent edges at the current vertex and calculate the angle between their normals
 		CollectAssociatedSides(vNeighbourEdgesToVertex, grid, f, vrt);
@@ -440,7 +440,7 @@ number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 //	Iterate over all face vertices
 	for(uint vrtIter = 0; vrtIter < numFaceVrts; ++vrtIter)
 	{
-		VertexBase* vrt = f->vertex(vrtIter);
+		Vertex* vrt = f->vertex(vrtIter);
 
 	//	Get adjacent edges at the current vertex and calculate the angle between their normals
 		CollectAssociatedSides(vNeighbourEdgesToVertex, grid, f, vrt);
