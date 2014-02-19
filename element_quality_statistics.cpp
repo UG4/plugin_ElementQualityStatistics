@@ -56,8 +56,8 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc)
 
 
 //	Elements
-	EdgeBase* minEdge;
-	EdgeBase* maxEdge;
+	Edge* minEdge;
+	Edge* maxEdge;
 	Face* minFace;
 	Face* maxFace;
 	Face* minAngleFace;
@@ -80,8 +80,8 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc)
 	//	----------
 	//	2D section
 	//	----------
-		minEdge = FindShortestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
-		maxEdge = FindLongestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
+		minEdge = FindShortestEdge(goc.begin<Edge>(i), goc.end<Edge>(i), aaPos);
+		maxEdge = FindLongestEdge(goc.begin<Edge>(i), goc.end<Edge>(i), aaPos);
 		minFace = FindSmallestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
 		maxFace = FindLargestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
 		minAngleFace = FindElementWithSmallestMinAngle(	grid,
@@ -195,8 +195,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 
 
 //	Elements
-	EdgeBase* minEdge;
-	EdgeBase* maxEdge;
+	Edge* minEdge;
+	Edge* maxEdge;
 	//Face* minAreaFace;
 	//Face* maxAreaFace;
 	Face* minAngleFace;
@@ -228,8 +228,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 	//	----------
 	//	2D section
 	//	----------
-		minEdge = FindShortestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
-		maxEdge = FindLongestEdge(goc.begin<EdgeBase>(i), goc.end<EdgeBase>(i), aaPos);
+		minEdge = FindShortestEdge(goc.begin<Edge>(i), goc.end<Edge>(i), aaPos);
+		maxEdge = FindLongestEdge(goc.begin<Edge>(i), goc.end<Edge>(i), aaPos);
 		//minFace =
 		//maxFace =
 		minAngleFace = FindElementWithSmallestMinAngle(	grid,

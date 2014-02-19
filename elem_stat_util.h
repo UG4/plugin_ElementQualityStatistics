@@ -42,7 +42,7 @@ namespace ug {
 ///	Collects all edges (= 2) which exist in the given face and which share the given vertex.
 /**	This method uses Grid::mark **/
 UG_API
-inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, Vertex* vrt)
+inline void CollectAssociatedSides(Edge* sidesOut[2], Grid& grid, Face* f, Vertex* vrt)
 {
 	//PROFILE_BEGIN(CollectAssociatedSides_VERTEX);
 	sidesOut[0] = NULL;
@@ -53,7 +53,7 @@ inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, V
 		grid.mark(f->vertex(i));
 	}
 
-	//vector<EdgeBase*> vNeighbourEdgesToVertex;
+	//vector<Edge*> vNeighbourEdgesToVertex;
 	//CollectAssociated(vNeighbourEdgesToVertex, grid, vrt, true);
 
 	Grid::AssociatedEdgeIterator iterEnd = grid.associated_edges_end(vrt);
@@ -61,7 +61,7 @@ inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, V
 	for(Grid::AssociatedEdgeIterator iter = grid.associated_edges_begin(vrt); iter != iterEnd; ++iter)
 	//for(Grid::AssociatedEdgeIterator iter = vNeighbourEdgesToVertex.begin(); iter != iterEnd; ++iter)
 	{
-		EdgeBase* e = *iter;
+		Edge* e = *iter;
 		if(grid.is_marked(e->vertex(0)) && grid.is_marked(e->vertex(1))){
 			UG_ASSERT(	sidesOut[1] == NULL,
 						"Only two edges may be adjacent to a vertex in a face element.");
@@ -81,7 +81,7 @@ inline void CollectAssociatedSides(EdgeBase* sidesOut[2], Grid& grid, Face* f, V
 ///	Collects all faces (= 2) which exist in the given volume and which share the given edge.
 /**	This method uses Grid::mark **/
 UG_API
-inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, EdgeBase* e)
+inline void CollectAssociatedSides(Face* sidesOut[2], Grid& grid, Volume* v, Edge* e)
 {
 	//PROFILE_BEGIN(CollectAssociatedSides_EDGE);
 	sidesOut[0] = NULL;
@@ -173,7 +173,7 @@ number CalculateMinAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 	ValueType vDir1, vDir2;
 	number minAngle = 180.0;
 	number tmpAngle;
-	EdgeBase* vNeighbourEdgesToVertex[2];
+	Edge* vNeighbourEdgesToVertex[2];
 
 //	Iterate over all face vertices
 	for(uint vrtIter = 0; vrtIter < numFaceVrts; ++vrtIter)
@@ -366,7 +366,7 @@ number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 //	Iterate over all element edges
 	for(uint eIter = 0; eIter < numElementEdges; ++eIter)
 	{
-		EdgeBase* e = grid.get_edge(v, eIter);
+		Edge* e = grid.get_edge(v, eIter);
 
 	//	Get adjacent faces at the current edge and calculate the angle between their normals
 		CollectAssociatedSides(vNeighbourFacesToEdge, grid, v, e);
@@ -435,7 +435,7 @@ number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 	ValueType vDir1, vDir2;
 	number maxAngle = 0;
 	number tmpAngle;
-	EdgeBase* vNeighbourEdgesToVertex[2];
+	Edge* vNeighbourEdgesToVertex[2];
 
 //	Iterate over all face vertices
 	for(uint vrtIter = 0; vrtIter < numFaceVrts; ++vrtIter)
@@ -577,7 +577,7 @@ number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 //	Iterate over all element edges
 	for(uint eIter = 0; eIter < numElementEdges; ++eIter)
 	{
-		EdgeBase* e = grid.get_edge(v, eIter);
+		Edge* e = grid.get_edge(v, eIter);
 
 	//	Get adjacent faces at the current edge and calculate the angle between their normals
 		CollectAssociatedSides(vNeighbourFacesToEdge, grid, v, e);
@@ -671,9 +671,9 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 	number maxEdgeLength;
 
 //	Collect element edges, find longest edge and calculate its length
-	vector<EdgeBase*> edges;
+	vector<Edge*> edges;
 	CollectAssociated(edges, grid, face);
-	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	Edge* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
 	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
 	switch (face->reference_object_id())
@@ -722,9 +722,9 @@ number CalculateAspectRatio(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
 	number maxEdgeLength;
 
 //	Collect element edges, find longest edge and calculate its length
-	vector<EdgeBase*> edges;
+	vector<Edge*> edges;
 	CollectAssociated(edges, grid, tet);
-	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	Edge* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
 	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
 	//	MINHEIGHT / MAXEDGELENGTH
@@ -745,9 +745,9 @@ number CalculateAspectRatio(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
 	number maxEdgeLength;
 
 //	Collect element edges, find longest edge and calculate its length
-	vector<EdgeBase*> edges;
+	vector<Edge*> edges;
 	CollectAssociated(edges, grid, prism);
-	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	Edge* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
 	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
 //  VOLUME / MAXEDGELENGTH
@@ -769,9 +769,9 @@ number CalculateAspectRatio(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 	number maxEdgeLength;
 
 //	Collect element edges, find longest edge and calculate its length
-	vector<EdgeBase*> edges;
+	vector<Edge*> edges;
 	CollectAssociated(edges, grid, pyr);
-	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	Edge* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
 	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
 //  VOLUME / MAXEDGELENGTH
@@ -832,9 +832,9 @@ number CalculateAspectRatio(Grid& grid, Face* face, TAAPosVRT& aaPos)
 	number maxEdgeLength;
 
 //	Collect element edges, find longest edge and calculate its length
-	vector<EdgeBase*> edges;
+	vector<Edge*> edges;
 	CollectAssociated(edges, grid, face);
-	EdgeBase* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
+	Edge* longestEdge = FindLongestEdge(edges.begin(), edges.end(), aaPos);
 	maxEdgeLength = EdgeLength(longestEdge, aaPos);
 
 	switch (face->reference_object_id())
