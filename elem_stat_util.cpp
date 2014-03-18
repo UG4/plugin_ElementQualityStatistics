@@ -25,7 +25,7 @@ number CalculateSubsetSurfaceArea(MultiGrid& mg, int subsetIndex, MGSubsetHandle
 	{
 		Face* f = *fIter;
 		#ifdef UG_PARALLEL
-			if(dgm->is_ghost(f))
+			if(dgm->is_ghost(f) || dgm->contains_status(f, ES_H_SLAVE))
 				continue;
 		#endif
 		subsetSurfaceArea += FaceArea(f, aaPos);
