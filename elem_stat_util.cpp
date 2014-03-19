@@ -25,6 +25,9 @@ number CalculateSubsetSurfaceArea(MultiGrid& mg, int subsetIndex, MGSubsetHandle
 	{
 		Face* f = *fIter;
 		#ifdef UG_PARALLEL
+		//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+		//	since they have a copy on another process and
+		//	since we already consider that copy...
 			if(dgm->is_ghost(f) || dgm->contains_status(f, ES_H_SLAVE))
 				continue;
 		#endif
@@ -57,7 +60,7 @@ number CalculateSubsetVolume(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh
 		Volume* v = *vIter;
 		#ifdef UG_PARALLEL
 		//	ghosts have to be ignored, since they have a copy on another process and
-		//	since we alread consider that copy...
+		//	since we already consider that copy...
 			if(dgm->is_ghost(v))
 				continue;
 		#endif
