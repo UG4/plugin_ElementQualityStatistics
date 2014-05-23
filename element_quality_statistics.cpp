@@ -14,6 +14,97 @@ namespace ug
 {
 
 
+void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
+{
+	Selector sel(mg);
+	//GridObjectCollection goc = mg.get_grid_objects();
+
+
+//	Position attachment management
+	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
+
+	APosition aTmpPosition;
+	mg.attach_to_vertices(aTmpPosition);
+	Grid::VertexAttachmentAccessor<APosition> aaTmpPos(mg, aTmpPosition);
+
+
+	sel.select(mg.begin<Vertex>(0), mg.end<Vertex>(0));
+	sel.select(mg.begin<Face>(0), mg.end<Face>(0));
+	sel.select(mg.begin<Volume>(0), mg.end<Volume>(0));
+
+	//Refine(mg, sel);
+
+
+	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
+	{
+		Vertex* vrt = *vrtIter;
+
+		aaTmpPos[vrt].x() = 0.0;
+		aaTmpPos[vrt].y() = 0.0;
+		aaTmpPos[vrt].z() = 0.0;
+	}
+
+	for(VolumeIterator volIter = mg.begin<Volume>(mg.top_level()); volIter != mg.end<Volume>(mg.top_level()); ++volIter)
+	{
+		Volume* vol = *volIter;
+
+		VecScaleAppend(	aaTmpPos[vol->vertex(0)],
+						-1.0/16, aaPos[vol->vertex(0)],
+						17.0/48, aaPos[vol->vertex(1)],
+						17.0/48, aaPos[vol->vertex(2)],
+						17.0/48, aaPos[vol->vertex(3)]);
+
+		VecScaleAppend(	aaTmpPos[vol->vertex(1)],
+						-1.0/16, aaPos[vol->vertex(1)],
+						17.0/48, aaPos[vol->vertex(0)],
+						17.0/48, aaPos[vol->vertex(2)],
+						17.0/48, aaPos[vol->vertex(3)]);
+
+		VecScaleAppend(	aaTmpPos[vol->vertex(2)],
+						-1.0/16, aaPos[vol->vertex(2)],
+						17.0/48, aaPos[vol->vertex(0)],
+						17.0/48, aaPos[vol->vertex(1)],
+						17.0/48, aaPos[vol->vertex(3)]);
+
+		VecScaleAppend(	aaTmpPos[vol->vertex(3)],
+						-1.0/16, aaPos[vol->vertex(3)],
+						17.0/48, aaPos[vol->vertex(0)],
+						17.0/48, aaPos[vol->vertex(1)],
+						17.0/48, aaPos[vol->vertex(2)]);
+	}
+
+	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
+	{
+		Vertex* vrt = *vrtIter;
+		int num_associated_volumes = 0;
+
+	//	Calculate number of associated volumes
+		for(Grid::AssociatedVolumeIterator vIter = mg.associated_volumes_begin(vrt); vIter != mg.associated_volumes_end(vrt); ++vIter)
+			num_associated_volumes++;
+
+
+		UG_LOG(aaTmpPos[vrt].x() << "; " << aaTmpPos[vrt].y() << "; " << aaTmpPos[vrt].z() << "; " << num_associated_volumes << endl);
+
+		VecScale(aaTmpPos[vrt], aaTmpPos[vrt], 1.0/num_associated_volumes);
+	}
+
+	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
+	{
+		Vertex* vrt = *vrtIter;
+
+		VecScale(aaPos[vrt], aaTmpPos[vrt], 1.0);
+	}
+
+
+
+
+	//SaveGridToUGX(mg, sh, "test.ugx");
+	SaveGridToUGX(mg, sh, "test.ugx");
+}
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	ElementQualityStatistics
 ////////////////////////////////////////////////////////////////////////////////////////////

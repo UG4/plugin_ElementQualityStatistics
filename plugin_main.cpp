@@ -36,4 +36,9 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 	reg->add_function(	"get_subset_volume", &ug::CalculateSubsetVolume,
 						grp, "Subset volume", "mg#subsetIndex#sh", "Returns subset volume.");
 
+
+//	Register RefineTetVolumeSmoothly
+	reg->add_function(	"RefineTetVolumeSmoothly", &ug::RefineTetVolumeSmoothly,
+			grp, "RefineTetVolumeSmoothly", "mg", "RefineTetVolumeSmoothly");
+
 }

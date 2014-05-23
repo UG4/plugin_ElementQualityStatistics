@@ -145,6 +145,10 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 //	ElementQualityStatistics
 ////////////////////////////////////////////////////////////////////////////////////////////
 
+
+void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh);
+
+
 //	Wrapper
 //void ElementQualityStatistics(MultiGrid& mg, int level);
 void ElementQualityStatistics(MultiGrid& mg);
