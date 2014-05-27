@@ -163,12 +163,12 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 		for(Grid::AssociatedVolumeIterator vIter = mg.associated_volumes_begin(vrt); vIter != mg.associated_volumes_end(vrt); ++vIter)
 			num_associated_volumes++;
 
-		/*
+
 		if(num_associated_volumes == 2)
 		{
 			num_associated_volumes++;
 		}
-		*/
+
 
 		UG_LOG(aaTmpPos[vrt].x() << "; " << aaTmpPos[vrt].y() << "; " << aaTmpPos[vrt].z() << "; " << num_associated_volumes << endl);
 
