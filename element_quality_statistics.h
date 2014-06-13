@@ -6,8 +6,8 @@
  */
 
 
-#ifndef __ELEMENT_QUALITY_STATISTICS_h__
-#define __ELEMENT_QUALITY_STATISTICS__
+#ifndef __ELEMENT_QUALITY_STATISTICS_H__
+#define __ELEMENT_QUALITY_STATISTICS_H__
 
 /* system includes */
 #include <stddef.h>
@@ -161,5 +161,5 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc);
 
 
 }	 
-#endif
+#endif  //__ELEMENT_QUALITY_STATISTICS_H__
 
