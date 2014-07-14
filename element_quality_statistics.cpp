@@ -8,6 +8,7 @@
 
 #include "element_quality_statistics.h"
 #include "common/util/table.h"
+#include "lib_grid/grid_objects/tetrahedron_rules.h"
 
 
 namespace ug
@@ -27,17 +28,19 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 	mg.attach_to_vertices(aTmpPosition);
 	Grid::VertexAttachmentAccessor<APosition> aaTmpPos(mg, aTmpPosition);
 
+	//tet_rules::SetRefinementRule(tet_rules::HYBRID_TET_OCT);
 
 //	Select all elements for linear refinement
-	sel.select(mg.begin<Vertex>(0), mg.end<Vertex>(0));
-	sel.select(mg.begin<Face>(0), mg.end<Face>(0));
-	sel.select(mg.begin<Volume>(0), mg.end<Volume>(0));
+	//sel.select(mg.begin<Vertex>(0), mg.end<Vertex>(0));
+	//sel.select(mg.begin<Face>(0), mg.end<Face>(0));
+	//sel.select(mg.begin<Volume>(0), mg.end<Volume>(0));
 
 	//Refine(mg, sel);
 
 
 //	Initialize new TmpPosition of vertices with 0
 	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
+	//for(VertexIterator vrtIter = mg.begin<Vertex>(i); vrtIter != mg.end<Vertex>(i); ++vrtIter)
 	{
 		Vertex* vrt = *vrtIter;
 
@@ -46,9 +49,9 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 		aaTmpPos[vrt].z() = 0.0;
 	}
 
-
 //	Smooth tetrahedral vertices (see Schaefer et al, "Smooth subdivision of tetrahedral meshes")
-	for(VolumeIterator volIter = mg.begin<Volume>(mg.top_level()); volIter != mg.end<Volume>(mg.top_level()); ++volIter)
+	for(VolumeIterator volIter = mg.begin<Tetrahedron>(mg.top_level()); volIter != mg.end<Tetrahedron>(mg.top_level()); ++volIter)
+	//for(VolumeIterator volIter = mg.begin<Tetrahedron>(i); volIter != mg.end<Tetrahedron>(i); ++volIter)
 	{
 		Volume* vol = *volIter;
 
@@ -79,82 +82,93 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 
 
 //	Smooth octahedral vertices (see Schaefer et al, "Smooth subdivision of tetrahedral meshes")
-	Vertex* vrt1 = *sh.begin<Vertex>(1, mg.top_level());
-	Vertex* vrt2 = *sh.begin<Vertex>(2, mg.top_level());
-	Vertex* vrt3 = *sh.begin<Vertex>(3, mg.top_level());
-	Vertex* vrt4 = *sh.begin<Vertex>(4, mg.top_level());
-	Vertex* vrt5 = *sh.begin<Vertex>(5, mg.top_level());
-	Vertex* vrt6 = *sh.begin<Vertex>(6, mg.top_level());
+	for(VolumeIterator volIter = mg.begin<Octahedron>(mg.top_level()); volIter != mg.end<Octahedron>(mg.top_level()); ++volIter)
+	//for(VolumeIterator volIter = mg.begin<Octahedron>(i); volIter != mg.end<Octahedron>(i); ++volIter)
+	{
+		Volume* vol = *volIter;
 
-//	1
-	VecScaleAppend(	aaTmpPos[vrt1],
-					1.0/12, aaPos[vrt2],
-					1.0/12, aaPos[vrt3],
-					1.0/12, aaPos[vrt4],
-					1.0/12, aaPos[vrt6]);
+		Vertex* vrt1 = vol->vertex(0);
+		Vertex* vrt2 = vol->vertex(1);
+		Vertex* vrt3 = vol->vertex(2);
+		Vertex* vrt4 = vol->vertex(3);
+		Vertex* vrt5 = vol->vertex(4);
+		Vertex* vrt6 = vol->vertex(5);
 
-	VecScaleAppend(	aaTmpPos[vrt1],
-					3.0/8,  aaPos[vrt1],
-					7.0/24, aaPos[vrt5]);
 
-//	2
-	VecScaleAppend(	aaTmpPos[vrt2],
-					1.0/12, aaPos[vrt1],
-					1.0/12, aaPos[vrt3],
-					1.0/12, aaPos[vrt4],
-					1.0/12, aaPos[vrt5]);
+	//	1
+		VecScaleAppend(	aaTmpPos[vrt1],
+						1.0/12, aaPos[vrt2],
+						1.0/12, aaPos[vrt3],
+						1.0/12, aaPos[vrt4],
+						1.0/12, aaPos[vrt5]);
 
-	VecScaleAppend(	aaTmpPos[vrt2],
-					3.0/8,  aaPos[vrt2],
-					7.0/24, aaPos[vrt6]);
+		VecScaleAppend(	aaTmpPos[vrt1],
+						3.0/8,  aaPos[vrt1],
+						7.0/24, aaPos[vrt6]);
 
-//	3
-	VecScaleAppend(	aaTmpPos[vrt3],
-					1.0/12, aaPos[vrt1],
-					1.0/12, aaPos[vrt2],
-					1.0/12, aaPos[vrt5],
-					1.0/12, aaPos[vrt6]);
+	//	2
+		VecScaleAppend(	aaTmpPos[vrt2],
+						1.0/12, aaPos[vrt1],
+						1.0/12, aaPos[vrt3],
+						1.0/12, aaPos[vrt5],
+						1.0/12, aaPos[vrt6]);
 
-	VecScaleAppend(	aaTmpPos[vrt3],
-					3.0/8,  aaPos[vrt3],
-					7.0/24, aaPos[vrt4]);
+		VecScaleAppend(	aaTmpPos[vrt2],
+						3.0/8,  aaPos[vrt2],
+						7.0/24, aaPos[vrt4]);
 
-//	4
-	VecScaleAppend(	aaTmpPos[vrt4],
-					1.0/12, aaPos[vrt1],
-					1.0/12, aaPos[vrt2],
-					1.0/12, aaPos[vrt5],
-					1.0/12, aaPos[vrt6]);
+	//	3
+		VecScaleAppend(	aaTmpPos[vrt3],
+						1.0/12, aaPos[vrt1],
+						1.0/12, aaPos[vrt2],
+						1.0/12, aaPos[vrt4],
+						1.0/12, aaPos[vrt6]);
 
-	VecScaleAppend(	aaTmpPos[vrt4],
-					3.0/8,  aaPos[vrt4],
-					7.0/24, aaPos[vrt3]);
+		VecScaleAppend(	aaTmpPos[vrt3],
+						3.0/8,  aaPos[vrt3],
+						7.0/24, aaPos[vrt5]);
 
-//	5
-	VecScaleAppend(	aaTmpPos[vrt5],
-					1.0/12, aaPos[vrt2],
-					1.0/12, aaPos[vrt3],
-					1.0/12, aaPos[vrt4],
-					1.0/12, aaPos[vrt6]);
+	//	4
+		VecScaleAppend(	aaTmpPos[vrt4],
+						1.0/12, aaPos[vrt1],
+						1.0/12, aaPos[vrt3],
+						1.0/12, aaPos[vrt5],
+						1.0/12, aaPos[vrt6]);
 
-	VecScaleAppend(	aaTmpPos[vrt5],
-					3.0/8,  aaPos[vrt5],
-					7.0/24, aaPos[vrt1]);
+		VecScaleAppend(	aaTmpPos[vrt4],
+						3.0/8,  aaPos[vrt4],
+						7.0/24, aaPos[vrt2]);
 
-//	6
-	VecScaleAppend(	aaTmpPos[vrt6],
-					1.0/12, aaPos[vrt1],
-					1.0/12, aaPos[vrt3],
-					1.0/12, aaPos[vrt4],
-					1.0/12, aaPos[vrt5]);
+	//	5
+		VecScaleAppend(	aaTmpPos[vrt5],
+						1.0/12, aaPos[vrt1],
+						1.0/12, aaPos[vrt2],
+						1.0/12, aaPos[vrt4],
+						1.0/12, aaPos[vrt6]);
 
-	VecScaleAppend(	aaTmpPos[vrt6],
-					3.0/8,  aaPos[vrt6],
-					7.0/24, aaPos[vrt2]);
+		VecScaleAppend(	aaTmpPos[vrt5],
+						3.0/8,  aaPos[vrt5],
+						7.0/24, aaPos[vrt3]);
+
+	//	6
+		VecScaleAppend(	aaTmpPos[vrt6],
+						1.0/12, aaPos[vrt2],
+						1.0/12, aaPos[vrt3],
+						1.0/12, aaPos[vrt4],
+						1.0/12, aaPos[vrt5]);
+
+		VecScaleAppend(	aaTmpPos[vrt6],
+						3.0/8,  aaPos[vrt6],
+						7.0/24, aaPos[vrt1]);
+
+	}
+
+
 
 
 //	Calculate cell valencies of each vertex (:= of associated volumes)
 	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
+	//for(VertexIterator vrtIter = mg.begin<Vertex>(i); vrtIter != mg.end<Vertex>(i); ++vrtIter)
 	{
 		Vertex* vrt = *vrtIter;
 		int num_associated_volumes = 0;
@@ -163,14 +177,7 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 		for(Grid::AssociatedVolumeIterator vIter = mg.associated_volumes_begin(vrt); vIter != mg.associated_volumes_end(vrt); ++vIter)
 			num_associated_volumes++;
 
-
-		if(num_associated_volumes == 2)
-		{
-			num_associated_volumes++;
-		}
-
-
-		UG_LOG(aaTmpPos[vrt].x() << "; " << aaTmpPos[vrt].y() << "; " << aaTmpPos[vrt].z() << "; " << num_associated_volumes << endl);
+		//UG_LOG(aaTmpPos[vrt].x() << "; " << aaTmpPos[vrt].y() << "; " << aaTmpPos[vrt].z() << "; " << num_associated_volumes << endl);
 
 		VecScale(aaTmpPos[vrt], aaTmpPos[vrt], 1.0/num_associated_volumes);
 	}
@@ -178,16 +185,17 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 
 //	Move vertices to their smoothed position
 	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
+	//for(VertexIterator vrtIter = mg.begin<Vertex>(i); vrtIter != mg.end<Vertex>(i); ++vrtIter)
 	{
 		Vertex* vrt = *vrtIter;
-
 		VecScale(aaPos[vrt], aaTmpPos[vrt], 1.0);
 	}
 
 
+
 //	Export grid
 	//SaveGridToUGX(mg, sh, "test.ugx");
-	SaveGridToUGX(mg, sh, "test.ugx");
+	//SaveGridToUGX(mg, sh, "test.ugx");
 }
 
 
