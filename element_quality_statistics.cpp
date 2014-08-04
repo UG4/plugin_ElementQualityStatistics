@@ -14,13 +14,245 @@
 namespace ug
 {
 
-
-void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
+////////////////////////////////////////////////////////////////////////////////////////////
+//	MoveVertexToSmoothTetGridSubdivisionPosition
+void MoveVertexToSmoothTetGridSubdivisionPosition(MultiGrid& mg, Vertex* vrt, 	Grid::VertexAttachmentAccessor<APosition>& aaPos,
+																				Grid::VertexAttachmentAccessor<APosition>& aaSmoothPos)
 {
-	Selector sel(mg);
-	//GridObjectCollection goc = mg.get_grid_objects();
+//	Declare centroid coordinate vector
+	typedef typename APosition::ValueType pos_type;
+	pos_type p;
 
+//	Declare vertex volume valence
+	size_t valence = 0;
 
+//	Collect associated volumes
+	std::vector<Volume*> volumes;
+	CollectAssociated(volumes, mg, vrt);
+
+//	Iterate over all associated volumes
+	for(Grid::AssociatedVolumeIterator vIter = mg.associated_volumes_begin(vrt); vIter != mg.associated_volumes_end(vrt); ++vIter)
+	{
+		VecSet(p, 0);
+		Volume* vol = *vIter;
+		++valence;
+
+	//	TETRAHEDRON CASE
+		if(vol->reference_object_id() == ROID_TETRAHEDRON)
+		{
+		//	Iterate over all associated vertices inside tetrahedron
+
+			//
+			// Alternative iteration
+			//
+			/*
+			for(Grid::AssociatedEdgeIterator eIter = mg.associated_edges_begin(vol); eIter != mg.associated_edges_end(vol); ++eIter)
+			{
+				Edge* e = *eIter;
+				if(GetConnectedVertex(e, vrt) != NULL)
+					VecAdd(p, p, aaPos[GetConnectedVertex(e, vrt)]);
+			}
+			*/
+
+			for(size_t i = 0; i < vol->num_vertices(); ++i)
+			{
+				if(i != GetVertexIndex(vol, vrt))
+				{
+					VecAdd(p, p, aaPos[vol->vertex(i)]);
+				}
+			}
+
+		//	TODO: refer to subdivision rules object
+			number centerWgt 	= -1.0/16;
+			number nbrWgt 		= 17.0/48;
+
+			VecScaleAppend(aaSmoothPos[vrt], centerWgt, aaPos[vrt], nbrWgt, p);
+		}
+
+	//	OCTAHEDRON CASE
+		else if(vol->reference_object_id() == ROID_OCTAHEDRON)
+		{
+		//	Iterate over all vertices inside octahedron, first associate ones and last the opposing one
+			for(Grid::AssociatedEdgeIterator eIter = mg.associated_edges_begin(vol); eIter != mg.associated_edges_end(vol); ++eIter)
+			{
+				Edge* e = *eIter;
+				if(GetConnectedVertex(e, vrt) != NULL)
+				{
+					VecAdd(p, p, aaPos[GetConnectedVertex(e, vrt)]);
+				}
+			}
+
+			Vertex* oppVrt = vol->vertex(vol->get_opposing_object(vrt).second);
+
+		//	TODO: refer to subdivision rules object
+			number centerWgt 	= 3.0/8;
+			number nbrWgt 		= 1.0/12;
+			number oppNbrWgt 	= 7.0/24;
+
+			VecScaleAppend(aaSmoothPos[vrt], centerWgt, aaPos[vrt], nbrWgt, p, oppNbrWgt, aaPos[oppVrt]);
+		}
+
+	//	UNSUPPORTED VOLUME ELEMENT CASE
+		else
+		{
+			UG_THROW("Volume type not supported for subdivision volumes refinement.");
+		}
+	}
+
+//	Scale vertex position by the number of associated volume elements
+	VecScale(aaSmoothPos[vrt],  aaSmoothPos[vrt], 1.0/valence);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	SubdivisionTetGridSmooth
+void SubdivisionTetGridSmooth(MultiGrid& mg, MGSubsetHandler& sh)
+{
+	typedef typename APosition::ValueType pos_type;
+
+//	Position attachment management
+	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
+
+	APosition aSmoothPosition(0.0);
+	mg.attach_to_vertices(aSmoothPosition);
+	Grid::VertexAttachmentAccessor<APosition> aaSmoothPos(mg, aSmoothPosition);
+
+//	Load subdivision surfaces rules
+	SubdivRules_PLoop& subdiv = SubdivRules_PLoop::inst();
+
+//	Check, if volumes are included in input grid
+	bool volumesExist = mg.num<Volume>() > 0;
+	if(!volumesExist)
+		UG_THROW("SubdivisionTetGridSmooth: No volumes included in input grid for smooth TetGrid subdivision refinement.");
+
+//	Initialize new SmoothPosition of vertices with 0.0
+	/*
+	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
+	{
+		Vertex* vrt = *vrtIter;
+
+		aaSmoothPos[vrt].x() = 0.0;
+		aaSmoothPos[vrt].y() = 0.0;
+		aaSmoothPos[vrt].z() = 0.0;
+
+		//UG_LOG(aaSmoothPos[vrt].x() << ", " << aaSmoothPos[vrt].y() << ", " << aaSmoothPos[vrt].z() << endl);
+	}
+	*/
+
+// 	Loop all vertices of top_level
+	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
+	{
+		Vertex* vrt = *vrtIter;
+
+	//	Even vertex
+		if(mg.get_parent(vrt)->reference_object_id() == ROID_VERTEX)
+		{
+			Vertex* parentVrt = dynamic_cast<Vertex*>(mg.get_parent(vrt));
+
+		//	Boundary vertex
+			if(IsBoundaryVertex3D(mg, vrt))
+			{
+			//	perform loop subdivision on even surface vertices
+			//	first get neighboured vertices
+				size_t valence = 0;
+				pos_type p;
+				VecSet(p, 0);
+
+				for(Grid::AssociatedEdgeIterator iter = mg.associated_edges_begin(parentVrt); iter != mg.associated_edges_end(parentVrt); ++iter)
+				{
+					if((!volumesExist) || IsBoundaryEdge3D(mg, *iter))
+					{
+						VecAdd(p, p, aaPos[GetConnectedVertex(*iter, parentVrt)]);
+						++valence;
+					}
+				}
+
+				number centerWgt 	= subdiv.ref_even_inner_center_weight(valence);
+				number nbrWgt 		= subdiv.ref_even_inner_nbr_weight(valence);
+
+				VecScaleAdd(aaSmoothPos[vrt], centerWgt, aaPos[parentVrt], nbrWgt, p);
+			}
+
+		//	Inner vertex
+			else
+				MoveVertexToSmoothTetGridSubdivisionPosition(mg, vrt, aaPos, aaSmoothPos);
+
+		}
+
+	//	Odd vertex
+		if(mg.get_parent(vrt)->reference_object_id() == ROID_EDGE)
+		{
+		//	Get parent edge
+			Edge* parentEdge = dynamic_cast<Edge*>(mg.get_parent(vrt));
+
+		//	Boundary vertex
+			if(IsBoundaryVertex3D(mg, vrt))
+			{
+			//	apply loop-subdivision on inner elements
+			//	get the neighboured triangles
+				Face* f[2];
+				int numAssociatedBndFaces = 0;
+
+				std::vector<Face*> faces;
+				CollectAssociated(faces, mg, parentEdge);
+
+				for(size_t i = 0; i < faces.size(); ++i)
+				{
+					if(IsBoundaryFace3D(mg, faces[i]))
+					{
+						if(numAssociatedBndFaces < 2)
+						{
+							f[numAssociatedBndFaces] = faces[i];
+						}
+						++numAssociatedBndFaces;
+					}
+				}
+
+				if(numAssociatedBndFaces == 2)
+				{
+					if(f[0]->num_vertices() == 3 && f[1]->num_vertices() == 3)
+					{
+					//	the 4 vertices that are important for the calculation
+						Vertex* v[4];
+						v[0] = parentEdge->vertex(0); v[1] = parentEdge->vertex(1);
+						v[2] = GetConnectedVertex(parentEdge, f[0]);
+						v[3] = GetConnectedVertex(parentEdge, f[1]);
+
+						vector4 wghts;
+
+						wghts = subdiv.ref_odd_inner_weights();
+
+						VecScaleAdd(aaSmoothPos[vrt],
+									wghts.x(), aaPos[v[0]], wghts.y(), aaPos[v[1]],
+									wghts.z(), aaPos[v[2]], wghts.w(), aaPos[v[3]]);
+					}
+					else
+						UG_THROW("Non triangular faces included in grid.");
+				}
+				else
+					UG_THROW("numAssociatedBndFaces != 2.");
+			}
+			else
+				MoveVertexToSmoothTetGridSubdivisionPosition(mg, vrt, aaPos, aaSmoothPos);
+		}
+
+	//	Volume vertex
+		if(mg.get_parent(vrt)->reference_object_id() == ROID_OCTAHEDRON)
+			MoveVertexToSmoothTetGridSubdivisionPosition(mg, vrt, aaPos, aaSmoothPos);
+	}
+
+//	Move vertices to their smoothed position
+	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
+	{
+		Vertex* vrt = *vrtIter;
+		VecScale(aaPos[vrt], aaSmoothPos[vrt], 1.0);
+	}
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	SubdivisionTetGridSmoothBasic
+void SubdivisionTetGridSmoothBasic(MultiGrid& mg, MGSubsetHandler& sh)
+{
 //	Position attachment management
 	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
 
@@ -28,15 +260,13 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 	mg.attach_to_vertices(aTmpPosition);
 	Grid::VertexAttachmentAccessor<APosition> aaTmpPos(mg, aTmpPosition);
 
-	//tet_rules::SetRefinementRule(tet_rules::HYBRID_TET_OCT);
-
 //	Select all elements for linear refinement
 	//sel.select(mg.begin<Vertex>(0), mg.end<Vertex>(0));
 	//sel.select(mg.begin<Face>(0), mg.end<Face>(0));
 	//sel.select(mg.begin<Volume>(0), mg.end<Volume>(0));
 
+	//tet_rules::SetRefinementRule(tet_rules::HYBRID_TET_OCT);
 	//Refine(mg, sel);
-
 
 //	Initialize new TmpPosition of vertices with 0
 	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
@@ -80,7 +310,6 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 						17.0/48, aaPos[vol->vertex(2)]);
 	}
 
-
 //	Smooth octahedral vertices (see Schaefer et al, "Smooth subdivision of tetrahedral meshes")
 	for(VolumeIterator volIter = mg.begin<Octahedron>(mg.top_level()); volIter != mg.end<Octahedron>(mg.top_level()); ++volIter)
 	//for(VolumeIterator volIter = mg.begin<Octahedron>(i); volIter != mg.end<Octahedron>(i); ++volIter)
@@ -93,7 +322,6 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 		Vertex* vrt4 = vol->vertex(3);
 		Vertex* vrt5 = vol->vertex(4);
 		Vertex* vrt6 = vol->vertex(5);
-
 
 	//	1
 		VecScaleAppend(	aaTmpPos[vrt1],
@@ -160,11 +388,7 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 		VecScaleAppend(	aaTmpPos[vrt6],
 						3.0/8,  aaPos[vrt6],
 						7.0/24, aaPos[vrt1]);
-
 	}
-
-
-
 
 //	Calculate cell valencies of each vertex (:= of associated volumes)
 	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
@@ -182,7 +406,6 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 		VecScale(aaTmpPos[vrt], aaTmpPos[vrt], 1.0/num_associated_volumes);
 	}
 
-
 //	Move vertices to their smoothed position
 	for(VertexIterator vrtIter = mg.begin<Vertex>(mg.top_level()); vrtIter != mg.end<Vertex>(mg.top_level()); ++vrtIter)
 	//for(VertexIterator vrtIter = mg.begin<Vertex>(i); vrtIter != mg.end<Vertex>(i); ++vrtIter)
@@ -191,13 +414,10 @@ void RefineTetVolumeSmoothly(MultiGrid& mg, MGSubsetHandler& sh)
 		VecScale(aaPos[vrt], aaTmpPos[vrt], 1.0);
 	}
 
-
-
 //	Export grid
 	//SaveGridToUGX(mg, sh, "test.ugx");
 	//SaveGridToUGX(mg, sh, "test.ugx");
 }
-
 
 
 

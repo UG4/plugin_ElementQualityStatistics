@@ -38,7 +38,10 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 
 
 //	Register RefineTetVolumeSmoothly
-	reg->add_function(	"RefineTetVolumeSmoothly", &ug::RefineTetVolumeSmoothly,
-			grp, "RefineTetVolumeSmoothly", "mg", "RefineTetVolumeSmoothly");
+	reg->add_function(	"SubdivisionTetGridSmooth", &ug::SubdivisionTetGridSmooth,
+			grp, "SubdivisionTetGridSmooth", "mg", "SubdivisionTetGridSmooth");
+
+	reg->add_function(	"SubdivisionTetGridSmoothBasic", &ug::SubdivisionTetGridSmoothBasic,
+			grp, "SubdivisionTetGridSmoothBasic", "mg", "SubdivisionTetGridSmoothBasic");
 
 }
