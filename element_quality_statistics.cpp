@@ -20,7 +20,7 @@ void MoveVertexToSmoothTetGridSubdivisionPosition(MultiGrid& mg, Vertex* vrt, 	G
 																				Grid::VertexAttachmentAccessor<APosition>& aaSmoothPos)
 {
 //	Declare centroid coordinate vector
-	typedef typename APosition::ValueType pos_type;
+	typedef APosition::ValueType pos_type;
 	pos_type p;
 
 //	Declare vertex volume valence
@@ -54,12 +54,15 @@ void MoveVertexToSmoothTetGridSubdivisionPosition(MultiGrid& mg, Vertex* vrt, 	G
 			}
 			*/
 
+			int vrtIndex = 0;
 			for(size_t i = 0; i < vol->num_vertices(); ++i)
 			{
-				if(i != GetVertexIndex(vol, vrt))
+				if(vrtIndex != GetVertexIndex(vol, vrt))
 				{
 					VecAdd(p, p, aaPos[vol->vertex(i)]);
 				}
+
+				++vrtIndex;
 			}
 
 		//	TODO: refer to subdivision rules object
@@ -108,7 +111,7 @@ void MoveVertexToSmoothTetGridSubdivisionPosition(MultiGrid& mg, Vertex* vrt, 	G
 /// (see Schaefer et al, "Smooth subdivision of tetrahedral meshes")
 void SubdivisionTetGridSmooth(MultiGrid& mg, MGSubsetHandler& sh)
 {
-	typedef typename APosition::ValueType pos_type;
+	typedef APosition::ValueType pos_type;
 
 //	Position attachment management
 	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
