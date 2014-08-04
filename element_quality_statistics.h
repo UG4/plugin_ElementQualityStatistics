@@ -142,16 +142,17 @@ void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	ElementQualityStatistics
+//	SubdivisionTetGridSmooth
 ////////////////////////////////////////////////////////////////////////////////////////////
-
 
 void SubdivisionTetGridSmooth(MultiGrid& mg, MGSubsetHandler& sh);
 void SubdivisionTetGridSmoothBasic(MultiGrid& mg, MGSubsetHandler& sh);
 void MoveVertexToSmoothTetGridSubdivisionPosition(MultiGrid& mg, Vertex* vrt, 	Grid::VertexAttachmentAccessor<APosition>& aaPos,
 																				Grid::VertexAttachmentAccessor<APosition>& aaSmoothPos);
 
-
+////////////////////////////////////////////////////////////////////////////////////////////
+//	ElementQualityStatistics
+////////////////////////////////////////////////////////////////////////////////////////////
 
 //	Wrapper
 //void ElementQualityStatistics(MultiGrid& mg, int level);

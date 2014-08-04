@@ -105,6 +105,7 @@ void MoveVertexToSmoothTetGridSubdivisionPosition(MultiGrid& mg, Vertex* vrt, 	G
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	SubdivisionTetGridSmooth
+/// (see Schaefer et al, "Smooth subdivision of tetrahedral meshes")
 void SubdivisionTetGridSmooth(MultiGrid& mg, MGSubsetHandler& sh)
 {
 	typedef typename APosition::ValueType pos_type;
