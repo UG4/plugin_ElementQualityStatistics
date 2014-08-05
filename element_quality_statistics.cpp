@@ -147,14 +147,14 @@ void SubdivisionTetGridSmooth(MultiGrid& mg, MGSubsetHandler& sh)
 	{
 		Vertex* vrt = *vrtIter;
 
-	//	Even vertex
-		if(mg.get_parent(vrt)->reference_object_id() == ROID_VERTEX)
+	//	BOUNDARY VERTEX
+		if(IsBoundaryVertex3D(mg, vrt))
 		{
-			Vertex* parentVrt = dynamic_cast<Vertex*>(mg.get_parent(vrt));
-
-		//	Boundary vertex
-			if(IsBoundaryVertex3D(mg, vrt))
+		//	Even vertex
+			if(mg.get_parent(vrt)->reference_object_id() == ROID_VERTEX)
 			{
+				Vertex* parentVrt = dynamic_cast<Vertex*>(mg.get_parent(vrt));
+
 			//	perform loop subdivision on even surface vertices
 			//	first get neighboured vertices
 				size_t valence = 0;
@@ -176,21 +176,12 @@ void SubdivisionTetGridSmooth(MultiGrid& mg, MGSubsetHandler& sh)
 				VecScaleAdd(aaSmoothPos[vrt], centerWgt, aaPos[parentVrt], nbrWgt, p);
 			}
 
-		//	Inner vertex
-			else
-				MoveVertexToSmoothTetGridSubdivisionPosition(mg, vrt, aaPos, aaSmoothPos);
-
-		}
-
-	//	Odd vertex
-		if(mg.get_parent(vrt)->reference_object_id() == ROID_EDGE)
-		{
-		//	Get parent edge
-			Edge* parentEdge = dynamic_cast<Edge*>(mg.get_parent(vrt));
-
-		//	Boundary vertex
-			if(IsBoundaryVertex3D(mg, vrt))
+		//	Odd vertex
+			else if(mg.get_parent(vrt)->reference_object_id() == ROID_EDGE)
 			{
+			//	Get parent edge
+				Edge* parentEdge = dynamic_cast<Edge*>(mg.get_parent(vrt));
+
 			//	apply loop-subdivision on inner elements
 			//	get the neighboured triangles
 				Face* f[2];
@@ -235,13 +226,13 @@ void SubdivisionTetGridSmooth(MultiGrid& mg, MGSubsetHandler& sh)
 				else
 					UG_THROW("numAssociatedBndFaces != 2.");
 			}
-			else
-				MoveVertexToSmoothTetGridSubdivisionPosition(mg, vrt, aaPos, aaSmoothPos);
 		}
 
-	//	Volume vertex
-		if(mg.get_parent(vrt)->reference_object_id() == ROID_OCTAHEDRON)
+	//	INNER VERTEX
+		else
+		{
 			MoveVertexToSmoothTetGridSubdivisionPosition(mg, vrt, aaPos, aaSmoothPos);
+		}
 	}
 
 //	Move vertices to their smoothed position
