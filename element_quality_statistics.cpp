@@ -386,6 +386,85 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 		//PROFILE_END();
 
 		UG_LOG(endl);
+
+
+	//	Calculate and output standard deviation for tetrahedral/hexahedral angles
+		if(goc.num_volumes(i) > 0)
+		{
+			number sd_tet = 0.0;
+			number sd_hex = 0.0;
+			number mean_tet = 0.0;
+			number mean_hex = 0.0;
+			int numTets = 0;
+			int numHex 	= 0;
+			number regVolDihedral = 90.0;
+
+			vector<number> vDihedralsOut;
+
+			for(VolumeIterator vIter = goc.begin<Volume>(i); vIter != goc.end<Volume>(i); ++vIter)
+			{
+				vDihedralsOut.clear();
+				Volume* vol = *vIter;
+
+				if(vol->reference_object_id() == ROID_TETRAHEDRON)
+				{
+					numTets += 1;
+					regVolDihedral = 70.5288;
+					CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
+
+					for(size_t k = 0; k < vDihedralsOut.size(); ++k)
+					{
+						sd_tet += (regVolDihedral-vDihedralsOut[k])*(regVolDihedral-vDihedralsOut[k]);
+						mean_tet += vDihedralsOut[k];
+					}
+				}
+
+				if(vol->reference_object_id() == ROID_HEXAHEDRON)
+				{
+					numHex += 1;
+					regVolDihedral = 90.0;
+					CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
+
+					for(size_t k = 0; k < vDihedralsOut.size(); ++k)
+					{
+						sd_hex += (regVolDihedral-vDihedralsOut[k])*(regVolDihedral-vDihedralsOut[k]);
+						mean_hex += vDihedralsOut[k];
+					}
+				}
+			}
+
+			if(numTets > 0)
+			{
+				sd_tet *= (1.0/(6*numTets));
+				sd_tet = sqrt(sd_tet);
+				mean_tet *= (1.0/(6*numTets));
+			}
+
+			if(numHex > 0)
+			{
+				sd_hex *= (1.0/(12*numHex));
+				sd_hex = sqrt(sd_hex);
+				mean_hex = (1.0/(12*numHex));
+			}
+
+			UG_LOG("Standard deviation of dihedral angles to regular case" << endl);
+			UG_LOG("(70.5288° for tetrahedrons, 90° for hexahedrons)" << endl);
+			UG_LOG(endl);
+			UG_LOG("	Tetrahedrons (" << numTets << "):" << endl);
+			if(numTets > 0)
+			{
+				UG_LOG("		sd   = " << sd_tet << endl);
+				UG_LOG("		mean = " << mean_tet << endl);
+			}
+			UG_LOG(endl);
+			UG_LOG("	Hexahedrons (" << numHex << "):" << endl);
+			if(numHex > 0)
+			{
+				UG_LOG("		sd   = " << sd_hex << endl);
+				UG_LOG("		mean = " << mean_tet << endl);
+			}
+			UG_LOG(endl);
+		}
 	}
 
 	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);
