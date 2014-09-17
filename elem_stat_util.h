@@ -615,6 +615,61 @@ number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 }
 
 
+//	Volume
+template <class TAAPosVRT>
+void CalculateVolumeDihedrals(vector<number>& vDihedralsOut, Grid& grid, Volume* v, TAAPosVRT& aaPos)
+{
+	//PROFILE_FUNC();
+//	in the current implementation this method requires, that all edges
+//	are created for all faces.
+//TODO: improve this!
+	if(!grid.option_is_enabled(GRIDOPT_AUTOGENERATE_SIDES))
+	{
+		LOG("WARNING: autoenabling GRIDOPT_AUTOGENERATE_SIDES in GetNeighbours(Face).\n");
+		grid.enable_options(GRIDOPT_AUTOGENERATE_SIDES);
+	}
+
+//	Initialization
+	uint numElementEdges = v->num_edges();
+	vector3 vNorm1, vNorm2;
+	number tmpAngle;
+	Face* vNeighbourFacesToEdge[2];
+
+//	Iterate over all element edges
+	for(uint eIter = 0; eIter < numElementEdges; ++eIter)
+	{
+		Edge* e = grid.get_edge(v, eIter);
+
+	//	Get adjacent faces at the current edge and calculate the angle between their normals
+		CollectAssociatedSides(vNeighbourFacesToEdge, grid, v, e);
+
+		CalculateNormal(vNorm1, vNeighbourFacesToEdge[0], aaPos);
+		CalculateNormal(vNorm2, vNeighbourFacesToEdge[1], aaPos);
+
+	/*	!!!	Beware of the correct vExtrDir normals to get correct angle value !!!
+		INFO:	Angles of a regular tetrahedron:
+				- "Tetrahedron (dihedral) angle x" 	= 109,471...deg
+				- "Face-to-face angle y"			= 180deg - x = 70,52...deg
+
+		--> Old version:
+		//VecScale(vNorm1, vNorm1, -1);
+		//tmpAngle = acos(VecDot(vNorm1, vNorm2));
+
+		--> New version:
+			(s.	"Qualit�ts-Metriken und Optimierung von Tetraeder-Netzen",
+				 Seminararbeit von Johannes Ahlmann, Universit�t Karlsruhe)
+	*/
+		tmpAngle = acos(VecDot(vNorm1, vNorm2));
+		tmpAngle = PI - tmpAngle;
+
+	//	Transform maxDihedral from RAD to DEG
+		tmpAngle = 180.0/PI * tmpAngle;
+
+		vDihedralsOut.push_back(tmpAngle);
+	}
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	CalculateMinTriangleHeight
 template <class TAAPosVRT>
