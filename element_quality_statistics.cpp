@@ -21,21 +21,25 @@ namespace ug
 
 //	Wrapper for multigrids
 //void ElementQualityStatistics(MultiGrid& mg, int level)
-void ElementQualityStatistics(MultiGrid& mg)
+void ElementQualityStatistics(MultiGrid& mg, int dim)
 {
-	if(mg.num_volumes() > 0)
+	if(dim == 2)
+		ElementQualityStatistics2d(mg, mg.get_grid_objects());
+	else if(dim == 3)
 		ElementQualityStatistics3d(mg, mg.get_grid_objects());
 	else
-		ElementQualityStatistics2d(mg, mg.get_grid_objects());
+		UG_THROW("Only dimensions 2 or 3 supported.");
 }
 
 //	Wrapper for grids
-void ElementQualityStatistics(Grid& grid)
+void ElementQualityStatistics(Grid& grid, int dim)
 {
-	if(grid.num_volumes() > 0)
+	if(dim == 2)
+		ElementQualityStatistics2d(grid, grid.get_grid_objects());
+	else if(dim == 3)
 		ElementQualityStatistics3d(grid, grid.get_grid_objects());
 	else
-		ElementQualityStatistics2d(grid, grid.get_grid_objects());
+		UG_THROW("Only dimensions 2 or 3 supported.");
 }
 
 //	Actual procedures
@@ -43,7 +47,6 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc)
 {
 	//PROFILE_FUNC();
 	Grid::VertexAttachmentAccessor<APosition2> aaPos(grid, aPosition2);
-
 
 //	Numbers
 	number n_minEdge = 0.0;

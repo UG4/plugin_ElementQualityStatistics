@@ -24,11 +24,11 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 
 //	Register ElementQualityStatistics wrapper functions
 	reg->add_function(	"ElementQualityStatistics",
-						(void (*)(ug::Grid&)) (&ug::ElementQualityStatistics),
-						grp, "", "grid", "Prints element quality statistics for a grid object");
+						(void (*)(ug::Grid&, int)) (&ug::ElementQualityStatistics),
+						grp, "", "grid#dim", "Prints element quality statistics for a grid object");
 	reg->add_function(	"ElementQualityStatistics",
-						(void (*)(ug::MultiGrid&/*, int level*/)) (&ug::ElementQualityStatistics),
-						grp, "", "mg", "Prints element quality statistics for a multigrid object");
+						(void (*)(ug::MultiGrid&, int)) (&ug::ElementQualityStatistics),
+						grp, "", "mg#dim", "Prints element quality statistics for a multigrid object");
 
 //	Register CalculateSubsetSurfaceArea
 	reg->add_function(	"get_subset_surface_area", &ug::CalculateSubsetSurfaceArea,
