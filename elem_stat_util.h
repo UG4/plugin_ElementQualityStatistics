@@ -174,6 +174,8 @@ number CalculateMinAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 	number minAngle = 180.0;
 	number tmpAngle;
 	Edge* vNeighbourEdgesToVertex[2];
+	Vertex* adjacentVrt1;
+	Vertex* adjacentVrt2;
 
 //	Iterate over all face vertices
 	for(uint vrtIter = 0; vrtIter < numFaceVrts; ++vrtIter)
@@ -185,13 +187,18 @@ number CalculateMinAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 
 	//	Calculate vExtrDir vectors of the current two adjacent edges
 	//	!!!	Beware of the correct order of the vertices	to get correct angle value !!!
-		VecSubtract(vDir1,
-					aaPos[vNeighbourEdgesToVertex[0]->vertex(0)],
-					aaPos[vNeighbourEdgesToVertex[0]->vertex(1)]);
+		if(vrt != vNeighbourEdgesToVertex[0]->vertex(0))
+			adjacentVrt1 = vNeighbourEdgesToVertex[0]->vertex(0);
+		else
+			adjacentVrt1 = vNeighbourEdgesToVertex[0]->vertex(1);
 
-		VecSubtract(vDir2,
-					aaPos[vNeighbourEdgesToVertex[1]->vertex(1)],
-					aaPos[vNeighbourEdgesToVertex[1]->vertex(0)]);
+		if(vrt != vNeighbourEdgesToVertex[1]->vertex(0))
+			adjacentVrt2 = vNeighbourEdgesToVertex[1]->vertex(0);
+		else
+			adjacentVrt2 = vNeighbourEdgesToVertex[1]->vertex(1);
+
+		VecSubtract(vDir1, aaPos[adjacentVrt1], aaPos[vrt]);
+		VecSubtract(vDir2, aaPos[adjacentVrt2], aaPos[vrt]);
 
 	//	Normalize
 		VecNormalize(vDir1, vDir1);
@@ -371,8 +378,38 @@ number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 	//	Get adjacent faces at the current edge and calculate the angle between their normals
 		CollectAssociatedSides(vNeighbourFacesToEdge, grid, v, e);
 
-		CalculateNormal(vNorm1, vNeighbourFacesToEdge[0], aaPos);
-		CalculateNormal(vNorm2, vNeighbourFacesToEdge[1], aaPos);
+			Vertex* adjacentVrt1;
+			Vertex* adjacentVrt2;
+			vector3 vDir1;
+			vector3 vDir2;
+			vector3 vDir3;
+
+			if(vNeighbourFacesToEdge[0]->vertex(0) != e->vertex(0) && vNeighbourFacesToEdge[0]->vertex(0) != e->vertex(1))
+				adjacentVrt1 = vNeighbourFacesToEdge[0]->vertex(0);
+			else if(vNeighbourFacesToEdge[0]->vertex(1) != e->vertex(0) && vNeighbourFacesToEdge[0]->vertex(1) != e->vertex(1))
+				adjacentVrt1 = vNeighbourFacesToEdge[0]->vertex(1);
+			else if(vNeighbourFacesToEdge[0]->vertex(2) != e->vertex(0) && vNeighbourFacesToEdge[0]->vertex(2) != e->vertex(1))
+				adjacentVrt1 = vNeighbourFacesToEdge[0]->vertex(2);
+
+			if(vNeighbourFacesToEdge[1]->vertex(0) != e->vertex(0) && vNeighbourFacesToEdge[1]->vertex(0) != e->vertex(1))
+				adjacentVrt2 = vNeighbourFacesToEdge[1]->vertex(0);
+			else if(vNeighbourFacesToEdge[1]->vertex(1) != e->vertex(0) && vNeighbourFacesToEdge[1]->vertex(1) != e->vertex(1))
+				adjacentVrt2 = vNeighbourFacesToEdge[1]->vertex(1);
+			else if(vNeighbourFacesToEdge[1]->vertex(2) != e->vertex(0) && vNeighbourFacesToEdge[1]->vertex(2) != e->vertex(1))
+				adjacentVrt2 = vNeighbourFacesToEdge[1]->vertex(2);
+
+			VecSubtract(vDir1, aaPos[e->vertex(1)], aaPos[e->vertex(0)]);
+			VecSubtract(vDir2, aaPos[adjacentVrt1], aaPos[e->vertex(0)]);
+			VecSubtract(vDir3, aaPos[e->vertex(0)], aaPos[adjacentVrt2]);
+
+			VecCross(vNorm1, vDir1, vDir2);
+			VecCross(vNorm2, vDir1, vDir3);
+
+			VecNormalize(vNorm1, vNorm1);
+			VecNormalize(vNorm2, vNorm2);
+
+		//CalculateNormal(vNorm1, vNeighbourFacesToEdge[0], aaPos);
+		//CalculateNormal(vNorm2, vNeighbourFacesToEdge[1], aaPos);
 
 	/*	!!!	Beware of the correct vExtrDir normals to get correct angle value !!!
 		INFO:	Angles of a regular tetrahedron:
@@ -436,6 +473,8 @@ number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 	number maxAngle = 0;
 	number tmpAngle;
 	Edge* vNeighbourEdgesToVertex[2];
+	Vertex* adjacentVrt1;
+	Vertex* adjacentVrt2;
 
 //	Iterate over all face vertices
 	for(uint vrtIter = 0; vrtIter < numFaceVrts; ++vrtIter)
@@ -447,13 +486,18 @@ number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 
 	//	Calculate vExtrDir vectors of the current two adjacent edges
 	//	!!!	Beware of the correct order of the vertices	to get correct angle value !!!
-		VecSubtract(vDir1,
-					aaPos[vNeighbourEdgesToVertex[0]->vertex(0)],
-					aaPos[vNeighbourEdgesToVertex[0]->vertex(1)]);
+		if(vrt != vNeighbourEdgesToVertex[0]->vertex(0))
+			adjacentVrt1 = vNeighbourEdgesToVertex[0]->vertex(0);
+		else
+			adjacentVrt1 = vNeighbourEdgesToVertex[0]->vertex(1);
 
-		VecSubtract(vDir2,
-					aaPos[vNeighbourEdgesToVertex[1]->vertex(1)],
-					aaPos[vNeighbourEdgesToVertex[1]->vertex(0)]);
+		if(vrt != vNeighbourEdgesToVertex[1]->vertex(0))
+			adjacentVrt2 = vNeighbourEdgesToVertex[1]->vertex(0);
+		else
+			adjacentVrt2 = vNeighbourEdgesToVertex[1]->vertex(1);
+
+		VecSubtract(vDir1, aaPos[adjacentVrt1], aaPos[vrt]);
+		VecSubtract(vDir2, aaPos[adjacentVrt2], aaPos[vrt]);
 
 	//	Normalize
 		VecNormalize(vDir1, vDir1);
@@ -582,8 +626,38 @@ number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 	//	Get adjacent faces at the current edge and calculate the angle between their normals
 		CollectAssociatedSides(vNeighbourFacesToEdge, grid, v, e);
 
-		CalculateNormal(vNorm1, vNeighbourFacesToEdge[0], aaPos);
-		CalculateNormal(vNorm2, vNeighbourFacesToEdge[1], aaPos);
+			Vertex* adjacentVrt1;
+			Vertex* adjacentVrt2;
+			vector3 vDir1;
+			vector3 vDir2;
+			vector3 vDir3;
+
+			if(vNeighbourFacesToEdge[0]->vertex(0) != e->vertex(0) && vNeighbourFacesToEdge[0]->vertex(0) != e->vertex(1))
+				adjacentVrt1 = vNeighbourFacesToEdge[0]->vertex(0);
+			else if(vNeighbourFacesToEdge[0]->vertex(1) != e->vertex(0) && vNeighbourFacesToEdge[0]->vertex(1) != e->vertex(1))
+				adjacentVrt1 = vNeighbourFacesToEdge[0]->vertex(1);
+			else if(vNeighbourFacesToEdge[0]->vertex(2) != e->vertex(0) && vNeighbourFacesToEdge[0]->vertex(2) != e->vertex(1))
+				adjacentVrt1 = vNeighbourFacesToEdge[0]->vertex(2);
+
+			if(vNeighbourFacesToEdge[1]->vertex(0) != e->vertex(0) && vNeighbourFacesToEdge[1]->vertex(0) != e->vertex(1))
+				adjacentVrt2 = vNeighbourFacesToEdge[1]->vertex(0);
+			else if(vNeighbourFacesToEdge[1]->vertex(1) != e->vertex(0) && vNeighbourFacesToEdge[1]->vertex(1) != e->vertex(1))
+				adjacentVrt2 = vNeighbourFacesToEdge[1]->vertex(1);
+			else if(vNeighbourFacesToEdge[1]->vertex(2) != e->vertex(0) && vNeighbourFacesToEdge[1]->vertex(2) != e->vertex(1))
+				adjacentVrt2 = vNeighbourFacesToEdge[1]->vertex(2);
+
+			VecSubtract(vDir1, aaPos[e->vertex(1)], aaPos[e->vertex(0)]);
+			VecSubtract(vDir2, aaPos[adjacentVrt1], aaPos[e->vertex(0)]);
+			VecSubtract(vDir3, aaPos[e->vertex(0)], aaPos[adjacentVrt2]);
+
+			VecCross(vNorm1, vDir1, vDir2);
+			VecCross(vNorm2, vDir1, vDir3);
+
+			VecNormalize(vNorm1, vNorm1);
+			VecNormalize(vNorm2, vNorm2);
+
+		//CalculateNormal(vNorm1, vNeighbourFacesToEdge[0], aaPos);
+		//CalculateNormal(vNorm2, vNeighbourFacesToEdge[1], aaPos);
 
 	/*	!!!	Beware of the correct vExtrDir normals to get correct angle value !!!
 		INFO:	Angles of a regular tetrahedron:
