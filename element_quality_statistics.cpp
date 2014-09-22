@@ -447,7 +447,7 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 			{
 				sd_hex *= (1.0/(12*numHex));
 				sd_hex = sqrt(sd_hex);
-				mean_hex = (1.0/(12*numHex));
+				mean_hex *= (1.0/(12*numHex));
 			}
 
 			UG_LOG("Standard deviation of dihedral angles to regular case" << endl);
@@ -464,7 +464,7 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 			if(numHex > 0)
 			{
 				UG_LOG("		sd   = " << sd_hex << endl);
-				UG_LOG("		mean = " << mean_tet << endl);
+				UG_LOG("		mean = " << mean_hex << endl);
 			}
 			UG_LOG(endl);
 		}
