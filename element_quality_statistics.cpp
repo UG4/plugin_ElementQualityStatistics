@@ -163,10 +163,12 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc)
 
 		//PROFILE_BEGIN(eqs_minAngleHistogram);
 		MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
-
-
+		MaxAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
 		//PROFILE_END();
+
 		UG_LOG(endl);
+
+		PrintAngleStatistics2d(grid, goc, i, aaPos);
 	}
 
 	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);
@@ -181,8 +183,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 //	Numbers
 	number n_minEdge = 0.0;
 	number n_maxEdge = 0.0;
-	//number n_minFace;
-	//number n_maxFace;
+	number n_minFace;
+	number n_maxFace;
 	number n_minFaceAngle = 0.0;
 	number n_maxFaceAngle = 0.0;
 	number n_minTriAspectRatio = 0.0;
@@ -201,8 +203,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 //	Elements
 	Edge* minEdge;
 	Edge* maxEdge;
-	//Face* minAreaFace;
-	//Face* maxAreaFace;
+	Face* minFace = NULL;
+	Face* maxFace = NULL;
 	Face* minAngleFace;
 	Face* maxAngleFace;
 	Face* minAspectRatioTri;
@@ -234,8 +236,11 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 	//	----------
 		minEdge = FindShortestEdge(goc.begin<Edge>(i), goc.end<Edge>(i), aaPos);
 		maxEdge = FindLongestEdge(goc.begin<Edge>(i), goc.end<Edge>(i), aaPos);
-		//minFace =
-		//maxFace =
+		if(goc.num_volumes(i) == 0)
+		{
+			minFace = FindSmallestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
+			maxFace = FindLargestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
+		}
 		minAngleFace = FindElementWithSmallestMinAngle(	grid,
 														goc.begin<Face>(i),
 														goc.end<Face>(i),
@@ -248,6 +253,10 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 			n_minEdge = EdgeLength(minEdge, aaPos);
 		if(maxEdge != NULL)
 			n_maxEdge = EdgeLength(maxEdge, aaPos);
+		if(minFace != NULL)
+			n_minFace = FaceArea(minFace, aaPos);
+		if(maxFace != NULL)
+			n_maxFace = FaceArea(maxFace, aaPos);
 		if(minAngleFace != NULL)
 			n_minFaceAngle = CalculateMinAngle(grid, minAngleFace, aaPos);
 		if(maxAngleFace != NULL)
@@ -348,25 +357,31 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 		table(5, 0) << "Smallest face angle";	table(5, 1) << n_minFaceAngle;
 		table(5, 2) << "Largest face angle";	table(5, 3) << n_maxFaceAngle;
 
+		if(goc.num<Triangle>(i) > 0)
+		{
+			table(6, 0) << "Smallest triangle AR"; table(6, 1) << n_minTriAspectRatio;
+			table(6, 2) << "Largest triangle AR"; table(6, 3) << n_maxTriAspectRatio;
+		}
+
+		if(goc.num_volumes(i) == 0)
+		{
+			table(7, 0) << "Smallest face";	table(7, 1) << n_minFace;
+			table(7, 2) << "Largest face";	table(7, 3) << n_maxFace;
+		}
+
 		if(goc.num_volumes(i) > 0)
 		{
-			table(6, 0) << "Smallest volume";		table(6, 1) << n_minVolume;
-			table(6, 2) << "Largest volume";		table(6, 3) << n_maxVolume;
-			table(7, 0) << "Smallest volume angle";	table(7, 1) << n_minVolAngle;
-			table(7, 2) << "Largest volume angle";	table(7, 3) << n_maxVolAngle;
-			table(8, 0) << "Smallest volume dihedral";	table(8, 1) << n_minVolDihedral;
-			table(8, 2) << "Largest volume dihedral";	table(8, 3) << n_maxVolDihedral;
-
-			if(goc.num<Triangle>(i) > 0)
-			{
-				table(9, 0) << "Smallest triangle AR"; table(9, 1) << n_minTriAspectRatio;
-				table(9, 2) << "Largest triangle AR"; table(9, 3) << n_maxTriAspectRatio;
-			}
+			table(8, 0) << "Smallest volume";		table(8, 1) << n_minVolume;
+			table(8, 2) << "Largest volume";		table(8, 3) << n_maxVolume;
+			table(9, 0) << "Smallest volume angle";	table(9, 1) << n_minVolAngle;
+			table(9, 2) << "Largest volume angle";	table(9, 3) << n_maxVolAngle;
+			table(10, 0) << "Smallest volume dihedral";	table(10, 1) << n_minVolDihedral;
+			table(10, 2) << "Largest volume dihedral";	table(10, 3) << n_maxVolDihedral;
 
 			if(goc.num<Tetrahedron>(i) > 0)
 			{
-				table(10, 0) << "Smallest tetrahedron AR";	table(10, 1) << n_minTetAspectRatio;
-				table(10, 2) << "Largest tetrahedron AR";	table(10, 3) << n_maxTetAspectRatio;
+				table(11, 0) << "Smallest tetrahedron AR";	table(11, 1) << n_minTetAspectRatio;
+				table(11, 2) << "Largest tetrahedron AR";	table(11, 3) << n_maxTetAspectRatio;
 			}
 		}
 
@@ -381,93 +396,18 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 		if(goc.num_volumes(i) > 0)
 		{
 			MinAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, 10);
+			MaxAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, 10);
 		}
 		else
 		{
 			MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
+			MaxAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, 10);
 		}
 		//PROFILE_END();
 
 		UG_LOG(endl);
 
-
-	//	Calculate and output standard deviation for tetrahedral/hexahedral angles
-		if(goc.num_volumes(i) > 0)
-		{
-			number sd_tet = 0.0;
-			number sd_hex = 0.0;
-			number mean_tet = 0.0;
-			number mean_hex = 0.0;
-			int numTets = 0;
-			int numHex 	= 0;
-			number regVolDihedral = 90.0;
-
-			vector<number> vDihedralsOut;
-
-			for(VolumeIterator vIter = goc.begin<Volume>(i); vIter != goc.end<Volume>(i); ++vIter)
-			{
-				vDihedralsOut.clear();
-				Volume* vol = *vIter;
-
-				if(vol->reference_object_id() == ROID_TETRAHEDRON)
-				{
-					numTets += 1;
-					regVolDihedral = 70.5288;
-					CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
-
-					for(size_t k = 0; k < vDihedralsOut.size(); ++k)
-					{
-						sd_tet += (regVolDihedral-vDihedralsOut[k])*(regVolDihedral-vDihedralsOut[k]);
-						mean_tet += vDihedralsOut[k];
-					}
-				}
-
-				if(vol->reference_object_id() == ROID_HEXAHEDRON)
-				{
-					numHex += 1;
-					regVolDihedral = 90.0;
-					CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
-
-					for(size_t k = 0; k < vDihedralsOut.size(); ++k)
-					{
-						sd_hex += (regVolDihedral-vDihedralsOut[k])*(regVolDihedral-vDihedralsOut[k]);
-						mean_hex += vDihedralsOut[k];
-					}
-				}
-			}
-
-			if(numTets > 0)
-			{
-				sd_tet *= (1.0/(6*numTets));
-				sd_tet = sqrt(sd_tet);
-				mean_tet *= (1.0/(6*numTets));
-			}
-
-			if(numHex > 0)
-			{
-				sd_hex *= (1.0/(12*numHex));
-				sd_hex = sqrt(sd_hex);
-				mean_hex *= (1.0/(12*numHex));
-			}
-
-			UG_LOG("Standard deviation of dihedral angles to regular case" << endl);
-			UG_LOG("(70.5288° for tetrahedrons, 90° for hexahedrons)" << endl);
-			UG_LOG(endl);
-			UG_LOG("	Tetrahedrons (" << numTets << "):" << endl);
-			if(numTets > 0)
-			{
-				UG_LOG("		sd   = " << sd_tet << endl);
-				UG_LOG("		mean = " << mean_tet << endl);
-			}
-			UG_LOG(endl);
-			UG_LOG("	Hexahedrons (" << numHex << "):" << endl);
-			if(numHex > 0)
-			{
-				UG_LOG("		sd   = " << sd_hex << endl);
-				UG_LOG("		mean = " << mean_hex << endl);
-			}
-			UG_LOG(endl);
-		}
+		PrintAngleStatistics3d(grid, goc, i, aaPos);
 	}
 
 	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);
