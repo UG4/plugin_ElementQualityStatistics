@@ -25,7 +25,7 @@
 #include <algorithm>
 
 #include "lib_grid/lib_grid.h"
-#include "volume_calculation.h"
+//#include "volume_calculation.h"
 
 
 using namespace std;
@@ -1282,14 +1282,14 @@ FindSmallestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPo
 
 //	Initializations
 	typename TIterator::value_type smallestVolume = *volumesBegin;
-	number smallestVolumeVolume = CalculateVolume(*smallestVolume, aaPos);
+	number smallestVolumeVolume = CalculateVolume(smallestVolume, aaPos);
 	++volumesBegin;
 
 //	compare all tetrahedrons and find minimal volume
 	for(; volumesBegin != volumesEnd; ++volumesBegin)
 	{
 		Volume* curVolume = *volumesBegin;
-		number curVolumeVolume = CalculateVolume(*curVolume, aaPos);
+		number curVolumeVolume = CalculateVolume(curVolume, aaPos);
 
 		if(curVolumeVolume < smallestVolumeVolume)
 		{
@@ -1316,14 +1316,14 @@ FindLargestVolume(TIterator volumesBegin, TIterator volumesEnd, TAAPosVRT& aaPos
 
 //	Initializations
 	typename TIterator::value_type largestVolume = *volumesBegin;
-	number largestVolumeVolume = CalculateVolume(*largestVolume, aaPos);
+	number largestVolumeVolume = CalculateVolume(largestVolume, aaPos);
 	++volumesBegin;
 
 //	compare all tetrahedrons and find minimal volume
 	for(; volumesBegin != volumesEnd; ++volumesBegin)
 	{
 		Volume* curVolume = *volumesBegin;
-		number curVolumeVolume = CalculateVolume(*curVolume, aaPos);
+		number curVolumeVolume = CalculateVolume(curVolume, aaPos);
 
 		if(curVolumeVolume > largestVolumeVolume)
 		{

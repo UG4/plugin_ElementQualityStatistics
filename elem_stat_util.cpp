@@ -64,7 +64,7 @@ number CalculateSubsetVolume(MultiGrid& mg, int subsetIndex, MGSubsetHandler& sh
 			if(dgm->is_ghost(v))
 				continue;
 		#endif
-		subsetVolume += CalculateVolume(*v, aaPos);
+		subsetVolume += CalculateVolume(v, aaPos);
 	}
 
 	#ifdef UG_PARALLEL

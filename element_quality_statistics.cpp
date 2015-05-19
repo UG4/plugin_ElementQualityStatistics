@@ -311,9 +311,9 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc)
 																goc.volumes_end(i),
 																aaPos);
 			if(minVolume != NULL)
-				n_minVolume = CalculateVolume(*minVolume, aaPos);
+				n_minVolume = CalculateVolume(minVolume, aaPos);
 			if(maxVolume != NULL)
-				n_maxVolume = CalculateVolume(*maxVolume, aaPos);
+				n_maxVolume = CalculateVolume(maxVolume, aaPos);
 			if(minAngleVol != NULL)
 				n_minVolAngle = CalculateMinAngle(grid, minAngleVol, aaPos);
 			if(maxAngleVol != NULL)
