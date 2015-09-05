@@ -412,12 +412,14 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 
 
 //	Calculate and output standard deviation for tetrahedral/hexahedral angles
-	if(goc.num<Tetrahedron>(i) > 0 || goc.num<Hexahedron>(i) > 0)
+	if(goc.num<Tetrahedron>(i) > 0 || goc.num<Hexahedron>(i) > 0 || goc.num<Octahedron>(i) > 0)
 	{
 		number sd_tet = 0.0;
 		number sd_hex = 0.0;
+		number sd_oct = 0.0;
 		number mean_tet = 0.0;
 		number mean_hex = 0.0;
+		number mean_oct = 0.0;
 		number regVolDihedral = 90.0;
 
 		vector<number> vDihedralsOut;
@@ -429,7 +431,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 
 			if(vol->reference_object_id() == ROID_TETRAHEDRON)
 			{
-				regVolDihedral = 70.5288;
+				regVolDihedral = 70.52877937;
 				CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
 
 				for(size_t k = 0; k < vDihedralsOut.size(); ++k)
@@ -450,6 +452,18 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 					mean_hex += vDihedralsOut[k];
 				}
 			}
+
+			if(vol->reference_object_id() == ROID_OCTAHEDRON)
+			{
+				regVolDihedral = 109.4712206;
+				CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
+
+				for(size_t k = 0; k < vDihedralsOut.size(); ++k)
+				{
+					sd_oct += (regVolDihedral-vDihedralsOut[k])*(regVolDihedral-vDihedralsOut[k]);
+					mean_oct += vDihedralsOut[k];
+				}
+			}
 		}
 
 		if(goc.num<Tetrahedron>(i) > 0)
@@ -466,8 +480,15 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			mean_hex *= (1.0/(12*goc.num<Hexahedron>(i)));
 		}
 
+		if(goc.num<Octahedron>(i) > 0)
+		{
+			sd_oct *= (1.0/(12*goc.num<Octahedron>(i)));
+			sd_oct = sqrt(sd_oct);
+			mean_oct *= (1.0/(12*goc.num<Octahedron>(i)));
+		}
+
 		UG_LOG("(*) Standard deviation of dihedral angles to regular case" << endl);
-		UG_LOG("	(70.5288° for tetrahedrons, 90° for hexahedrons)" << endl);
+		UG_LOG("	(70.5288° for tetrahedrons, 90° for hexahedrons, 109.471° for Octahedrons)" << endl);
 		UG_LOG(endl);
 		UG_LOG("	Tetrahedrons (" << goc.num<Tetrahedron>(i) << "):" << endl);
 		if(goc.num<Tetrahedron>(i) > 0)
@@ -481,6 +502,13 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 		{
 			UG_LOG("		sd   = " << sd_hex << endl);
 			UG_LOG("		mean = " << mean_hex << endl);
+		}
+		UG_LOG(endl);
+		UG_LOG("	Octahedrons (" << goc.num<Octahedron>(i) << "):" << endl);
+		if(goc.num<Octahedron>(i) > 0)
+		{
+			UG_LOG("		sd   = " << sd_oct << endl);
+			UG_LOG("		mean = " << mean_oct << endl);
 		}
 		UG_LOG(endl);
 	}
