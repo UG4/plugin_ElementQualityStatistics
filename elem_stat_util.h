@@ -1069,7 +1069,7 @@ number CalculateAspectRatio(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
 
 	//	MINHEIGHT / MAXEDGELENGTH
 	// 	optimal Aspect Ratio of a regular tetrahedron
-	//	 Q = sqrt(2/3) * a / a = 0.81...
+	//	 Q =  a / a / sqrt(2/3) = 1.22...
 
 //	Calculate the aspect ratio
 	AspectRatio = CalculateTetrahedronAspectRatio(grid, tet, aaPos);
