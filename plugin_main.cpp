@@ -35,4 +35,12 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 						grp, "Subset surface area", "mg#subsetIndex#sh", "Returns subset surface area.");
 	reg->add_function(	"get_subset_volume", &ug::CalculateSubsetVolume,
 						grp, "Subset volume", "mg#subsetIndex#sh", "Returns subset volume.");
+
+//	Register AssignSubsetsByElementQuality
+	reg->add_function(	"AssignSubsetsByElementQuality",
+						(void (*)(ug::Grid&, ug::SubsetHandler& sh, int, int)) (&ug::AssignSubsetsByElementQuality),
+						grp, "", "grid#dim", "");
+	reg->add_function(	"AssignSubsetsByElementQuality",
+						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler& sh, int, int)) (&ug::AssignSubsetsByElementQuality),
+						grp, "", "mg#dim", "");
 }

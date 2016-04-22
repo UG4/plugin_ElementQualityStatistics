@@ -16,6 +16,137 @@ namespace ug
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	CreateElementQualityHistogram
+void CreateElementQualityHistogram(vector<int>& histOut, const std::vector<number>& vQualities, int numSections)
+{
+//	Determine min and max quality values and range
+	number minVal = numeric_limits<number>::max();
+	number maxVal = numeric_limits<number>::min();
+
+	for(size_t i = 0; i < vQualities.size(); ++i)
+	{
+		minVal = min(minVal, vQualities[i]);
+		maxVal = max(maxVal, vQualities[i]);
+	}
+
+	number range;
+	range = maxVal - minVal;
+
+	if(range <= 0)
+	{
+		histOut.resize(vQualities.size(), 0);
+		return;
+	}
+
+	histOut.resize(vQualities.size());
+
+//	Calculate correspondence of the i-th quality value to its adequate histogram section
+	for(size_t i = 0; i < vQualities.size(); ++i)
+	{
+		int section = (int)((number)numSections * (vQualities[i] - minVal) / range);
+
+		if(section < 0)
+			section = 0;
+
+		if(section >= numSections)
+			section = numSections - 1;
+
+		histOut[i] = section;
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	AssignSubsetsByElementQuality3d
+void AssignSubsetsByElementQuality3d(MultiGrid& grid, MGSubsetHandler& sh, int numSecs)
+{
+//	Position attachment management
+	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
+
+//	Management for VolumeAttachment aElemID
+	AInt aElemID;
+	grid.attach_to_volumes(aElemID);
+	Grid::VolumeAttachmentAccessor<AInt> aaElemID(grid, aElemID);
+
+//	Init vector for element qualities to be stored
+	std::vector<number> vQualities;
+
+	int numElems = 0;
+
+//	Calculate aspect ratio for every element and attach element id
+	for(VolumeIterator vIter = grid.begin<Tetrahedron>(); vIter != grid.end<Tetrahedron>(); ++vIter)
+	{
+		Tetrahedron* tet = static_cast<Tetrahedron*>(*vIter);
+		number q = CalculateAspectRatio(grid, tet, aaPos);
+		vQualities.push_back(q);
+
+		aaElemID[tet] = numElems;
+		numElems++;
+	}
+
+//	Create element quality histogram by specified number of sections
+	std::vector<int> hist;
+	CreateElementQualityHistogram(hist, vQualities, numSecs);
+
+//	Assign elements to subsets by their aspect ration and set subset name by quality
+	for(VolumeIterator vIter = grid.begin<Tetrahedron>(); vIter != grid.end<Tetrahedron>(); ++vIter)
+	{
+		Tetrahedron* tet = static_cast<Tetrahedron*>(*vIter);
+		sh.assign_subset(tet, hist[aaElemID[tet]]);
+
+		const char* siName = (std::to_string(vQualities[aaElemID[tet]])).c_str();
+		sh.set_subset_name(siName, hist[aaElemID[tet]]);
+	}
+
+//	Set color range for the assigned subsets and name subsets by their qualities
+	for(int i = 0; i < sh.num_subsets(); ++i)
+	{
+		number ia = 0;
+
+		if(sh.num_subsets() > 1)
+			ia = (number)i/ (number)(sh.num_subsets()-1);
+
+		number r = max<number>(0, -1 + 2 * ia);
+		number g = 1. - fabs(2 * (ia - 0.5));
+		number b = max<number>(0, 1. - 2 * ia);
+
+		SubsetInfo& si = sh.subset_info(i);
+
+		si.color.x() = r;
+		si.color.y() = g;
+		si.color.z() = b;
+		si.color.w() = 1.f;
+	}
+
+//	Detach VolumeAttachment from grid
+	grid.detach_from_volumes(aElemID);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	AssignSubsetsByElementQuality
+void AssignSubsetsByElementQuality(MultiGrid& mg, MGSubsetHandler& sh, int dim, int numSecs)
+{
+	if(dim == 2){}
+	else if(dim == 3)
+		AssignSubsetsByElementQuality3d(mg, sh, numSecs);
+	else
+		UG_THROW("Only dimensions 2 or 3 supported.");
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	AssignSubsetsByElementQuality
+void AssignSubsetsByElementQuality(Grid& grid, SubsetHandler& sh, int dim, int numSecs)
+{
+	if(dim == 2){}
+	else if(dim == 3){}
+	else
+		UG_THROW("Only dimensions 2 or 3 supported.");
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	ElementQualityStatistics
 ////////////////////////////////////////////////////////////////////////////////////////////
 
