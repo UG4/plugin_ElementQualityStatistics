@@ -6,8 +6,9 @@
  */
 
 
-#include "element_quality_statistics.h"
 #include "common/util/table.h"
+#include "common/util/stringify.h"
+#include "element_quality_statistics.h"
 #include "lib_grid/grid_objects/tetrahedron_rules.h"
 
 
@@ -94,7 +95,7 @@ void AssignSubsetsByElementQuality3d(MultiGrid& grid, MGSubsetHandler& sh, int n
 		Tetrahedron* tet = static_cast<Tetrahedron*>(*vIter);
 		sh.assign_subset(tet, hist[aaElemID[tet]]);
 
-		const char* siName = (std::to_string(vQualities[aaElemID[tet]])).c_str();
+		const char* siName = (mkstr(vQualities[aaElemID[tet]])).c_str();
 		sh.set_subset_name(siName, hist[aaElemID[tet]]);
 	}
 
