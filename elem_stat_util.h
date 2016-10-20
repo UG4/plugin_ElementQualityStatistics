@@ -220,53 +220,35 @@ number CalculateMinAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 	return minAngle;
 }
 
+//	INFO:
+//	For volume elements the minAngle corresponds to the smallest dihedral
+
 //	Tetrahedron
 template <class TAAPosVRT>
 number CalculateMinAngle(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
 {
-	return CalculateMinAngle(grid, static_cast<Volume*>(tet), aaPos);
+	return CalculateMinDihedral(grid, static_cast<Volume*>(tet), aaPos);
 }
 
 //	Prism
 template <class TAAPosVRT>
 number CalculateMinAngle(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
 {
-	return CalculateMinAngle(grid, static_cast<Volume*>(prism), aaPos);
+	return CalculateMinDihedral(grid, static_cast<Volume*>(prism), aaPos);
 }
 
 //	Pyramid
 template <class TAAPosVRT>
 number CalculateMinAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 {
-	return CalculateMinAngle(grid, static_cast<Volume*>(pyr), aaPos);
+	return CalculateMinDihedral(grid, static_cast<Volume*>(pyr), aaPos);
 }
 
-//	Volume (For volume elements the minimum of dihedral and edge angle will be returned.)
+//	Volume
 template <class TAAPosVRT>
-number CalculateMinAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
-
-//	CORRECT VERSION BUT IN COMBINATION WITH SIMULATION ONLY UNDER DEBUG
+number CalculateMinAngle(Grid& grid, Volume* vol, TAAPosVRT& aaPos)
 {
-	//PROFILE_FUNC();
-	number minDihedral;
-	number tmpMinEdgeAngle;
-	number minEdgeAngle = 360.0;
-
-//	Calculate the minimal dihedral
-	minDihedral = CalculateMinDihedral(grid, v, aaPos);
-
-//	Calculate the minimal edge angle
-	for(uint i = 0; i < v->num_faces(); ++i)
-	{
-		tmpMinEdgeAngle = CalculateMinAngle(grid, grid.get_face(v, i), aaPos);
-		if(tmpMinEdgeAngle < minEdgeAngle)
-		{
-			minEdgeAngle = tmpMinEdgeAngle;
-		}
-	}
-
-//	return the minimum of minimal dihedral and minimal edge angle
-	return min(minDihedral, minEdgeAngle);
+	return CalculateMinDihedral(grid, vol, aaPos);
 }
 
 
@@ -384,8 +366,8 @@ number CalculateMinDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 		//tmpAngle = acos(VecDot(vNorm1, vNorm2));
 
 		--> New version:
-			(s.	"Qualit�ts-Metriken und Optimierung von Tetraeder-Netzen",
-				 Seminararbeit von Johannes Ahlmann, Universit�t Karlsruhe)
+			(s.	"Qualitaets-Metriken und Optimierung von Tetraeder-Netzen",
+				 Seminararbeit von Johannes Ahlmann, Universitaet Karlsruhe)
 	*/
 
 		tmpAngle = acos(VecDot(vNorm1, vNorm2));
@@ -483,52 +465,35 @@ number CalculateMaxAngle(Grid& grid, Face* f, TAAPosVRT& aaPos)
 	return maxAngle;
 }
 
+//	INFO:
+//	For volume elements the maxAngle corresponds to the largest dihedral
+
 //	Tetrahedron
 template <class TAAPosVRT>
 number CalculateMaxAngle(Grid& grid, Tetrahedron* tet, TAAPosVRT& aaPos)
 {
-	return CalculateMaxAngle(grid, static_cast<Volume*>(tet), aaPos);
+	return CalculateMaxDihedral(grid, static_cast<Volume*>(tet), aaPos);
 }
 
 //	Prism
 template <class TAAPosVRT>
 number CalculateMaxAngle(Grid& grid, Prism* prism, TAAPosVRT& aaPos)
 {
-	return CalculateMaxAngle(grid, static_cast<Volume*>(prism), aaPos);
+	return CalculateMaxDihedral(grid, static_cast<Volume*>(prism), aaPos);
 }
 
 //	Pyramid
 template <class TAAPosVRT>
 number CalculateMaxAngle(Grid& grid, Pyramid* pyr, TAAPosVRT& aaPos)
 {
-	return CalculateMaxAngle(grid, static_cast<Volume*>(pyr), aaPos);
+	return CalculateMaxDihedral(grid, static_cast<Volume*>(pyr), aaPos);
 }
 
-//	Volume (For volume elements the maximum of dihedral and edge angle will be returned.)
+//	Volume
 template <class TAAPosVRT>
-number CalculateMaxAngle(Grid& grid, Volume* v, TAAPosVRT& aaPos)
+number CalculateMaxAngle(Grid& grid, Volume* vol, TAAPosVRT& aaPos)
 {
-	//PROFILE_FUNC();
-	number maxDihedral;
-	number tmpMaxEdgeAngle;
-	number maxEdgeAngle = 0.0;
-
-//	Calculate the maximal dihedral
-	maxDihedral = CalculateMaxDihedral(grid, v, aaPos);
-
-//	Calculate the maximal edge angle
-	for(uint i = 0; i < v->num_faces(); ++i)
-	{
-		tmpMaxEdgeAngle = CalculateMaxAngle(grid, grid.get_face(v, i), aaPos);
-
-		if(tmpMaxEdgeAngle > maxEdgeAngle)
-		{
-			maxEdgeAngle = tmpMaxEdgeAngle;
-		}
-	}
-
-//	return the maximum of maximal dihedral and maximal edge angle
-	return max(maxDihedral, maxEdgeAngle);
+	return CalculateMaxDihedral(grid, vol, aaPos);
 }
 
 
@@ -645,8 +610,8 @@ number CalculateMaxDihedral(Grid& grid, Volume* v, TAAPosVRT& aaPos)
 		//tmpAngle = acos(VecDot(vNorm1, vNorm2));
 
 		--> New version:
-			(s.	"Qualit�ts-Metriken und Optimierung von Tetraeder-Netzen",
-				 Seminararbeit von Johannes Ahlmann, Universit�t Karlsruhe)
+			(s.	"Qualitaets-Metriken und Optimierung von Tetraeder-Netzen",
+				 Seminararbeit von Johannes Ahlmann, Universitaet Karlsruhe)
 	*/
 
 		tmpAngle = acos(VecDot(vNorm1, vNorm2));
@@ -733,8 +698,8 @@ void CalculateVolumeDihedrals(vector<number>& vDihedralsOut, Grid& grid, Volume*
 		//tmpAngle = acos(VecDot(vNorm1, vNorm2));
 
 		--> New version:
-			(s.	"Qualit�ts-Metriken und Optimierung von Tetraeder-Netzen",
-				 Seminararbeit von Johannes Ahlmann, Universit�t Karlsruhe)
+			(s.	"Qualitaets-Metriken und Optimierung von Tetraeder-Netzen",
+				 Seminararbeit von Johannes Ahlmann, Universitaet Karlsruhe)
 	*/
 
 		tmpAngle = acos(VecDot(vNorm1, vNorm2));
@@ -1099,10 +1064,6 @@ number CalculateAspectRatio(Grid& grid, Volume* vol, TAAPosVRT& aaPos)
 }
 
 
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithSmallestMinAngle
 template <class TIterator, class TAAPosVRT>
@@ -1138,40 +1099,6 @@ FindElementWithSmallestMinAngle(Grid& grid, TIterator elementsBegin, TIterator e
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	FindVolumeWithSmallestMinDihedral
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindVolumeWithSmallestMinDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
-{
-	//PROFILE_FUNC();
-//	if volumesBegin equals volumesBegin, then the list is empty and we can
-//	immediately return NULL
-	if(elementsBegin == elementsEnd)
-		return NULL;
-
-//	Initializations
-	typename TIterator::value_type elementWithSmallestMinDihedral = *elementsBegin;
-	number smallestMinDihedral = CalculateMinDihedral(grid, elementWithSmallestMinDihedral, aaPos);
-	++elementsBegin;
-
-//	compare all volumes and find that one with smallest minAngle
-	for(; elementsBegin != elementsEnd; ++elementsBegin)
-	{
-		typename TIterator::value_type curElement = *elementsBegin;
-		number curSmallestMinDihedral = CalculateMinDihedral(grid, curElement, aaPos);
-
-		if(curSmallestMinDihedral < smallestMinDihedral)
-		{
-			elementWithSmallestMinDihedral = curElement;
-			smallestMinDihedral = curSmallestMinDihedral;
-		}
-	}
-
-	return elementWithSmallestMinDihedral;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
 //	FindElementWithLargestMaxAngle
 template <class TIterator, class TAAPosVRT>
 typename TIterator::value_type
@@ -1202,40 +1129,6 @@ FindElementWithLargestMaxAngle(Grid& grid, TIterator elementsBegin, TIterator el
 	}
 
 	return elementWithLargestMaxAngle;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	FindVolumeWithLargestMaxDihedral
-template <class TIterator, class TAAPosVRT>
-typename TIterator::value_type
-FindVolumeWithLargestMaxDihedral(Grid& grid, TIterator elementsBegin, TIterator elementsEnd, TAAPosVRT& aaPos)
-{
-	//PROFILE_FUNC();
-//	if volumesBegin equals volumesBegin, then the list is empty and we can
-//	immediately return NULL
-	if(elementsBegin == elementsEnd)
-		return NULL;
-
-//	Initializations
-	typename TIterator::value_type elementWithLargestMaxDihedral = *elementsBegin;
-	number largestMaxDihedral = CalculateMaxDihedral(grid, elementWithLargestMaxDihedral, aaPos);
-	++elementsBegin;
-
-//	compare all volumes and find that one with largest maxDihedral
-	for(; elementsBegin != elementsEnd; ++elementsBegin)
-	{
-		typename TIterator::value_type curElement = *elementsBegin;
-		number curLargestMaxDihedral = CalculateMaxDihedral(grid, curElement, aaPos);
-
-		if(curLargestMaxDihedral > largestMaxDihedral)
-		{
-			elementWithLargestMaxDihedral = curElement;
-			largestMaxDihedral = curLargestMaxDihedral;
-		}
-	}
-
-	return elementWithLargestMaxDihedral;
 }
 
 

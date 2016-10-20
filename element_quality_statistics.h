@@ -54,7 +54,7 @@ template <class TIterator, class TAAPosVRT>
 void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 									TIterator elementsEnd,
 									TAAPosVRT& aaPos,
-									uint stepSize)
+									size_t stepSize)
 {
 	//PROFILE_FUNC();
 //	Initialization
@@ -161,7 +161,7 @@ template <class TIterator, class TAAPosVRT>
 void MaxAngleHistogram(Grid& grid, 	TIterator elementsBegin,
                        TIterator elementsEnd,
                        TAAPosVRT& aaPos,
-                       uint stepSize)
+					   size_t stepSize)
 {
     //PROFILE_FUNC();
     //	Initialization
@@ -536,13 +536,14 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 //	Wrapper
+void ElementQualityStatistics(MultiGrid& mg, int dim, size_t angleHistStepSize);
 void ElementQualityStatistics(MultiGrid& mg, int dim);
-
+void ElementQualityStatistics(Grid& grid, int dim, size_t angleHistStepSize);
 void ElementQualityStatistics(Grid& grid, int dim);
 
 //	Actual procedures
-void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc);
-void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc);
+void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, size_t angleHistStepSize = 10.0);
+void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, size_t angleHistStepSize = 10.0);
 
 
 }	 
