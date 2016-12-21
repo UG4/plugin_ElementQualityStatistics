@@ -719,32 +719,28 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 				ofstream ofstr;
 				std::stringstream ss;
 				ss << "volMinAngles_lvl_" << i << ".csv";
-				std::string s = ss.str();
-				ofstr.open(s);
+				ofstr.open(ss.str().c_str());
 				ofstr << volMinAngleTable.to_csv(";");
 				ofstr.close();
 
 				ofstr.clear();
 				ss.str("");
 				ss << "volMaxAngles_lvl_" << i << ".csv";
-				s = ss.str();
-				ofstr.open(s);
+				ofstr.open(ss.str().c_str());
 				ofstr << volMaxAngleTable.to_csv(";");
 				ofstr.close();
 
 				ofstr.clear();
 				ss.str("");
 				ss << "volAspectRatios_lvl_" << i << ".csv";
-				s = ss.str();
-				ofstr.open(s);
+				ofstr.open(ss.str().c_str());
 				ofstr << volAspectRatioTable.to_csv(";");
 				ofstr.close();
 
 				ofstr.clear();
 				ss.str("");
 				ss << "volToRMSFaceAreaRatios_lvl_" << i << ".csv";
-				s = ss.str();
-				ofstr.open(s);
+				ofstr.open(ss.str().c_str());
 				ofstr << volToRMSFaceAreaRatioTable.to_csv(";");
 				ofstr.close();
 			}
