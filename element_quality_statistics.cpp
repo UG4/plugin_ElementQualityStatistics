@@ -366,6 +366,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	number n_maxVolAngle = std::numeric_limits<double>::min();
 	number n_minTetAspectRatio = std::numeric_limits<double>::max();
 	number n_maxTetAspectRatio = std::numeric_limits<double>::min();
+	number n_minTetVolToRMSFaceAreaRatio = std::numeric_limits<double>::max();
+	number n_maxTetVolToRMSFaceAreaRatio = std::numeric_limits<double>::min();
 
 
 //	Elements
@@ -384,6 +386,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	Volume* maxAngleVol;
 	Tetrahedron* minAspectRatioTet;
 	Tetrahedron* maxAspectRatioTet;
+	Tetrahedron* minVolToRMSFaceAreaRatioTet;
+	Tetrahedron* maxVolToRMSFaceAreaRatioTet;
 
 
 //	Basic grid properties on level i
@@ -569,10 +573,24 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 																		goc.begin<Tetrahedron>(i),
 																		goc.end<Tetrahedron>(i),
 																		aaPos);
+
+				minVolToRMSFaceAreaRatioTet = FindElementWithSmallestVolToRMSFaceAreaRatio(grid,
+																		goc.begin<Tetrahedron>(i),
+																		goc.end<Tetrahedron>(i),
+																		aaPos);
+				maxVolToRMSFaceAreaRatioTet = FindElementWithLargestVolToRMSFaceAreaRatio(grid,
+																		goc.begin<Tetrahedron>(i),
+																		goc.end<Tetrahedron>(i),
+																		aaPos);
+
 				if(minAspectRatioTet != NULL)
 					n_minTetAspectRatio = CalculateAspectRatio(grid, minAspectRatioTet, aaPos);
 				if(maxAspectRatioTet != NULL)
 					n_maxTetAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTet, aaPos);
+				if(minVolToRMSFaceAreaRatioTet != NULL)
+					n_minTetVolToRMSFaceAreaRatio = CalculateVolToRMSFaceAreaRatio(grid, minVolToRMSFaceAreaRatioTet, aaPos);
+				if(maxVolToRMSFaceAreaRatioTet != NULL)
+					n_maxTetVolToRMSFaceAreaRatio = CalculateVolToRMSFaceAreaRatio(grid, maxVolToRMSFaceAreaRatioTet, aaPos);
 			}
 		}
 
@@ -596,6 +614,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 				n_maxVolAngle = pc.allreduce(n_maxVolAngle, PCL_RO_MAX);
 				n_minTetAspectRatio = pc.allreduce(n_minTetAspectRatio, PCL_RO_MIN);
 				n_maxTetAspectRatio = pc.allreduce(n_maxTetAspectRatio, PCL_RO_MAX);
+				n_minTetVolToRMSFaceAreaRatio = pc.allreduce(n_minTetVolToRMSFaceAreaRatio, PCL_RO_MIN);
+				n_maxTetVolToRMSFaceAreaRatio = pc.allreduce(n_maxTetVolToRMSFaceAreaRatio, PCL_RO_MIN);
 			}
 		#endif
 
@@ -633,8 +653,10 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 
 			if(goc.num<Tetrahedron>(i) > 0)
 			{
-				table(10, 0) << "Smallest tetrahedron AR";	table(10, 1) << n_minTetAspectRatio;
-				table(10, 2) << "Largest tetrahedron AR";	table(10, 3) << n_maxTetAspectRatio;
+				table(10, 0) << "Smallest tet AR";	table(10, 1) << n_minTetAspectRatio;
+				table(10, 2) << "Largest tet AR";	table(10, 3) << n_maxTetAspectRatio;
+				table(11, 0) << "Smallest tet Vol/FaceAreaRatio";	table(11, 1) << n_minTetVolToRMSFaceAreaRatio;
+				table(11, 2) << "Largest tet Vol/FaceAreaRatio";	table(11, 3) << n_maxTetVolToRMSFaceAreaRatio;
 			}
 		}
 
@@ -697,28 +719,32 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 				ofstream ofstr;
 				std::stringstream ss;
 				ss << "volMinAngles_lvl_" << i << ".csv";
-				ofstr.open(ss.str());
+				std::string s = ss.str();
+				ofstr.open(s);
 				ofstr << volMinAngleTable.to_csv(";");
 				ofstr.close();
 
 				ofstr.clear();
 				ss.str("");
 				ss << "volMaxAngles_lvl_" << i << ".csv";
-				ofstr.open(ss.str());
+				s = ss.str();
+				ofstr.open(s);
 				ofstr << volMaxAngleTable.to_csv(";");
 				ofstr.close();
 
 				ofstr.clear();
 				ss.str("");
 				ss << "volAspectRatios_lvl_" << i << ".csv";
-				ofstr.open(ss.str());
+				s = ss.str();
+				ofstr.open(s);
 				ofstr << volAspectRatioTable.to_csv(";");
 				ofstr.close();
 
 				ofstr.clear();
 				ss.str("");
 				ss << "volToRMSFaceAreaRatios_lvl_" << i << ".csv";
-				ofstr.open(ss.str());
+				s = ss.str();
+				ofstr.open(s);
 				ofstr << volToRMSFaceAreaRatioTable.to_csv(";");
 				ofstr.close();
 			}

@@ -1369,5 +1369,77 @@ FindElementWithLargestAspectRatio(Grid& grid,  	TIterator elemsBegin,
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindElementWithSmallestVolToRMSFaceAreaRatio
+template <class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindElementWithSmallestVolToRMSFaceAreaRatio(Grid& grid, TIterator elemsBegin,
+											 TIterator elemsEnd, TAAPosVRT& aaPos)
+{
+	//PROFILE_FUNC();
+//	if volumesBegin equals volumesBegin, then the list is empty and we can
+//	immediately return NULL
+	if(elemsBegin == elemsEnd)
+		return NULL;
+
+//	Initializations
+	typename TIterator::value_type elementWithSmallestRatio = *elemsBegin;
+	number smallestRatio = CalculateVolToRMSFaceAreaRatio(grid, elementWithSmallestRatio, aaPos);
+	++elemsBegin;
+
+//	compare all tetrahedrons and find that one with minimal aspect ratio
+	for(; elemsBegin != elemsEnd; ++elemsBegin)
+	{
+		typename TIterator::value_type curElement = *elemsBegin;
+		//TElem* curElement = *elemsBegin;
+		number curSmallestRatio = CalculateVolToRMSFaceAreaRatio(grid, curElement, aaPos);
+
+		if(curSmallestRatio < smallestRatio)
+		{
+			elementWithSmallestRatio = curElement;
+			smallestRatio = curSmallestRatio;
+		}
+	}
+
+	return elementWithSmallestRatio;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindElementWithLargestVolToRMSFaceAreaRatio
+template <class TIterator, class TAAPosVRT>
+typename TIterator::value_type
+FindElementWithLargestVolToRMSFaceAreaRatio(Grid& grid, TIterator elemsBegin,
+											TIterator elemsEnd, TAAPosVRT& aaPos)
+{
+	//PROFILE_FUNC();
+//	if volumesBegin equals volumesBegin, then the list is empty and we can
+//	immediately return NULL
+	if(elemsBegin == elemsEnd)
+		return NULL;
+
+//	Initializations
+	typename TIterator::value_type elementWithLargestRatio = *elemsBegin;
+	number largestRatio = CalculateVolToRMSFaceAreaRatio(grid, elementWithLargestRatio, aaPos);
+	++elemsBegin;
+
+//	compare all tetrahedrons and find that one with maximal aspect ratio
+	for(; elemsBegin != elemsEnd; ++elemsBegin)
+	{
+		typename TIterator::value_type curElement = *elemsBegin;
+		//TElem* curElement = *elemsBegin;
+		number curSmallestRatio = CalculateVolToRMSFaceAreaRatio(grid, curElement, aaPos);
+
+		if(curSmallestRatio > largestRatio)
+		{
+			elementWithLargestRatio = curElement;
+			largestRatio = curSmallestRatio;
+		}
+	}
+
+	return elementWithLargestRatio;
+}
+
+
 }	 
 #endif
