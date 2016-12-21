@@ -152,12 +152,12 @@ void AssignSubsetsByElementQuality(Grid& grid, SubsetHandler& sh, int dim, int n
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 //	Wrapper for multigrids
-void ElementQualityStatistics(MultiGrid& mg, int dim, size_t angleHistStepSize)
+void ElementQualityStatistics(MultiGrid& mg, int dim, number angleHistStepSize, number aspectRatioHistStepSize, bool bWriteHistograms)
 {
 	if(dim == 2)
-		ElementQualityStatistics2d(mg, mg.get_grid_objects(), angleHistStepSize);
+		ElementQualityStatistics2d(mg, mg.get_grid_objects(), angleHistStepSize, aspectRatioHistStepSize, bWriteHistograms);
 	else if(dim == 3)
-		ElementQualityStatistics3d(mg, mg.get_grid_objects(), angleHistStepSize);
+		ElementQualityStatistics3d(mg, mg.get_grid_objects(), angleHistStepSize, aspectRatioHistStepSize, bWriteHistograms);
 	else
 		UG_THROW("Only dimensions 2 or 3 supported.");
 }
@@ -173,12 +173,12 @@ void ElementQualityStatistics(MultiGrid& mg, int dim)
 }
 
 //	Wrapper for grids
-void ElementQualityStatistics(Grid& grid, int dim, size_t angleHistStepSize)
+void ElementQualityStatistics(Grid& grid, int dim, number angleHistStepSize, number aspectRatioHistStepSize, bool bWriteHistograms)
 {
 	if(dim == 2)
-		ElementQualityStatistics2d(grid, grid.get_grid_objects(), angleHistStepSize);
+		ElementQualityStatistics2d(grid, grid.get_grid_objects(), angleHistStepSize, aspectRatioHistStepSize, bWriteHistograms);
 	else if(dim == 3)
-		ElementQualityStatistics3d(grid, grid.get_grid_objects(), angleHistStepSize);
+		ElementQualityStatistics3d(grid, grid.get_grid_objects(), angleHistStepSize, aspectRatioHistStepSize, bWriteHistograms);
 	else
 		UG_THROW("Only dimensions 2 or 3 supported.");
 }
@@ -194,7 +194,7 @@ void ElementQualityStatistics(Grid& grid, int dim)
 }
 
 //	Actual procedures
-void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, size_t angleHistStepSize)
+void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, number angleHistStepSize, number aspectRatioHistStepSize, bool bWriteHistograms)
 {
 	//PROFILE_FUNC();
 	Grid::VertexAttachmentAccessor<APosition2> aaPos(grid, aPosition2);
@@ -313,40 +313,59 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, size_t ang
 
 
 		//PROFILE_BEGIN(eqs_minAngleHistogram);
-		MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, angleHistStepSize);
-		MaxAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, angleHistStepSize);
+	//	TODO:
+		//MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, angleHistStepSize, i);
+		//MaxAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, angleHistStepSize, i);
 		//PROFILE_END();
 
 		UG_LOG(endl);
-
 		PrintAngleStatistics2d(grid, goc, i, aaPos);
 	}
 
 	UG_LOG(endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl << endl);
 }
 
-void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, size_t angleHistStepSize)
+void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number angleHistStepSize, number aspectRatioHistStepSize, bool bWriteHistograms)
 {
 	//PROFILE_FUNC();
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
+	DistributedGridManager* dgm = grid.distributed_grid_manager();
 
+//	Output
+	vector<number> volMinAngles;
+	vector<number> volMaxAngles;
+	vector<number> volAspectRatios;
+	vector<number> volToRMSFaceAreaRatios;
+	vector<number> faceMinAngles;
+	vector<number> faceMaxAngles;
+
+	//ug::Table<std::stringstream> volMinAngleTable(numRanges, 2);
+	ug::Table<std::stringstream> volMinAngleTable;
+	ug::Table<std::stringstream> volMaxAngleTable;
+	ug::Table<std::stringstream> volAspectRatioTable;
+	ug::Table<std::stringstream> volToRMSFaceAreaRatioTable;
 
 //	Numbers
-	number n_minEdge = 0.0;
-	number n_maxEdge = 0.0;
-	number n_minFace;
-	number n_maxFace;
-	number n_minFaceAngle = 0.0;
-	number n_maxFaceAngle = 0.0;
-	number n_minTriAspectRatio = 0.0;
-	number n_maxTriAspectRatio = 0.0;
+	size_t numVertices = 0;
+	size_t numEdges = 0;
+	size_t numFaces = 0;
+	size_t numVolumes = 0;
 
-	number n_minVolume = 0.0;
-	number n_maxVolume = 0.0;
-	number n_minVolAngle = 0.0;
-	number n_maxVolAngle = 0.0;
-	number n_minTetAspectRatio = 0.0;
-	number n_maxTetAspectRatio = 0.0;
+	number n_minEdge = std::numeric_limits<double>::max();
+	number n_maxEdge = std::numeric_limits<double>::min();
+	number n_minFace = std::numeric_limits<double>::max();
+	number n_maxFace = std::numeric_limits<double>::min();
+	number n_minFaceAngle = std::numeric_limits<double>::max();
+	number n_maxFaceAngle = std::numeric_limits<double>::min();
+	number n_minTriAspectRatio = std::numeric_limits<double>::max();
+	number n_maxTriAspectRatio = std::numeric_limits<double>::min();
+
+	number n_minVolume = std::numeric_limits<double>::max();
+	number n_maxVolume = std::numeric_limits<double>::min();
+	number n_minVolAngle = std::numeric_limits<double>::max();
+	number n_maxVolAngle = std::numeric_limits<double>::min();
+	number n_minTetAspectRatio = std::numeric_limits<double>::max();
+	number n_maxTetAspectRatio = std::numeric_limits<double>::min();
 
 
 //	Elements
@@ -378,16 +397,96 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, size_t ang
 	for(uint i = 0; i < goc.num_levels(); ++i)
 	{
 		//PROFILE_BEGIN(eqs_qualityStatistics2d);
+
+	//	--------------------
+	//	Number of elements
+	//	--------------------
+		numVertices = 0;
+		numEdges = 0;
+		numFaces = 0;
+		numVolumes = 0;
+
+		for(VertexIterator vrtIter = goc.begin<Vertex>(i); vrtIter != goc.end<Vertex>(i); ++vrtIter)
+		{
+			Vertex* vrt = *vrtIter;
+
+			#ifdef UG_PARALLEL
+			//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+			//	since they have a copy on another process and
+			//	since we already consider that copy...
+				if(dgm->is_ghost(vrt) || dgm->contains_status(vrt, ES_H_SLAVE))
+					continue;
+			#endif
+
+			numVertices++;
+		}
+
+		for(EdgeIterator eIter = goc.begin<Edge>(i); eIter != goc.end<Edge>(i); ++eIter)
+		{
+			Edge* e = *eIter;
+
+			#ifdef UG_PARALLEL
+			//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+			//	since they have a copy on another process and
+			//	since we already consider that copy...
+				if(dgm->is_ghost(e) || dgm->contains_status(e, ES_H_SLAVE))
+					continue;
+			#endif
+
+			numEdges++;
+		}
+
+		for(FaceIterator fIter = goc.begin<Face>(i); fIter != goc.end<Face>(i); ++fIter)
+		{
+			Face* f = *fIter;
+
+			#ifdef UG_PARALLEL
+			//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+			//	since they have a copy on another process and
+			//	since we already consider that copy...
+				if(dgm->is_ghost(f) || dgm->contains_status(f, ES_H_SLAVE))
+					continue;
+			#endif
+
+			numFaces++;
+		}
+
+		for(VolumeIterator vIter = goc.begin<Volume>(i); vIter != goc.end<Volume>(i); ++vIter)
+		{
+			Volume* v = *vIter;
+
+			#ifdef UG_PARALLEL
+			//	ghosts (vertical slaves) have to be ignored,
+			//	since they have a copy on another process and
+			//	since we already consider that copy...
+				if(dgm->is_ghost(v))
+					continue;
+			#endif
+
+			numVolumes++;
+		}
+
+		#ifdef UG_PARALLEL
+			if(pcl::NumProcs() > 1){
+			//	sum the numbers of all involved processes. Since we ignored ghosts,
+			//	each process contributes the numbers of a unique part of the grid.
+				pcl::ProcessCommunicator pc;
+				numVertices = pc.allreduce(numVertices, PCL_RO_SUM);
+				numEdges = pc.allreduce(numEdges, PCL_RO_SUM);
+				numFaces = pc.allreduce(numFaces, PCL_RO_SUM);
+				numVolumes = pc.allreduce(numVolumes, PCL_RO_SUM);
+			}
+		#endif
+
 	//	----------
 	//	2D section
 	//	----------
 		minEdge = FindShortestEdge(goc.begin<Edge>(i), goc.end<Edge>(i), aaPos);
 		maxEdge = FindLongestEdge(goc.begin<Edge>(i), goc.end<Edge>(i), aaPos);
-		if(goc.num_volumes(i) == 0)
-		{
-			minFace = FindSmallestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
-			maxFace = FindLargestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
-		}
+
+		minFace = FindSmallestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
+		maxFace = FindLargestFace(goc.begin<Face>(i), goc.end<Face>(i), aaPos);
+
 		minAngleFace = FindElementWithSmallestMinAngle(	grid,
 														goc.begin<Face>(i),
 														goc.end<Face>(i),
@@ -477,12 +576,35 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, size_t ang
 			}
 		}
 
+		#ifdef UG_PARALLEL
+			if(pcl::NumProcs() > 1){
+			//	sum the numbers of all involved processes. Since we ignored ghosts,
+			//	each process contributes the numbers of a unique part of the grid.
+				pcl::ProcessCommunicator pc;
+				n_minEdge = pc.allreduce(n_minEdge, PCL_RO_MIN);
+				n_maxEdge = pc.allreduce(n_maxEdge, PCL_RO_MAX);
+				n_minFace = pc.allreduce(n_minFace, PCL_RO_MIN);
+				n_maxFace = pc.allreduce(n_maxFace, PCL_RO_MAX);
+				n_minFaceAngle = pc.allreduce(n_minFaceAngle, PCL_RO_MIN);
+				n_maxFaceAngle = pc.allreduce(n_maxFaceAngle, PCL_RO_MAX);
+				n_minTriAspectRatio = pc.allreduce(n_minTriAspectRatio, PCL_RO_MIN);
+				n_maxTriAspectRatio = pc.allreduce(n_maxTriAspectRatio, PCL_RO_MAX);
+
+				n_minVolume = pc.allreduce(n_minVolume, PCL_RO_MIN);
+				n_maxVolume = pc.allreduce(n_maxVolume, PCL_RO_MAX);
+				n_minVolAngle = pc.allreduce(n_minVolAngle, PCL_RO_MIN);
+				n_maxVolAngle = pc.allreduce(n_maxVolAngle, PCL_RO_MAX);
+				n_minTetAspectRatio = pc.allreduce(n_minTetAspectRatio, PCL_RO_MIN);
+				n_maxTetAspectRatio = pc.allreduce(n_maxTetAspectRatio, PCL_RO_MAX);
+			}
+		#endif
+
 		//PROFILE_BEGIN(eqs_qualityStatisticsOutput);
 	//	Table summary
 		ug::Table<std::stringstream> table(11, 4);
-		table(0, 0) << "Number of volumes"; 	table(0, 1) << goc.num_volumes(i);
-		table(1, 0) << "Number of faces"; 		table(1, 1) << goc.num_faces(i);
-		table(2, 0) << "Number of vertices";	table(2, 1) << goc.num_vertices(i);
+		table(0, 0) << "Number of volumes"; 	table(0, 1) << numVolumes;
+		table(1, 0) << "Number of faces"; 		table(1, 1) << numFaces;
+		table(2, 0) << "Number of vertices";	table(2, 1) << numVertices;
 
 		table(3, 0) << " "; table(3, 1) << " ";
 		table(3, 2) << " "; table(3, 3) << " ";
@@ -499,11 +621,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, size_t ang
 			table(6, 2) << "Largest triangle AR"; table(6, 3) << n_maxTriAspectRatio;
 		}
 
-		if(goc.num_volumes(i) == 0)
-		{
-			table(7, 0) << "Smallest face";	table(7, 1) << n_minFace;
-			table(7, 2) << "Largest face";	table(7, 3) << n_maxFace;
-		}
+		table(7, 0) << "Smallest face";	table(7, 1) << n_minFace;
+		table(7, 2) << "Largest face";	table(7, 3) << n_maxFace;
 
 		if(goc.num_volumes(i) > 0)
 		{
@@ -529,18 +648,83 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, size_t ang
 		//PROFILE_BEGIN(eqs_minAngleHistogram);
 		if(goc.num_volumes(i) > 0)
 		{
-			MinAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, angleHistStepSize);
-			MaxAngleHistogram(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, angleHistStepSize);
+			volMinAngles.clear();
+			volMaxAngles.clear();
+			volAspectRatios.clear();
+			volToRMSFaceAreaRatios.clear();
+
+			CollectMinAngles(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, volMinAngles);
+			CollectMaxAngles(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, volMaxAngles);
+			CollectAspectRatios(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, volAspectRatios);
+			CollectVolToRMSFaceAreaRatios(grid, goc.begin<Volume>(i), goc.end<Volume>(i), aaPos, volToRMSFaceAreaRatios);
 		}
 		else
 		{
-			MinAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, angleHistStepSize);
-			MaxAngleHistogram(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, angleHistStepSize);
+		//	TODO:
+//			CollectMinAngles(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, faceMinAngles);
+//			CollectMaxAngles(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, faceMaxAngles);
+//			CollectAspectRatios(grid, goc.begin<Face>(i), goc.end<Face>(i), aaPos, faceAspectRatios);
 		}
 		//PROFILE_END();
 
+		UG_LOG(endl << "(*) MinAngle-Histogram for '" << "3d' elements");
 		UG_LOG(endl);
+		volMinAngleTable.clear();
+		PrintAngleHistogram(volMinAngles, angleHistStepSize, volMinAngleTable);
 
+		UG_LOG(endl << "(*) MaxAngle-Histogram for '" << "3d' elements");
+		UG_LOG(endl);
+		volMaxAngleTable.clear();
+		PrintAngleHistogram(volMaxAngles, angleHistStepSize, volMaxAngleTable);
+
+		UG_LOG(endl << "(*) AspectRatio-Histogram for '" << "3d' elements");
+		UG_LOG(endl);
+		volAspectRatioTable.clear();
+		PrintAspectRatioHistogram(volAspectRatios, aspectRatioHistStepSize, volAspectRatioTable);
+
+		UG_LOG(endl << "(*) VolToRMSFaceAreaRatioHistogram-Histogram for '" << "3d' elements");
+		UG_LOG(endl);
+		volToRMSFaceAreaRatioTable.clear();
+		PrintAspectRatioHistogram(volToRMSFaceAreaRatios, aspectRatioHistStepSize, volToRMSFaceAreaRatioTable);
+
+	//	----------------------------------------
+	//	Histogram table file output section
+	//	----------------------------------------
+		if(bWriteHistograms)
+		{
+			if(pcl::ProcRank() == 0)
+			{
+				ofstream ofstr;
+				std::stringstream ss;
+				ss << "volMinAngles_lvl_" << i << ".csv";
+				ofstr.open(ss.str());
+				ofstr << volMinAngleTable.to_csv(";");
+				ofstr.close();
+
+				ofstr.clear();
+				ss.str("");
+				ss << "volMaxAngles_lvl_" << i << ".csv";
+				ofstr.open(ss.str());
+				ofstr << volMaxAngleTable.to_csv(";");
+				ofstr.close();
+
+				ofstr.clear();
+				ss.str("");
+				ss << "volAspectRatios_lvl_" << i << ".csv";
+				ofstr.open(ss.str());
+				ofstr << volAspectRatioTable.to_csv(";");
+				ofstr.close();
+
+				ofstr.clear();
+				ss.str("");
+				ss << "volToRMSFaceAreaRatios_lvl_" << i << ".csv";
+				ofstr.open(ss.str());
+				ofstr << volToRMSFaceAreaRatioTable.to_csv(";");
+				ofstr.close();
+			}
+		}
+
+		UG_LOG(endl);
 		PrintAngleStatistics3d(grid, goc, i, aaPos);
 	}
 
@@ -548,10 +732,261 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, size_t ang
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////////////
+//	PrintHistograms
+////////////////////////////////////////////////////////////////////////////////////////////
+void PrintAngleHistogram(vector<number>& locAngles, number stepSize, ug::Table<std::stringstream>& outTable)
+{
+	vector<number> angles;
+
+	#ifdef UG_PARALLEL
+	//	propagate to all processes
+		pcl::ProcessCommunicator pc;
+		pc.allgatherv(angles, locAngles);
+	#else
+		angles = locAngles;
+	#endif
+
+//	Sort the calculated angles in an ascending way
+	sort (angles.begin(), angles.end());
+
+//	Evaluate the minimal and maximal degree rounding to 10
+	int minDeg = round(number(angles.front()) / 10.0) * 10;
+	int maxDeg = round(number(angles.back()) / 10.0) * 10;
+
+//	Expand minDeg and maxDeg by plus minus 10 degrees or at least to 0 or 180 degrees
+	if((minDeg-10) > 0)
+		minDeg = minDeg - 10;
+	else
+		minDeg = 0;
+
+	if((maxDeg+10) < 180)
+		maxDeg = maxDeg + 10;
+	else
+		maxDeg = 180;
+
+//	Evaluate the number of ranges in respect to the specified step size
+	uint numRanges = floor((maxDeg-minDeg) / stepSize);
+	vector<uint> counter(numRanges, 0);
+
+//	Count the elements in their corresponding minAngle range
+	for(uint i = 0; i < angles.size(); ++i)
+	{
+		number angle = angles[i];
+		for (uint range = 0; range < numRanges; range++)
+		{
+			if (angle < minDeg + (range+1)*stepSize)
+			{
+				++counter[range];
+				break;
+			}
+		}
+	}
+
+//	----------------------------------------
+//	Histogram table output section: (THIRDS)
+//	----------------------------------------
+
+//	Divide the output table into three thirds (columnwise)
+	uint numRows = ceil(number(numRanges) / 3.0);
+
+//	Create table object
+	ug::Table<std::stringstream> angleTable(numRows, 6);
+
+//	First third
+	uint i = 0;
+	for(; i < numRows; ++i)
+	{
+		angleTable(i, 0) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
+		angleTable(i, 1) << counter[i];
+	}
+
+//	Second third
+//	Check, if second third of table is needed
+	if(i < counter.size())
+	{
+		for(; i < 2*numRows; ++i)
+		{
+			angleTable(i-numRows, 2) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
+			angleTable(i-numRows, 3) << counter[i];
+		}
+	}
+
+//	Third third
+	if(i < counter.size())
+//	Check, if third third of table is needed
+	{
+		for(; i < numRanges; ++i)
+		{
+			angleTable(i-2*numRows, 4) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
+			angleTable(i-2*numRows, 5) << counter[i];
+		}
+	}
+
+//	Output table
+	UG_LOG(endl << angleTable);
 
 
+//	----------------------------------------
+//	Histogram table file output section
+//	----------------------------------------
+	numRanges = floor(180.0/stepSize);
+	counter.clear();
+	counter.resize(numRanges, 0.0);
+	int numElems = 0;
+
+//	Count the elements in their corresponding minAngle range
+	for(uint i = 0; i < angles.size(); ++i)
+	{
+		number angle = angles[i];
+		for (uint range = 0; range < numRanges; range++)
+		{
+			if (angle < (range+1)*stepSize)
+			{
+				++counter[range];
+				++numElems;
+				break;
+			}
+		}
+	}
+
+	outTable.add_rows(numRanges);
+	outTable.add_cols(2);
+
+	for(uint i = 0; i < numRanges; ++i)
+	{
+		outTable(i, 0) << i*stepSize << " - " << (i+1)*stepSize;
+		outTable(i, 1) << 100.0/numElems*counter[i];
+	}
+}
+
+
+void PrintAspectRatioHistogram(vector<number>& locAspectRatios, number stepSize, ug::Table<std::stringstream>& outTable)
+{
+	vector<number> aspectRatios;
+
+	#ifdef UG_PARALLEL
+	//	propagate to all processes
+		pcl::ProcessCommunicator pc;
+		pc.allgatherv(aspectRatios, locAspectRatios);
+	#else
+		aspectRatios = locAspectRatios;
+	#endif
+
+//	Sort the calculated aspectRatios in an ascending way
+	sort (aspectRatios.begin(), aspectRatios.end());
+
+//	Evaluate the minimal and maximal aspectRatio rounding to 0.01
+	number minAspectRatio = round(number(aspectRatios.front()) * 10.0) / 10.0;
+	number maxAspectRatio = round(number(aspectRatios.back()) * 10.0) / 10.0;
+
+//	Expand minAspectRatio and maxAspectRatio by plus minus 0.1 or at least to 0 or 1.0
+	if((minAspectRatio-0.1) > 0)
+		minAspectRatio = minAspectRatio - 0.1;
+	else
+		minAspectRatio = 0;
+
+	if((maxAspectRatio+0.1) < 1.0)
+		maxAspectRatio = maxAspectRatio + 0.1;
+	else
+		maxAspectRatio = 1.0;
+
+//	Evaluate the number of ranges in respect to the specified step size
+	uint numRanges = round((maxAspectRatio-minAspectRatio) / stepSize);
+	vector<uint> counter(numRanges, 0);
+
+//	Count the elements in their corresponding aspectRatio range
+	for(uint i = 0; i < aspectRatios.size(); ++i)
+	{
+		number aspectRatio = aspectRatios[i];
+		for (uint range = 0; range < numRanges; range++)
+		{
+			if (aspectRatio < minAspectRatio + (range+1)*stepSize)
+			{
+				++counter[range];
+				break;
+			}
+		}
+	}
+
+//	----------------------------------------
+//	Histogram table output section: (THIRDS)
+//	----------------------------------------
+
+//	Divide the output table into three thirds (columnwise)
+	uint numRows = ceil(number(numRanges) / 3.0);
+
+//	Create table object
+	ug::Table<std::stringstream> aspectRatioTable(numRows, 6);
+
+//	First third
+	uint i = 0;
+	for(; i < numRows; ++i)
+	{
+		aspectRatioTable(i, 0) << minAspectRatio + i*stepSize << " - " << minAspectRatio + (i+1)*stepSize << " : ";
+		aspectRatioTable(i, 1) << counter[i];
+	}
+
+//	Second third
+//	Check, if second third of table is needed
+	if(i < counter.size())
+	{
+		for(; i < 2*numRows; ++i)
+		{
+			aspectRatioTable(i-numRows, 2) << minAspectRatio + i*stepSize << " - " << minAspectRatio + (i+1)*stepSize << " : ";
+			aspectRatioTable(i-numRows, 3) << counter[i];
+		}
+	}
+
+//	Third third
+	if(i < counter.size())
+//	Check, if third third of table is needed
+	{
+		for(; i < numRanges; ++i)
+		{
+			aspectRatioTable(i-2*numRows, 4) << minAspectRatio + i*stepSize << " - " << minAspectRatio + (i+1)*stepSize << " : ";
+			aspectRatioTable(i-2*numRows, 5) << counter[i];
+		}
+	}
+
+//	Output table
+	UG_LOG(endl << aspectRatioTable);
+
+
+//	----------------------------------------
+//	Histogram table file output section
+//	----------------------------------------
+	numRanges = floor(1.0/stepSize);
+	counter.clear();
+	counter.resize(numRanges, 0.0);
+	int numElems = 0;
+
+//	Count the elements in their corresponding aspectRatio range
+	for(uint i = 0; i < aspectRatios.size(); ++i)
+	{
+		number aspectRatio = aspectRatios[i];
+		for (uint range = 0; range < numRanges; range++)
+		{
+			if (aspectRatio < (range+1)*stepSize)
+			{
+				++counter[range];
+				++numElems;
+				break;
+			}
+		}
+	}
+
+	outTable.add_rows(numRanges);
+	outTable.add_cols(2);
+
+	for(uint i = 0; i < numRanges; ++i)
+	{
+		outTable(i, 0) << i*stepSize << " - " << (i+1)*stepSize;
+		outTable(i, 1) << 100.0/numElems*counter[i];
+	}
 }
 
 
 
 
+}

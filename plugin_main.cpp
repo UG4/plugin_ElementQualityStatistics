@@ -24,13 +24,13 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 
 //	Register ElementQualityStatistics wrapper functions
 	reg->add_function(	"ElementQualityStatistics",
-						(void (*)(ug::Grid&, int, size_t)) (&ug::ElementQualityStatistics),
-						grp, "", "grid#dim#stepSize", "Prints element quality statistics for a grid object");
+						(void (*)(ug::Grid&, int, number, number, bool)) (&ug::ElementQualityStatistics),
+						grp, "", "grid#dim#angleHiststepSize,aspectRatioHiststepSize", "Prints element quality statistics for a grid object");
 	reg->add_function(	"ElementQualityStatistics",
 						(void (*)(ug::Grid&, int)) (&ug::ElementQualityStatistics),
 						grp, "", "grid#dim", "Prints element quality statistics for a grid object");
 	reg->add_function(	"ElementQualityStatistics",
-						(void (*)(ug::MultiGrid&, int, size_t)) (&ug::ElementQualityStatistics),
+						(void (*)(ug::MultiGrid&, int, number, number, bool)) (&ug::ElementQualityStatistics),
 						grp, "", "mg#dim#stepSize", "Prints element quality statistics for a multigrid object");
 	reg->add_function(	"ElementQualityStatistics",
 						(void (*)(ug::MultiGrid&, int)) (&ug::ElementQualityStatistics),

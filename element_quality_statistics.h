@@ -33,232 +33,146 @@ namespace ug {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	AssignSubsetsByElementQuality3d
-void AssignSubsetsByElementQuality3d(MultiGrid& mg, MGSubsetHandler& sh, int numSecs);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	AssignSubsetsByElementQuality
-void AssignSubsetsByElementQuality(MultiGrid& mg, MGSubsetHandler& sh, int dim, int numSecs);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	AssignSubsetsByElementQuality
-void AssignSubsetsByElementQuality(Grid& grid, SubsetHandler& sh, int dim, int numSecs);
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-//	MinAngleHistogram
+//	CollectMinAngles
 template <class TIterator, class TAAPosVRT>
-void MinAngleHistogram(Grid& grid, 	TIterator elementsBegin,
-									TIterator elementsEnd,
-									TAAPosVRT& aaPos,
-									size_t stepSize)
+void CollectMinAngles(Grid& grid, TIterator elementsBegin,
+					  TIterator elementsEnd,
+					  TAAPosVRT& aaPos,
+					  vector<number>& minAngles)
 {
 	//PROFILE_FUNC();
-//	Initialization
-	vector<number> minAngles;
-	typename TIterator::value_type refElem = *elementsBegin;
+	DistributedGridManager* dgm = grid.distributed_grid_manager();
+
+//	if elementsBegin equals elementsEnd, then the list is empty and we can
+//	immediately return NULL
+	if(elementsBegin == elementsEnd)
+	{
+		UG_LOG("ERROR in CollectMinAngles: elementsBegin == elementsEnd." << std::endl);
+		return;
+	}
 
 //	Calculate the minAngle of every element
 	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
 	{
+		#ifdef UG_PARALLEL
+		//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+		//	since they have a copy on another process and
+		//	since we already consider that copy...
+			if(dgm->is_ghost(*iter) || dgm->contains_status(*iter, ES_H_SLAVE))
+				continue;
+		#endif
+
 		number curMinAngle = CalculateMinAngle(grid, *iter, aaPos);
 		minAngles.push_back(curMinAngle);
 	}
-
-//	Sort the calculated minAngles in an ascending way
-	sort (minAngles.begin(), minAngles.end());
-
-
-//	Evaluate the minimal and maximal degree rounding to 10
-	int minDeg = round(number(minAngles.front()) / 10.0) * 10;
-	int maxDeg = round(number(minAngles.back()) / 10.0) * 10;
-
-//	Expand minDeg and maxDeg by plus minus 10 degrees or at least to 0 or 180 degress
-	if((minDeg-10) > 0)
-		minDeg = minDeg - 10;
-	else
-		minDeg = 0;
-
-	if((maxDeg+10) < 180)
-		maxDeg = maxDeg + 10;
-	else
-		maxDeg = 180;
-
-//	Evaluate the number of ranges in respect to the specified step size
-	uint numRanges = floor((maxDeg-minDeg) / stepSize);
-	vector<uint> counter(numRanges, 0);
-
-//	Count the elements in their corresponding minAngle range
-	for(uint i = 0; i < minAngles.size(); ++i)
-	{
-		number minAngle = minAngles[i];
-		for (uint range = 0; range < numRanges; range++)
-		{
-			if (minAngle < minDeg + (range+1)*stepSize)
-			{
-				++counter[range];
-				break;
-			}
-		}
-	}
-
-//	----------------------------------------
-//	Histogram table output section: (THIRDS)
-//	----------------------------------------
-
-//	Divide the output table into three thirds (columnwise)
-	uint numRows = ceil(number(numRanges) / 3.0);
-
-//	Create table object
-	ug::Table<std::stringstream> minAngleTable(numRows, 6);
-
-//	Specific element header
-	//UG_LOG(endl << "MinAngle-Histogram for '" << refElem->reference_object_id() << "' elements");
-	UG_LOG(endl << "(*) MinAngle-Histogram for '" << refElem->base_object_id() << "d' elements");
-	UG_LOG(endl);
-
-//	First third
-	uint i = 0;
-	for(; i < numRows; ++i)
-	{
-		minAngleTable(i, 0) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
-		minAngleTable(i, 1) << counter[i];
-	}
-
-//	Second third
-//	Check, if second third of table is needed
-	if(i < counter.size())
-	{
-		for(; i < 2*numRows; ++i)
-		{
-			minAngleTable(i-numRows, 2) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
-			minAngleTable(i-numRows, 3) << counter[i];
-		}
-	}
-
-//	Third third
-	if(i < counter.size())
-//	Check, if third third of table is needed
-	{
-		for(; i < numRanges; ++i)
-		{
-			minAngleTable(i-2*numRows, 4) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
-			minAngleTable(i-2*numRows, 5) << counter[i];
-		}
-	}
-
-//	Output table
-	UG_LOG(endl << minAngleTable);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-//	MaxAngleHistogram
+//	CollectMaxAngles
 template <class TIterator, class TAAPosVRT>
-void MaxAngleHistogram(Grid& grid, 	TIterator elementsBegin,
-                       TIterator elementsEnd,
-                       TAAPosVRT& aaPos,
-					   size_t stepSize)
+void CollectMaxAngles(Grid& grid, TIterator elementsBegin,
+					  TIterator elementsEnd,
+					  TAAPosVRT& aaPos,
+					  vector<number>& maxAngles)
 {
-    //PROFILE_FUNC();
-    //	Initialization
-    vector<number> maxAngles;
-    typename TIterator::value_type refElem = *elementsBegin;
+	//PROFILE_FUNC();
+	DistributedGridManager* dgm = grid.distributed_grid_manager();
 
-    //	Calculate the minAngle of every element
-    for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
-    {
-        number curMaxAngle = CalculateMaxAngle(grid, *iter, aaPos);
-        maxAngles.push_back(curMaxAngle);
-    }
+//	if elementsBegin equals elementsEnd, then the list is empty and we can
+//	immediately return NULL
+	if(elementsBegin == elementsEnd)
+	{
+		UG_LOG("ERROR in CollectMaxAngles: elementsBegin == elementsEnd." << std::endl);
+		return;
+	}
 
-    //	Sort the calculated minAngles in an ascending way
-    sort (maxAngles.begin(), maxAngles.end());
+//	Calculate the minAngle of every element
+	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
+	{
+		#ifdef UG_PARALLEL
+		//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+		//	since they have a copy on another process and
+		//	since we already consider that copy...
+			if(dgm->is_ghost(*iter) || dgm->contains_status(*iter, ES_H_SLAVE))
+				continue;
+		#endif
+
+		number curMaxAngle = CalculateMaxAngle(grid, *iter, aaPos);
+		maxAngles.push_back(curMaxAngle);
+	}
+}
 
 
-    //	Evaluate the minimal and maximal degree rounding to 10
-    int minDeg = round(number(maxAngles.front()) / 10.0) * 10;
-    int maxDeg = round(number(maxAngles.back()) / 10.0) * 10;
+////////////////////////////////////////////////////////////////////////////////////////////
+//	AspectRatioHistogram
+template <class TIterator, class TAAPosVRT>
+void CollectAspectRatios(Grid& grid, TIterator elementsBegin,
+						 TIterator elementsEnd,
+						 TAAPosVRT& aaPos,
+						 vector<number>& aspectRatios)
+{
+	//PROFILE_FUNC();
+	DistributedGridManager* dgm = grid.distributed_grid_manager();
 
-    //	Expand minDeg and maxDeg by plus minus 10 degrees or at least to 0 or 180 degress
-    if((minDeg-10) > 0)
-        minDeg = minDeg - 10;
-    else
-        minDeg = 0;
+//	if elementsBegin equals elementsEnd, then the list is empty and we can
+//	immediately return NULL
+	if(elementsBegin == elementsEnd)
+	{
+		UG_LOG("ERROR in CollectAspectRatios: elementsBegin == elementsEnd." << std::endl);
+		return;
+	}
 
-    if((maxDeg+10) < 180)
-        maxDeg = maxDeg + 10;
-    else
-        maxDeg = 180;
+//	Calculate the aspectRatio of every element
+	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
+	{
+		#ifdef UG_PARALLEL
+		//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+		//	since they have a copy on another process and
+		//	since we already consider that copy...
+			if(dgm->is_ghost(*iter) || dgm->contains_status(*iter, ES_H_SLAVE))
+				continue;
+		#endif
 
-    //	Evaluate the number of ranges in respect to the specified step size
-    uint numRanges = floor((maxDeg-minDeg) / stepSize);
-    vector<uint> counter(numRanges, 0);
+		number curAspectRatio = CalculateAspectRatio(grid, *iter, aaPos);
+		aspectRatios.push_back(curAspectRatio);
+	}
+}
 
-    //	Count the elements in their corresponding minAngle range
-    for(uint i = 0; i < maxAngles.size(); ++i)
-    {
-        number minAngle = maxAngles[i];
-        for (uint range = 0; range < numRanges; range++)
-        {
-            if (minAngle < minDeg + (range+1)*stepSize)
-            {
-                ++counter[range];
-                break;
-            }
-        }
-    }
 
-    //	----------------------------------------
-    //	Histogram table output section: (THIRDS)
-    //	----------------------------------------
+////////////////////////////////////////////////////////////////////////////////////////////
+//	VolToRMSFaceAreaRatioHistogram
+template <class TIterator, class TAAPosVRT>
+void CollectVolToRMSFaceAreaRatios(Grid& grid, TIterator elementsBegin,
+						  	  	   TIterator elementsEnd,
+								   TAAPosVRT& aaPos,
+								   vector<number>& ratios)
+{
+	//PROFILE_FUNC();
+	DistributedGridManager* dgm = grid.distributed_grid_manager();
 
-    //	Divide the output table into three thirds (columnwise)
-    uint numRows = ceil(number(numRanges) / 3.0);
+//	if elementsBegin equals elementsEnd, then the list is empty and we can
+//	immediately return NULL
+	if(elementsBegin == elementsEnd)
+	{
+		UG_LOG("ERROR in CollectVolToRMSFaceAreaRatios: elementsBegin == elementsEnd." << std::endl);
+		return;
+	}
 
-    //	Create table object
-    ug::Table<std::stringstream> maxAngleTable(numRows, 6);
+//	Calculate the ratio of every element
+	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
+	{
+		#ifdef UG_PARALLEL
+		//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+		//	since they have a copy on another process and
+		//	since we already consider that copy...
+			if(dgm->is_ghost(*iter) || dgm->contains_status(*iter, ES_H_SLAVE))
+				continue;
+		#endif
 
-    //	Specific element header
-    //UG_LOG(endl << "MaxAngle-Histogram for '" << refElem->reference_object_id() << "' elements");
-    UG_LOG(endl << "(*) MaxAngle-Histogram for '" << refElem->base_object_id() << "d' elements");
-    UG_LOG(endl);
-
-    //	First third
-    uint i = 0;
-    for(; i < numRows; ++i)
-    {
-        maxAngleTable(i, 0) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
-        maxAngleTable(i, 1) << counter[i];
-    }
-
-    //	Second third
-    //	Check, if second third of table is needed
-    if(i < counter.size())
-    {
-        for(; i < 2*numRows; ++i)
-        {
-            maxAngleTable(i-numRows, 2) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
-            maxAngleTable(i-numRows, 3) << counter[i];
-        }
-    }
-
-    //	Third third
-    if(i < counter.size())
-        //	Check, if third third of table is needed
-    {
-        for(; i < numRanges; ++i)
-        {
-            maxAngleTable(i-2*numRows, 4) << minDeg + i*stepSize << " - " << minDeg + (i+1)*stepSize << " deg : ";
-            maxAngleTable(i-2*numRows, 5) << counter[i];
-        }
-    }
-
-    //	Output table
-    UG_LOG(endl << maxAngleTable);
+		number curRatio = CalculateVolToRMSFaceAreaRatio(grid, *iter, aaPos);
+		ratios.push_back(curRatio);
+	}
 }
 
 
@@ -267,17 +181,21 @@ void MaxAngleHistogram(Grid& grid, 	TIterator elementsBegin,
 template <class TAAPosVRT>
 void PrintAngleStatistics2d(Grid& grid, GridObjectCollection& goc, int level, TAAPosVRT& aaPos)
 {
+	size_t numTriangles = 0;
+	size_t numQuadrilaterals = 0;
+
+	number sd_tri = 0.0;
+	number sd_quad = 0.0;
+	number mean_tri = 0.0;
+	number mean_quad = 0.0;
+	number regAngle = 90.0;
+
+	DistributedGridManager* dgm = grid.distributed_grid_manager();
 	int i = level;
 
 //	Calculate and output standard deviation for triangular/quadrilateral angles
 	if(goc.num<Triangle>(i) > 0 || goc.num<Quadrilateral>(i) > 0)
 	{
-		number sd_tri = 0.0;
-		number sd_quad = 0.0;
-		number mean_tri = 0.0;
-		number mean_quad = 0.0;
-		number regAngle = 90.0;
-
 		vector<number> vAnglesOut;
 
 		for(FaceIterator fIter = goc.begin<Face>(i); fIter != goc.end<Face>(i); ++fIter)
@@ -285,10 +203,19 @@ void PrintAngleStatistics2d(Grid& grid, GridObjectCollection& goc, int level, TA
 			vAnglesOut.clear();
 			Face* f = *fIter;
 
+			#ifdef UG_PARALLEL
+			//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+			//	since they have a copy on another process and
+			//	since we already consider that copy...
+				if(dgm->is_ghost(f) || dgm->contains_status(f, ES_H_SLAVE))
+					continue;
+			#endif
+
 			if(f->reference_object_id() == ROID_TRIANGLE)
 			{
 				regAngle = 60.0;
 				CalculateFaceAngles(vAnglesOut, grid, f, aaPos);
+				numTriangles++;
 
 				for(size_t k = 0; k < vAnglesOut.size(); ++k)
 				{
@@ -301,6 +228,7 @@ void PrintAngleStatistics2d(Grid& grid, GridObjectCollection& goc, int level, TA
 			{
 				regAngle = 90.0;
 				CalculateFaceAngles(vAnglesOut, grid, f, aaPos);
+				numQuadrilaterals++;
 
 				for(size_t k = 0; k < vAnglesOut.size(); ++k)
 				{
@@ -309,32 +237,50 @@ void PrintAngleStatistics2d(Grid& grid, GridObjectCollection& goc, int level, TA
 				}
 			}
 		}
+	}
 
+	#ifdef UG_PARALLEL
+		if(pcl::NumProcs() > 1){
+		//	sum the numbers of all involved processes. Since we ignored ghosts,
+		//	each process contributes the numbers of a unique part of the grid.
+			pcl::ProcessCommunicator pc;
+			numTriangles = pc.allreduce(numTriangles, PCL_RO_SUM);
+			numQuadrilaterals = pc.allreduce(numQuadrilaterals, PCL_RO_SUM);
+			sd_tri = pc.allreduce(sd_tri, PCL_RO_SUM);
+			mean_tri = pc.allreduce(mean_tri, PCL_RO_SUM);
+			sd_quad = pc.allreduce(sd_quad, PCL_RO_SUM);
+			mean_quad = pc.allreduce(mean_quad, PCL_RO_SUM);
+		}
+	#endif
+
+//	Calculate and output standard deviation for triangular/quadrilateral angles
+	if(goc.num<Triangle>(i) > 0 || goc.num<Quadrilateral>(i) > 0)
+	{
 		if(goc.num<Triangle>(i) > 0)
 		{
-			sd_tri *= (1.0/(3*goc.num<Triangle>(i)));
+			sd_tri *= (1.0/(3*numTriangles));
 			sd_tri = sqrt(sd_tri);
-			mean_tri *= (1.0/(3*goc.num<Triangle>(i)));
+			mean_tri *= (1.0/(3*numTriangles));
 		}
 
 		if(goc.num<Quadrilateral>(i) > 0)
 		{
-			sd_quad *= (1.0/(4*goc.num<Quadrilateral>(i)));
+			sd_quad *= (1.0/(4*numQuadrilaterals));
 			sd_quad = sqrt(sd_quad);
-			mean_quad *= (1.0/(4*goc.num<Quadrilateral>(i)));
+			mean_quad *= (1.0/(4*numQuadrilaterals));
 		}
 
 		UG_LOG("(*) Standard deviation of face angles to regular case" << endl);
 		UG_LOG("	(60° for triangles, 90° for quadrilaterals)" << endl);
 		UG_LOG(endl);
-		UG_LOG("	Triangles (" << goc.num<Triangle>(i) << "):" << endl);
+		UG_LOG("	Triangles (" << numTriangles << "):" << endl);
 		if(goc.num<Triangle>(i) > 0)
 		{
 			UG_LOG("		sd   = " << sd_tri << endl);
 			UG_LOG("		mean = " << mean_tri << endl);
 		}
 		UG_LOG(endl);
-		UG_LOG("	Quadrilaterals (" << goc.num<Quadrilateral>(i) << "):" << endl);
+		UG_LOG("	Quadrilaterals (" << numQuadrilaterals << "):" << endl);
 		if(goc.num<Quadrilateral>(i) > 0)
 		{
 			UG_LOG("		sd   = " << sd_quad << endl);
@@ -350,17 +296,32 @@ void PrintAngleStatistics2d(Grid& grid, GridObjectCollection& goc, int level, TA
 template <class TAAPosVRT>
 void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TAAPosVRT& aaPos)
 {
+	size_t numTriangles = 0;
+	size_t numQuadrilaterals = 0;
+	size_t numTetrahedrons = 0;
+	size_t numHexahedrons = 0;
+	size_t numOctahedrons = 0;
+
+	number sd_tri = 0.0;
+	number sd_quad = 0.0;
+	number mean_tri = 0.0;
+	number mean_quad = 0.0;
+	number regAngle = 90.0;
+
+	number sd_tet = 0.0;
+	number sd_hex = 0.0;
+	number sd_oct = 0.0;
+	number mean_tet = 0.0;
+	number mean_hex = 0.0;
+	number mean_oct = 0.0;
+	number regVolDihedral = 90.0;
+
+	DistributedGridManager* dgm = grid.distributed_grid_manager();
 	int i = level;
 
 //	Calculate and output standard deviation for triangular/quadrilateral angles
 	if(goc.num<Triangle>(i) > 0 || goc.num<Quadrilateral>(i) > 0)
 	{
-		number sd_tri = 0.0;
-		number sd_quad = 0.0;
-		number mean_tri = 0.0;
-		number mean_quad = 0.0;
-		number regAngle = 90.0;
-
 		vector<number> vAnglesOut;
 
 		for(FaceIterator fIter = goc.begin<Face>(i); fIter != goc.end<Face>(i); ++fIter)
@@ -368,10 +329,19 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			vAnglesOut.clear();
 			Face* f = *fIter;
 
+			#ifdef UG_PARALLEL
+			//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+			//	since they have a copy on another process and
+			//	since we already consider that copy...
+				if(dgm->is_ghost(f) || dgm->contains_status(f, ES_H_SLAVE))
+					continue;
+			#endif
+
 			if(f->reference_object_id() == ROID_TRIANGLE)
 			{
 				regAngle = 60.0;
 				CalculateFaceAngles(vAnglesOut, grid, f, aaPos);
+				numTriangles++;
 
 				for(size_t k = 0; k < vAnglesOut.size(); ++k)
 				{
@@ -384,6 +354,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			{
 				regAngle = 90.0;
 				CalculateFaceAngles(vAnglesOut, grid, f, aaPos);
+				numQuadrilaterals++;
 
 				for(size_t k = 0; k < vAnglesOut.size(); ++k)
 				{
@@ -392,32 +363,50 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 				}
 			}
 		}
+	}
 
+	#ifdef UG_PARALLEL
+		if(pcl::NumProcs() > 1){
+		//	sum the numbers of all involved processes. Since we ignored ghosts,
+		//	each process contributes the numbers of a unique part of the grid.
+			pcl::ProcessCommunicator pc;
+			numTriangles = pc.allreduce(numTriangles, PCL_RO_SUM);
+			numQuadrilaterals = pc.allreduce(numQuadrilaterals, PCL_RO_SUM);
+			sd_tri = pc.allreduce(sd_tri, PCL_RO_SUM);
+			mean_tri = pc.allreduce(mean_tri, PCL_RO_SUM);
+			sd_quad = pc.allreduce(sd_quad, PCL_RO_SUM);
+			mean_quad = pc.allreduce(mean_quad, PCL_RO_SUM);
+		}
+	#endif
+
+//	Calculate and output standard deviation for triangular/quadrilateral angles
+	if(goc.num<Triangle>(i) > 0 || goc.num<Quadrilateral>(i) > 0)
+	{
 		if(goc.num<Triangle>(i) > 0)
 		{
-			sd_tri *= (1.0/(3*goc.num<Triangle>(i)));
+			sd_tri *= (1.0/(3*numTriangles));
 			sd_tri = sqrt(sd_tri);
-			mean_tri *= (1.0/(3*goc.num<Triangle>(i)));
+			mean_tri *= (1.0/(3*numTriangles));
 		}
 
 		if(goc.num<Quadrilateral>(i) > 0)
 		{
-			sd_quad *= (1.0/(4*goc.num<Quadrilateral>(i)));
+			sd_quad *= (1.0/(4*numQuadrilaterals));
 			sd_quad = sqrt(sd_quad);
-			mean_quad *= (1.0/(4*goc.num<Quadrilateral>(i)));
+			mean_quad *= (1.0/(4*numQuadrilaterals));
 		}
 
 		UG_LOG("(*) Standard deviation of face angles to regular case" << endl);
 		UG_LOG("	(60° for triangles, 90° for quadrilaterals)" << endl);
 		UG_LOG(endl);
-		UG_LOG("	Triangles (" << goc.num<Triangle>(i) << "):" << endl);
+		UG_LOG("	Triangles (" << numTriangles << "):" << endl);
 		if(goc.num<Triangle>(i) > 0)
 		{
 			UG_LOG("		sd   = " << sd_tri << endl);
 			UG_LOG("		mean = " << mean_tri << endl);
 		}
 		UG_LOG(endl);
-		UG_LOG("	Quadrilaterals (" << goc.num<Quadrilateral>(i) << "):" << endl);
+		UG_LOG("	Quadrilaterals (" << numQuadrilaterals << "):" << endl);
 		if(goc.num<Quadrilateral>(i) > 0)
 		{
 			UG_LOG("		sd   = " << sd_quad << endl);
@@ -426,18 +415,9 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 		UG_LOG(endl);
 	}
 
-
 //	Calculate and output standard deviation for tetrahedral/hexahedral angles
 	if(goc.num<Tetrahedron>(i) > 0 || goc.num<Hexahedron>(i) > 0 || goc.num<Octahedron>(i) > 0)
 	{
-		number sd_tet = 0.0;
-		number sd_hex = 0.0;
-		number sd_oct = 0.0;
-		number mean_tet = 0.0;
-		number mean_hex = 0.0;
-		number mean_oct = 0.0;
-		number regVolDihedral = 90.0;
-
 		vector<number> vDihedralsOut;
 
 		for(VolumeIterator vIter = goc.begin<Volume>(i); vIter != goc.end<Volume>(i); ++vIter)
@@ -445,10 +425,19 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			vDihedralsOut.clear();
 			Volume* vol = *vIter;
 
+			#ifdef UG_PARALLEL
+			//	ghosts (vertical slaves) have to be ignored,
+			//	since they have a copy on another process and
+			//	since we already consider that copy...
+				if(dgm->is_ghost(vol))
+					continue;
+			#endif
+
 			if(vol->reference_object_id() == ROID_TETRAHEDRON)
 			{
 				regVolDihedral = 70.52877937;
 				CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
+				numTetrahedrons++;
 
 				for(size_t k = 0; k < vDihedralsOut.size(); ++k)
 				{
@@ -461,6 +450,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			{
 				regVolDihedral = 90.0;
 				CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
+				numHexahedrons++;
 
 				for(size_t k = 0; k < vDihedralsOut.size(); ++k)
 				{
@@ -473,6 +463,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			{
 				regVolDihedral = 109.4712206;
 				CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
+				numOctahedrons++;
 
 				for(size_t k = 0; k < vDihedralsOut.size(); ++k)
 				{
@@ -481,46 +472,67 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 				}
 			}
 		}
+	}
 
+	#ifdef UG_PARALLEL
+		if(pcl::NumProcs() > 1){
+		//	sum the numbers of all involved processes. Since we ignored ghosts,
+		//	each process contributes the numbers of a unique part of the grid.
+			pcl::ProcessCommunicator pc;
+			numTetrahedrons = pc.allreduce(numTetrahedrons, PCL_RO_SUM);
+			numHexahedrons = pc.allreduce(numHexahedrons, PCL_RO_SUM);
+			numOctahedrons = pc.allreduce(numOctahedrons, PCL_RO_SUM);
+			sd_tet = pc.allreduce(sd_tet, PCL_RO_SUM);
+			mean_tet = pc.allreduce(mean_tet, PCL_RO_SUM);
+			sd_hex = pc.allreduce(sd_hex, PCL_RO_SUM);
+			mean_hex = pc.allreduce(mean_hex, PCL_RO_SUM);
+			sd_oct = pc.allreduce(sd_oct, PCL_RO_SUM);
+			mean_oct = pc.allreduce(mean_oct, PCL_RO_SUM);
+		}
+	#endif
+
+//	Calculate and output standard deviation for tetrahedral/hexahedral angles
+	if(goc.num<Tetrahedron>(i) > 0 || goc.num<Hexahedron>(i) > 0 || goc.num<Octahedron>(i) > 0)
+	{
 		if(goc.num<Tetrahedron>(i) > 0)
 		{
-			sd_tet *= (1.0/(6*goc.num<Tetrahedron>(i)));
+			sd_tet *= (1.0/(6*numTetrahedrons));
 			sd_tet = sqrt(sd_tet);
-			mean_tet *= (1.0/(6*goc.num<Tetrahedron>(i)));
+			mean_tet *= (1.0/(6*numTetrahedrons));
 		}
 
 		if(goc.num<Hexahedron>(i) > 0)
 		{
-			sd_hex *= (1.0/(12*goc.num<Hexahedron>(i)));
+			sd_hex *= (1.0/(12*numHexahedrons));
 			sd_hex = sqrt(sd_hex);
-			mean_hex *= (1.0/(12*goc.num<Hexahedron>(i)));
+			mean_hex *= (1.0/(12*numHexahedrons));
 		}
 
 		if(goc.num<Octahedron>(i) > 0)
 		{
-			sd_oct *= (1.0/(12*goc.num<Octahedron>(i)));
+			sd_oct *= (1.0/(12*numOctahedrons));
 			sd_oct = sqrt(sd_oct);
-			mean_oct *= (1.0/(12*goc.num<Octahedron>(i)));
+			mean_oct *= (1.0/(12*numOctahedrons));
 		}
 
 		UG_LOG("(*) Standard deviation of dihedral angles to regular case" << endl);
 		UG_LOG("	(70.5288° for tetrahedrons, 90° for hexahedrons, 109.471° for Octahedrons)" << endl);
 		UG_LOG(endl);
-		UG_LOG("	Tetrahedrons (" << goc.num<Tetrahedron>(i) << "):" << endl);
+		UG_LOG("	Tetrahedrons (" << numTetrahedrons << "):" << endl);
 		if(goc.num<Tetrahedron>(i) > 0)
 		{
 			UG_LOG("		sd   = " << sd_tet << endl);
 			UG_LOG("		mean = " << mean_tet << endl);
 		}
 		UG_LOG(endl);
-		UG_LOG("	Hexahedrons (" << goc.num<Hexahedron>(i) << "):" << endl);
+		UG_LOG("	Hexahedrons (" << numHexahedrons << "):" << endl);
 		if(goc.num<Hexahedron>(i) > 0)
 		{
 			UG_LOG("		sd   = " << sd_hex << endl);
 			UG_LOG("		mean = " << mean_hex << endl);
 		}
 		UG_LOG(endl);
-		UG_LOG("	Octahedrons (" << goc.num<Octahedron>(i) << "):" << endl);
+		UG_LOG("	Octahedrons (" << numOctahedrons << "):" << endl);
 		if(goc.num<Octahedron>(i) > 0)
 		{
 			UG_LOG("		sd   = " << sd_oct << endl);
@@ -532,18 +544,39 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	PrintAngleHistograms
+void PrintAngleHistogram(vector<number>& locAngles, number stepSize, ug::Table<std::stringstream>& outTable);
+void PrintAspectRatioHistogram(vector<number>& locAspectRatios, number stepSize, ug::Table<std::stringstream>& outTable);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	AssignSubsetsByElementQuality3d
+void AssignSubsetsByElementQuality3d(MultiGrid& mg, MGSubsetHandler& sh, int numSecs);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	AssignSubsetsByElementQuality
+void AssignSubsetsByElementQuality(MultiGrid& mg, MGSubsetHandler& sh, int dim, int numSecs);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	AssignSubsetsByElementQuality
+void AssignSubsetsByElementQuality(Grid& grid, SubsetHandler& sh, int dim, int numSecs);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	ElementQualityStatistics
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 //	Wrapper
-void ElementQualityStatistics(MultiGrid& mg, int dim, size_t angleHistStepSize);
+void ElementQualityStatistics(MultiGrid& mg, int dim, number angleHistStepSize, number aspectRatioHistStepSize, bool bWriteHistograms);
 void ElementQualityStatistics(MultiGrid& mg, int dim);
-void ElementQualityStatistics(Grid& grid, int dim, size_t angleHistStepSize);
+void ElementQualityStatistics(Grid& grid, int dim, number angleHistStepSize, number aspectRatioHistStepSize, bool bWriteHistograms);
 void ElementQualityStatistics(Grid& grid, int dim);
 
 //	Actual procedures
-void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, size_t angleHistStepSize = 10.0);
-void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, size_t angleHistStepSize = 10.0);
+void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, number angleHistStepSize = 10.0, number aspectRatioHistStepSize = 0.1, bool bWriteHistograms = true);
+void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number angleHistStepSize = 10.0, number aspectRatioHistStepSize = 0.1, bool bWriteHistograms = true);
 
 
 }	 
