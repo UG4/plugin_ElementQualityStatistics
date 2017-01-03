@@ -615,7 +615,7 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 				n_minTetAspectRatio = pc.allreduce(n_minTetAspectRatio, PCL_RO_MIN);
 				n_maxTetAspectRatio = pc.allreduce(n_maxTetAspectRatio, PCL_RO_MAX);
 				n_minTetVolToRMSFaceAreaRatio = pc.allreduce(n_minTetVolToRMSFaceAreaRatio, PCL_RO_MIN);
-				n_maxTetVolToRMSFaceAreaRatio = pc.allreduce(n_maxTetVolToRMSFaceAreaRatio, PCL_RO_MIN);
+				n_maxTetVolToRMSFaceAreaRatio = pc.allreduce(n_maxTetVolToRMSFaceAreaRatio, PCL_RO_MAX);
 			}
 		#endif
 
