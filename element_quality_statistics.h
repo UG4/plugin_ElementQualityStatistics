@@ -55,7 +55,7 @@ void CollectMinAngles(Grid& grid, TIterator elementsBegin,
 	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
 	{
 		#ifdef UG_PARALLEL
-		//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+		//	ghosts (vertical masters) as well as horizontal slaves (low dimensional elements only) have to be ignored,
 		//	since they have a copy on another process and
 		//	since we already consider that copy...
 			if(dgm->is_ghost(*iter) || dgm->contains_status(*iter, ES_H_SLAVE))
@@ -91,7 +91,7 @@ void CollectMaxAngles(Grid& grid, TIterator elementsBegin,
 	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
 	{
 		#ifdef UG_PARALLEL
-		//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+		//	ghosts (vertical masters) as well as horizontal slaves (low dimensional elements only) have to be ignored,
 		//	since they have a copy on another process and
 		//	since we already consider that copy...
 			if(dgm->is_ghost(*iter) || dgm->contains_status(*iter, ES_H_SLAVE))
@@ -127,7 +127,7 @@ void CollectAspectRatios(Grid& grid, TIterator elementsBegin,
 	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
 	{
 		#ifdef UG_PARALLEL
-		//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+		//	ghosts (vertical masters) as well as horizontal slaves (low dimensional elements only) have to be ignored,
 		//	since they have a copy on another process and
 		//	since we already consider that copy...
 			if(dgm->is_ghost(*iter) || dgm->contains_status(*iter, ES_H_SLAVE))
@@ -163,7 +163,7 @@ void CollectVolToRMSFaceAreaRatios(Grid& grid, TIterator elementsBegin,
 	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
 	{
 		#ifdef UG_PARALLEL
-		//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+		//	ghosts (vertical masters) as well as horizontal slaves (low dimensional elements only) have to be ignored,
 		//	since they have a copy on another process and
 		//	since we already consider that copy...
 			if(dgm->is_ghost(*iter) || dgm->contains_status(*iter, ES_H_SLAVE))
@@ -204,7 +204,7 @@ void PrintAngleStatistics2d(Grid& grid, GridObjectCollection& goc, int level, TA
 			Face* f = *fIter;
 
 			#ifdef UG_PARALLEL
-			//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+			//	ghosts (vertical masters) as well as horizontal slaves (low dimensional elements only) have to be ignored,
 			//	since they have a copy on another process and
 			//	since we already consider that copy...
 				if(dgm->is_ghost(f) || dgm->contains_status(f, ES_H_SLAVE))
@@ -330,7 +330,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			Face* f = *fIter;
 
 			#ifdef UG_PARALLEL
-			//	ghosts (vertical slaves) as well as horizontal slaves (low dimensional elements only) have to be ignored,
+			//	ghosts (vertical masters) as well as horizontal slaves (low dimensional elements only) have to be ignored,
 			//	since they have a copy on another process and
 			//	since we already consider that copy...
 				if(dgm->is_ghost(f) || dgm->contains_status(f, ES_H_SLAVE))
@@ -426,7 +426,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			Volume* vol = *vIter;
 
 			#ifdef UG_PARALLEL
-			//	ghosts (vertical slaves) have to be ignored,
+			//	ghosts (vertical masters) have to be ignored,
 			//	since they have a copy on another process and
 			//	since we already consider that copy...
 				if(dgm->is_ghost(vol))
