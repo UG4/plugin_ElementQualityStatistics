@@ -78,7 +78,9 @@ void AssignSubsetsByElementQuality3d(MultiGrid& grid, MGSubsetHandler& sh, int n
 	for(VolumeIterator vIter = grid.begin<Tetrahedron>(); vIter != grid.end<Tetrahedron>(); ++vIter)
 	{
 		Tetrahedron* tet = static_cast<Tetrahedron*>(*vIter);
-		number q = CalculateAspectRatio(grid, tet, aaPos);
+		number q = CalculateMinDihedral(grid, tet, aaPos);
+		//ALTERNATIVELY:
+		//number q = CalculateAspectRatio(grid, tet, aaPos);
 		vQualities.push_back(q);
 
 		aaElemID[tet] = numElems;
