@@ -22,7 +22,8 @@
 
 #include "lib_grid/lib_grid.h"
 #include "elem_stat_util.h"
-//#include "volume_calculation.h"
+#include "lib_grid/algorithms/element_angles.h"
+#include "lib_grid/algorithms/element_aspect_ratios.h"
 
 
 
@@ -214,7 +215,7 @@ void PrintAngleStatistics2d(Grid& grid, GridObjectCollection& goc, int level, TA
 			if(f->reference_object_id() == ROID_TRIANGLE)
 			{
 				regAngle = 60.0;
-				CalculateFaceAngles(vAnglesOut, grid, f, aaPos);
+				CalculateAngles(vAnglesOut, grid, f, aaPos);
 				numTriangles++;
 
 				for(size_t k = 0; k < vAnglesOut.size(); ++k)
@@ -227,7 +228,7 @@ void PrintAngleStatistics2d(Grid& grid, GridObjectCollection& goc, int level, TA
 			if(f->reference_object_id() == ROID_QUADRILATERAL)
 			{
 				regAngle = 90.0;
-				CalculateFaceAngles(vAnglesOut, grid, f, aaPos);
+				CalculateAngles(vAnglesOut, grid, f, aaPos);
 				numQuadrilaterals++;
 
 				for(size_t k = 0; k < vAnglesOut.size(); ++k)
@@ -340,7 +341,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			if(f->reference_object_id() == ROID_TRIANGLE)
 			{
 				regAngle = 60.0;
-				CalculateFaceAngles(vAnglesOut, grid, f, aaPos);
+				CalculateAngles(vAnglesOut, grid, f, aaPos);
 				numTriangles++;
 
 				for(size_t k = 0; k < vAnglesOut.size(); ++k)
@@ -353,7 +354,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			if(f->reference_object_id() == ROID_QUADRILATERAL)
 			{
 				regAngle = 90.0;
-				CalculateFaceAngles(vAnglesOut, grid, f, aaPos);
+				CalculateAngles(vAnglesOut, grid, f, aaPos);
 				numQuadrilaterals++;
 
 				for(size_t k = 0; k < vAnglesOut.size(); ++k)
@@ -436,7 +437,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			if(vol->reference_object_id() == ROID_TETRAHEDRON)
 			{
 				regVolDihedral = 70.52877937;
-				CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
+				CalculateAngles(vDihedralsOut, grid, vol, aaPos);
 				numTetrahedrons++;
 
 				for(size_t k = 0; k < vDihedralsOut.size(); ++k)
@@ -449,7 +450,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			if(vol->reference_object_id() == ROID_HEXAHEDRON)
 			{
 				regVolDihedral = 90.0;
-				CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
+				CalculateAngles(vDihedralsOut, grid, vol, aaPos);
 				numHexahedrons++;
 
 				for(size_t k = 0; k < vDihedralsOut.size(); ++k)
@@ -462,7 +463,7 @@ void PrintAngleStatistics3d(Grid& grid, GridObjectCollection& goc, int level, TA
 			if(vol->reference_object_id() == ROID_OCTAHEDRON)
 			{
 				regVolDihedral = 109.4712206;
-				CalculateVolumeDihedrals(vDihedralsOut, grid, vol, aaPos);
+				CalculateAngles(vDihedralsOut, grid, vol, aaPos);
 				numOctahedrons++;
 
 				for(size_t k = 0; k < vDihedralsOut.size(); ++k)
