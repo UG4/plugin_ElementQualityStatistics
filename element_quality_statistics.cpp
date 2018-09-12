@@ -58,6 +58,49 @@ void CreateElementQualityHistogram(vector<int>& histOut, const std::vector<numbe
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	AssignSubsetToElementWithSmallestMinAngle
+void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler& sh, const char* roid)
+{
+	GridObjectCollection goc = grid.get_grid_objects();
+	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
+	uint i = goc.num_levels() - 1;
+
+	sh.assign_subset(goc.begin<Vertex>(i), goc.end<Vertex>(i), 0);
+	sh.assign_subset(goc.begin<Edge>(i), goc.end<Edge>(i), 0);
+	sh.assign_subset(goc.begin<Face>(i), goc.end<Face>(i), 0);
+	sh.assign_subset(goc.begin<Volume>(i), goc.end<Volume>(i), 0);
+	sh.set_subset_name("grid", 0);
+
+	if(strcmp(roid, "triangle") == 0 || strcmp(roid, "quadrilateral") == 0)
+	{
+		Face* minAngleElement;
+		minAngleElement = FindElementWithSmallestMinAngle(	grid,
+															goc.begin<Face>(i),
+															goc.end<Face>(i),
+															aaPos);
+
+		sh.assign_subset(minAngleElement, 1);
+		sh.set_subset_name("face_with_smallest_minAngle", 1);
+	}
+	else if(strcmp(roid, "tetrahedron") == 0)
+	{
+		Tetrahedron* minAngleElement;
+		minAngleElement = FindElementWithSmallestMinAngle(	grid,
+															goc.begin<Tetrahedron>(i),
+															goc.end<Tetrahedron>(i),
+															aaPos);
+
+		sh.assign_subset(minAngleElement, 1);
+		sh.set_subset_name("tet_with_smallest_minAngle", 1);
+	}
+	else
+		UG_THROW("ERROR in AssignSubsetToElementWithSmallestMinAngle: only 'triangle', 'quadrilateral' and 'tetrahedron' supported.");
+
+	AssignSubsetColors(sh);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetsByElementQuality3d
 void AssignSubsetsByElementQuality3d(MultiGrid& grid, MGSubsetHandler& sh, int numSecs)
 {
