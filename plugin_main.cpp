@@ -50,6 +50,6 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, int, int)) (&ug::AssignSubsetsByElementQuality),
 						grp, "", "mg#sh", "");
 	reg->add_function(	"AssignSubsetToElementWithSmallestMinAngle",
-						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, const char*)) (&ug::AssignSubsetToElementWithSmallestMinAngle),
+						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, int, const char*)) (&ug::AssignSubsetToElementWithSmallestMinAngle),
 						grp, "", "mg#sh#roid", "");
 }

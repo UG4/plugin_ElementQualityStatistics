@@ -59,7 +59,51 @@ void CreateElementQualityHistogram(vector<int>& histOut, const std::vector<numbe
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetToElementWithSmallestMinAngle
-void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler& sh, const char* roid)
+void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler& sh, int dim, const char* roid)
+{
+	if(dim == 2)
+		AssignSubsetToElementWithSmallestMinAngle2d(grid, sh, roid);
+	else if(dim == 3)
+		AssignSubsetToElementWithSmallestMinAngle3d(grid, sh, roid);
+	else
+		UG_THROW("ERROR in AssignSubsetToElementWithSmallestMinAngle: Only dimensions 2 or 3 supported.");
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	AssignSubsetToElementWithSmallestMinAngle2d
+void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid)
+{
+	GridObjectCollection goc = grid.get_grid_objects();
+	Grid::VertexAttachmentAccessor<APosition2> aaPos(grid, aPosition2);
+	uint i = goc.num_levels() - 1;
+
+	sh.assign_subset(goc.begin<Vertex>(i), goc.end<Vertex>(i), 0);
+	sh.assign_subset(goc.begin<Edge>(i), goc.end<Edge>(i), 0);
+	sh.assign_subset(goc.begin<Face>(i), goc.end<Face>(i), 0);
+	sh.set_subset_name("grid", 0);
+
+	if(strcmp(roid, "triangle") == 0 || strcmp(roid, "quadrilateral") == 0)
+	{
+		Face* minAngleElement;
+		minAngleElement = FindElementWithSmallestMinAngle(	grid,
+															goc.begin<Face>(i),
+															goc.end<Face>(i),
+															aaPos);
+
+		sh.assign_subset(minAngleElement, 1);
+		sh.set_subset_name("face_with_smallest_minAngle", 1);
+	}
+	else
+		UG_THROW("ERROR in AssignSubsetToElementWithSmallestMinAngle2d: only 'triangle' and 'quadrilateral' supported.");
+
+	AssignSubsetColors(sh);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	AssignSubsetToElementWithSmallestMinAngle3d
+void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid)
 {
 	GridObjectCollection goc = grid.get_grid_objects();
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);

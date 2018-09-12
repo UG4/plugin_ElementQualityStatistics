@@ -552,7 +552,9 @@ void PrintAspectRatioHistogram(vector<number>& locAspectRatios, number stepSize,
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetToElementWithSmallestMinAngle
-void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler& sh, const char* roid);
+void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler& sh, int dim, const char* roid);
+void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid);
+void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
