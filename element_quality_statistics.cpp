@@ -803,7 +803,11 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	//	----------------------------------------
 		if(bWriteHistograms)
 		{
-			if(pcl::ProcRank() == 0)
+			int procRank = 0;
+			#ifdef UG_PARALLEL
+				procRank = pcl::ProcRank();
+			#endif
+			if(procRank == 0)
 			{
 				ofstream ofstr;
 				std::stringstream ss;
