@@ -52,4 +52,8 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 	reg->add_function(	"AssignSubsetToElementWithSmallestMinAngle",
 						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, int, const char*)) (&ug::AssignSubsetToElementWithSmallestMinAngle),
 						grp, "", "mg#sh#roid", "");
+
+	reg->add_function(	"PrintVertexVolumeValence",
+						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, int)) (&ug::PrintVertexVolumeValence),
+						grp, "", "mg#sh#si", "");
 }

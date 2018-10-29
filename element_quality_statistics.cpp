@@ -17,6 +17,35 @@ namespace ug
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	PrintVertexVolumeValence
+void PrintVertexVolumeValence(MultiGrid& mg, SubsetHandler& sh, int subsetIndex)
+{
+	AInt aNumElems;
+	mg.attach_to_vertices_dv(aNumElems, 0);
+	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
+	Grid::VertexAttachmentAccessor<AInt> aaNumElems(mg, aNumElems);
+
+	for(VolumeIterator vIter = mg.begin<Volume>(mg.top_level()); vIter != mg.end<Volume>(mg.top_level()); ++vIter)
+	{
+		Volume* vol = *vIter;
+
+		for(size_t i = 0; i < vol->num_vertices(); ++i)
+		{
+			++aaNumElems[vol->vertex(i)];
+		}
+	}
+
+	for(VertexIterator vIter = mg.begin<Vertex>(mg.top_level()); vIter != mg.end<Vertex>(mg.top_level()); ++vIter)
+	{
+		Vertex* vrt = *vIter;
+
+		if(sh.get_subset_index(vrt) == subsetIndex)
+			UG_LOG("Vertex " << aaPos[vrt] << ": aaNumElems[vrt] = " << aaNumElems[vrt] << std::endl);
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	CreateElementQualityHistogram
 void CreateElementQualityHistogram(vector<int>& histOut, const std::vector<number>& vQualities, int numSections)
 {
