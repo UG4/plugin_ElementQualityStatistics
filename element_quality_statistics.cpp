@@ -88,12 +88,12 @@ void CreateElementQualityHistogram(vector<int>& histOut, const std::vector<numbe
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetToElementWithSmallestMinAngle
-void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler& sh, int dim, const char* roid)
+void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler& sh, int dim, const char* roid, int si)
 {
 	if(dim == 2)
-		AssignSubsetToElementWithSmallestMinAngle2d(grid, sh, roid);
+		AssignSubsetToElementWithSmallestMinAngle2d(grid, sh, roid, si);
 	else if(dim == 3)
-		AssignSubsetToElementWithSmallestMinAngle3d(grid, sh, roid);
+		AssignSubsetToElementWithSmallestMinAngle3d(grid, sh, roid, si);
 	else
 		UG_THROW("ERROR in AssignSubsetToElementWithSmallestMinAngle: Only dimensions 2 or 3 supported.");
 }
@@ -101,16 +101,12 @@ void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler&
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetToElementWithSmallestMinAngle2d
-void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid)
+void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid, int si)
 {
+	Selector sel(grid);
 	GridObjectCollection goc = grid.get_grid_objects();
 	Grid::VertexAttachmentAccessor<APosition2> aaPos(grid, aPosition2);
 	uint i = goc.num_levels() - 1;
-
-	sh.assign_subset(goc.begin<Vertex>(i), goc.end<Vertex>(i), 0);
-	sh.assign_subset(goc.begin<Edge>(i), goc.end<Edge>(i), 0);
-	sh.assign_subset(goc.begin<Face>(i), goc.end<Face>(i), 0);
-	sh.set_subset_name("grid", 0);
 
 	if(strcmp(roid, "triangle") == 0 || strcmp(roid, "quadrilateral") == 0)
 	{
@@ -120,8 +116,14 @@ void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandle
 															goc.end<Face>(i),
 															aaPos);
 
-		sh.assign_subset(minAngleElement, 1);
-		sh.set_subset_name("face_with_smallest_minAngle", 1);
+		sel.select(minAngleElement);
+		CloseSelection(sel);
+
+		sh.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), si);
+		sh.assign_subset(sel.begin<Edge>(), sel.end<Edge>(), si);
+		sh.assign_subset(sel.begin<Face>(), sel.end<Face>(), si);
+
+		sh.set_subset_name("face_with_smallest_minAngle", si);
 	}
 	else
 		UG_THROW("ERROR in AssignSubsetToElementWithSmallestMinAngle2d: only 'triangle' and 'quadrilateral' supported.");
@@ -132,17 +134,12 @@ void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandle
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetToElementWithSmallestMinAngle3d
-void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid)
+void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid, int si)
 {
+	Selector sel(grid);
 	GridObjectCollection goc = grid.get_grid_objects();
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
 	uint i = goc.num_levels() - 1;
-
-	sh.assign_subset(goc.begin<Vertex>(i), goc.end<Vertex>(i), 0);
-	sh.assign_subset(goc.begin<Edge>(i), goc.end<Edge>(i), 0);
-	sh.assign_subset(goc.begin<Face>(i), goc.end<Face>(i), 0);
-	sh.assign_subset(goc.begin<Volume>(i), goc.end<Volume>(i), 0);
-	sh.set_subset_name("grid", 0);
 
 	if(strcmp(roid, "triangle") == 0 || strcmp(roid, "quadrilateral") == 0)
 	{
@@ -152,8 +149,14 @@ void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandle
 															goc.end<Face>(i),
 															aaPos);
 
-		sh.assign_subset(minAngleElement, 1);
-		sh.set_subset_name("face_with_smallest_minAngle", 1);
+		sel.select(minAngleElement);
+		CloseSelection(sel);
+
+		sh.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), si);
+		sh.assign_subset(sel.begin<Edge>(), sel.end<Edge>(), si);
+		sh.assign_subset(sel.begin<Face>(), sel.end<Face>(), si);
+
+		sh.set_subset_name("face_with_smallest_minAngle", si);
 	}
 	else if(strcmp(roid, "tetrahedron") == 0)
 	{
@@ -163,13 +166,97 @@ void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandle
 															goc.end<Tetrahedron>(i),
 															aaPos);
 
-		sh.assign_subset(minAngleElement, 1);
-		sh.set_subset_name("tet_with_smallest_minAngle", 1);
+		sel.select(minAngleElement);
+		CloseSelection(sel);
+
+		sh.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), si);
+		sh.assign_subset(sel.begin<Edge>(), sel.end<Edge>(), si);
+		sh.assign_subset(sel.begin<Face>(), sel.end<Face>(), si);
+		sh.assign_subset(sel.begin<Volume>(), sel.end<Volume>(), si);
+
+		sh.set_subset_name("tet_with_smallest_minAngle", si);
 	}
 	else
 		UG_THROW("ERROR in AssignSubsetToElementWithSmallestMinAngle: only 'triangle', 'quadrilateral' and 'tetrahedron' supported.");
 
 	AssignSubsetColors(sh);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	MeasureTetrahedronWithSmallestMinAngle
+void MeasureTetrahedronWithSmallestMinAngle(MultiGrid& grid)
+{
+	Selector sel(grid);
+	MGSubsetHandler sh(grid);
+	GridObjectCollection goc = grid.get_grid_objects();
+	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
+	uint i = goc.num_levels() - 1;
+
+	Tetrahedron* minAngleElement;
+	minAngleElement = FindElementWithSmallestMinAngle(	grid,
+														goc.begin<Tetrahedron>(i),
+														goc.end<Tetrahedron>(i),
+														aaPos);
+
+	sel.select(minAngleElement);
+	CloseSelection(sel);
+
+//	consecutive subset assignment of volume sub-elements
+	int subsetIndex = 0;
+
+//	Edges
+	for(EdgeIterator eIter = sel.begin<Edge>(); eIter != sel.end<Edge>(); ++eIter)
+	{
+		Edge* e = *eIter;
+		sh.assign_subset(e, subsetIndex);
+		subsetIndex++;
+	}
+
+//	Faces
+	for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
+	{
+		Face* f = *fIter;
+		sh.assign_subset(f, subsetIndex);
+		subsetIndex++;
+	}
+
+//	Volume (assign vertices to same subset as volume element for valence calculation)
+	sh.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), subsetIndex);
+	sh.assign_subset(minAngleElement, subsetIndex);
+	sh.set_subset_name("tet_with_smallest_minAngle", subsetIndex);
+
+//	Taking measures
+	number measure = 0.0;
+	double faceAreaNormSquared_a = 0.0;
+	double edgeLengthNormSq_b = 0.0;
+
+	UG_LOG(std::endl);
+	UG_LOG("-------------------------------------" << std::endl);
+	UG_LOG("ElementWithSmallestMinAngle measures:" << std::endl);
+
+	cout.precision(17);
+
+	for(int i = 0; i <= 5; ++i)
+	{
+		measure = CalculateVolume(sh.begin<Edge>(i, grid.top_level()), sh.end<Edge>(i, grid.top_level()), aaPos);
+		edgeLengthNormSq_b += measure*measure;
+		UG_LOG("Edge " << i << " length : " << measure << std::endl);
+	}
+
+	for(int i = 6; i <= 9; ++i)
+	{
+		measure = CalculateVolume(sh.begin<Face>(i, grid.top_level()), sh.end<Face>(i, grid.top_level()), aaPos);
+		faceAreaNormSquared_a += measure*measure;
+		UG_LOG("Face " << i << " area : " << measure << std::endl);
+	}
+
+	measure = CalculateVolume(minAngleElement, aaPos);
+	UG_LOG("Volume V = " << measure << std::endl);
+
+	UG_LOG("Area norm squared a = " << faceAreaNormSquared_a << std::endl);
+	UG_LOG("Length norm squared b = " << edgeLengthNormSq_b << std::endl);
+	UG_LOG("-------------------------------------" << std::endl);
 }
 
 
