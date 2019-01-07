@@ -565,6 +565,10 @@ void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandle
 //	MeasureTetrahedronWithSmallestMinAngle
 void MeasureTetrahedronWithSmallestMinAngle(MultiGrid& grid);
 
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindBoundsForStiffnesMatrixMaxEigenvalue
+void FindBoundsForStiffnesMatrixMaxEigenvalue(MultiGrid& mg, MGSubsetHandler& shOut);
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetsByElementQuality3d

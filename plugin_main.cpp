@@ -57,6 +57,10 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 						(void (*)(ug::MultiGrid&)) (&ug::MeasureTetrahedronWithSmallestMinAngle),
 						grp, "", "mg", "");
 
+	reg->add_function(	"FindBoundsForStiffnesMatrixMaxEigenvalue",
+						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&)) (&ug::FindBoundsForStiffnesMatrixMaxEigenvalue),
+						grp, "", "mg#sh", "");
+
 	reg->add_function(	"PrintVertexVolumeValence",
 						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, int)) (&ug::PrintVertexVolumeValence),
 						grp, "", "mg#sh#si", "");
