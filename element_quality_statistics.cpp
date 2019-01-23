@@ -329,12 +329,26 @@ void FindBoundsForStiffnesMatrixMaxEigenvalue(MultiGrid& mg, MGSubsetHandler& sh
 		faceAreaNormSquared_a = 0.0;
 	}
 
+//	Complementary TetrahedronVolToRMSFaceAreaRatio calculation
+	Tetrahedron* bdt = static_cast<Tetrahedron*>(bdv);
+	number rmsFaceAreaToVolRatio = CalculateTetrahedronVolToRMSFaceAreaRatio(mg, bdt, aaPos);
+
+//	Identification of element with smallest TetrahedronVolToRMSFaceAreaRatio for debugging purposes
+//	GridObjectCollection goc = mg.get_grid_objects();
+//	Tetrahedron* bdt_eqs = FindElementWithSmallestVolToRMSFaceAreaRatio(mg,
+//															goc.begin<Tetrahedron>(mg.top_level()),
+//															goc.end<Tetrahedron>(mg.top_level()),
+//															aaPos);
+//	number rmsFaceAreaToVolRatio_eqs = CalculateTetrahedronVolToRMSFaceAreaRatio(mg, bdt_eqs, aaPos);
+
+	//sel.select(bdt_eqs);
 	sel.select(bdv);
 	CloseSelection(sel);
 
 //	Take measurements of bdv
 
 //	Volume
+	//volume = CalculateVolume(bdt_eqs, aaPos);
 	volume = CalculateVolume(bdv, aaPos);
 
 //	Faces
@@ -370,14 +384,16 @@ void FindBoundsForStiffnesMatrixMaxEigenvalue(MultiGrid& mg, MGSubsetHandler& sh
 	UG_LOG("-----------------------------------------------------------------------------" << std::endl);
 	UG_LOG("Bound defining tetrahedron measures (for stiffness matrix maximal eigenvalue):" << std::endl);
 	UG_LOG(std::endl);
-	UG_LOG("Lower local bound     = " << upperBound/3.0 << std::endl);
-	UG_LOG("Upper local bound     = " << upperBound << std::endl);
-	UG_LOG("Lower global bound    = " << upperBound/3.0 << std::endl);
-	UG_LOG("Upper global bound    = " << upperBound*maxVertexValence << std::endl);
-	UG_LOG("Max valence           = " << maxVertexValence << std::endl);
-	UG_LOG("Volume V              = " << volume << std::endl);
-	UG_LOG("Area norm squared a   = " << faceAreaNormSquared_a << std::endl);
-	UG_LOG("Length norm squared b = " << edgeLengthNormSq_b << std::endl);
+	UG_LOG("rmsFaceAreaToVolRatio     = " << rmsFaceAreaToVolRatio << std::endl);
+//	UG_LOG("rmsFaceAreaToVolRatio_eqs = " << rmsFaceAreaToVolRatio_eqs << std::endl);
+	UG_LOG("Lower local bound         = " << upperBound/3.0 << std::endl);
+	UG_LOG("Upper local bound         = " << upperBound << std::endl);
+	UG_LOG("Lower global bound        = " << upperBound/3.0 << std::endl);
+	UG_LOG("Upper global bound        = " << upperBound*maxVertexValence << std::endl);
+	UG_LOG("Max valence               = " << maxVertexValence << std::endl);
+	UG_LOG("Volume V                  = " << volume << std::endl);
+	UG_LOG("Area norm squared a       = " << faceAreaNormSquared_a << std::endl);
+	UG_LOG("Length norm squared b     = " << edgeLengthNormSq_b << std::endl);
 	UG_LOG("-----------------------------------------------------------------------------" << std::endl);
 
 	shOut.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), 0);
