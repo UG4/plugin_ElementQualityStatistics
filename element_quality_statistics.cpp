@@ -10,6 +10,7 @@
 #include "common/util/stringify.h"
 #include "element_quality_statistics.h"
 #include "lib_grid/grid_objects/tetrahedron_rules.h"
+#include "pcl/pcl_base.h"
 
 
 namespace ug
@@ -297,6 +298,8 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, number ang
 	number n_maxFaceAngle = 0.0;
 	number n_minTriAspectRatio = 0.0;
 	number n_maxTriAspectRatio = 0.0;
+	number n_minQuadAspectRatio = 0.0;
+	number n_maxQuadAspectRatio = 0.0;
 
 
 //	Elements
@@ -306,8 +309,10 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, number ang
 	Face* maxFace;
 	Face* minAngleFace;
 	Face* maxAngleFace;
-	Face* minAspectRatioTri;
-	Face* maxAspectRatioTri;
+	Triangle* minAspectRatioTri;
+	Triangle* maxAspectRatioTri;
+	Quadrilateral* minAspectRatioQuad;
+	Quadrilateral* maxAspectRatioQuad;
 
 
 //	Basic grid properties on level i
@@ -353,17 +358,34 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, number ang
 		if(goc.num<Triangle>(i) > 0)
 		{
 			minAspectRatioTri = FindElementWithSmallestAspectRatio(	grid,
-																	goc.begin<Face>(i),
-																	goc.end<Face>(i),
+																	goc.begin<Triangle>(i),
+																	goc.end<Triangle>(i),
 																	aaPos);
 			maxAspectRatioTri = FindElementWithLargestAspectRatio(	grid,
-																	goc.begin<Face>(i),
-																	goc.end<Face>(i),
+																	goc.begin<Triangle>(i),
+																	goc.end<Triangle>(i),
 																	aaPos);
 			if(minAspectRatioTri != NULL)
 				n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
 			if(maxAspectRatioTri != NULL)
 				n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
+		}
+
+		//	Check for quadrilaterals
+		if (goc.num<Quadrilateral>(i) > 0)
+		{
+			minAspectRatioQuad = FindElementWithSmallestAspectRatio(grid,
+																	goc.begin<Quadrilateral>(i),
+																	goc.end<Quadrilateral>(i),
+																	aaPos);
+			maxAspectRatioQuad = FindElementWithLargestAspectRatio(grid,
+																   goc.begin<Quadrilateral>(i),
+																   goc.end<Quadrilateral>(i),
+																   aaPos);
+			if(minAspectRatioQuad != NULL)
+				n_minQuadAspectRatio = CalculateAspectRatio(grid, minAspectRatioQuad, aaPos);
+			if(maxAspectRatioQuad != NULL)
+				n_maxQuadAspectRatio = CalculateAspectRatio(grid, maxAspectRatioQuad, aaPos);
 		}
 		//PROFILE_END();
 
@@ -393,6 +415,11 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, number ang
 			table(7, 2) << "Largest triangle AR";	table(7, 3) << n_maxTriAspectRatio;
 		}
 
+		if(goc.num<Quadrilateral>(i) > 0)
+		{
+			table(8, 0) << "Smallest quad AR";	table(8, 1) << n_minQuadAspectRatio;
+			table(8, 2) << "Largest quad AR";	table(8, 3) << n_maxQuadAspectRatio;
+		}
 
 	//	Output section
 		UG_LOG("+++++++++++++++++" << endl);
@@ -448,6 +475,9 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	number n_maxFaceAngle = std::numeric_limits<double>::min();
 	number n_minTriAspectRatio = std::numeric_limits<double>::max();
 	number n_maxTriAspectRatio = std::numeric_limits<double>::min();
+
+	number n_minQuadAspectRatio = std::numeric_limits<double>::max();
+	number n_maxQuadAspectRatio = std::numeric_limits<double>::min();
 
 	number n_minVolume = std::numeric_limits<double>::max();
 	number n_maxVolume = std::numeric_limits<double>::min();
@@ -730,22 +760,28 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 			table(6, 2) << "Largest triangle AR"; table(6, 3) << n_maxTriAspectRatio;
 		}
 
-		table(7, 0) << "Smallest face";	table(7, 1) << n_minFace;
-		table(7, 2) << "Largest face";	table(7, 3) << n_maxFace;
+		if (goc.num<Quadrilateral>(i) > 0)
+		{
+			table(7, 0) << "Smallest quadrilateral AR"; table(7, 1) << n_minQuadAspectRatio;
+			table(7, 2) << "Largest quadrilateral AR"; table(7, 3) << n_maxQuadAspectRatio;
+		}
+
+		table(8, 0) << "Smallest face";	table(7, 1) << n_minFace;
+		table(8, 2) << "Largest face";	table(7, 3) << n_maxFace;
 
 		if(goc.num_volumes(i) > 0)
 		{
-			table(8, 0) << "Smallest volume";		table(8, 1) << n_minVolume;
-			table(8, 2) << "Largest volume";		table(8, 3) << n_maxVolume;
-			table(9, 0) << "Smallest volume dihedral";	table(9, 1) << n_minVolAngle;
-			table(9, 2) << "Largest volume dihedral";	table(9, 3) << n_maxVolAngle;
+			table(9, 0) << "Smallest volume";		table(8, 1) << n_minVolume;
+			table(9, 2) << "Largest volume";		table(8, 3) << n_maxVolume;
+			table(10, 0) << "Smallest volume dihedral";	table(9, 1) << n_minVolAngle;
+			table(10, 2) << "Largest volume dihedral";	table(9, 3) << n_maxVolAngle;
 
 			if(goc.num<Tetrahedron>(i) > 0)
 			{
-				table(10, 0) << "Smallest tet AR";	table(10, 1) << n_minTetAspectRatio;
-				table(10, 2) << "Largest tet AR";	table(10, 3) << n_maxTetAspectRatio;
-				table(11, 0) << "Smallest tet Vol/FaceAreaRatio";	table(11, 1) << n_minTetVolToRMSFaceAreaRatio;
-				table(11, 2) << "Largest tet Vol/FaceAreaRatio";	table(11, 3) << n_maxTetVolToRMSFaceAreaRatio;
+				table(11, 0) << "Smallest tet AR";	table(10, 1) << n_minTetAspectRatio;
+				table(11, 2) << "Largest tet AR";	table(10, 3) << n_maxTetAspectRatio;
+				table(12, 0) << "Smallest tet Vol/FaceAreaRatio";	table(11, 1) << n_minTetVolToRMSFaceAreaRatio;
+				table(12, 2) << "Largest tet Vol/FaceAreaRatio";	table(11, 3) << n_maxTetVolToRMSFaceAreaRatio;
 			}
 		}
 
@@ -803,8 +839,11 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	//	----------------------------------------
 		if(bWriteHistograms)
 		{
-			if(pcl::ProcRank() == 0)
-			{
+    int procRank = 0;
+    #ifdef UG_PARALLEL
+      procRank = pcl::ProcRank();
+    #endif
+			if(procRank == 0) {
 				ofstream ofstr;
 				std::stringstream ss;
 				ss << "volMinAngles_lvl_" << i << ".csv";
