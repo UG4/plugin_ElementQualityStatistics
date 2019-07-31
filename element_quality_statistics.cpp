@@ -18,6 +18,35 @@ namespace ug
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//	PrintVertexVolumeValence
+void PrintVertexVolumeValence(MultiGrid& mg, SubsetHandler& sh, int subsetIndex)
+{
+	AInt aNumElems;
+	mg.attach_to_vertices_dv(aNumElems, 0);
+	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
+	Grid::VertexAttachmentAccessor<AInt> aaNumElems(mg, aNumElems);
+
+	for(VolumeIterator vIter = mg.begin<Volume>(mg.top_level()); vIter != mg.end<Volume>(mg.top_level()); ++vIter)
+	{
+		Volume* vol = *vIter;
+
+		for(size_t i = 0; i < vol->num_vertices(); ++i)
+		{
+			++aaNumElems[vol->vertex(i)];
+		}
+	}
+
+	for(VertexIterator vIter = mg.begin<Vertex>(mg.top_level()); vIter != mg.end<Vertex>(mg.top_level()); ++vIter)
+	{
+		Vertex* vrt = *vIter;
+
+		if(sh.get_subset_index(vrt) == subsetIndex)
+			UG_LOG("Vertex " << aaPos[vrt] << ": aaNumElems[vrt] = " << aaNumElems[vrt] << std::endl);
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
 //	CreateElementQualityHistogram
 void CreateElementQualityHistogram(vector<int>& histOut, const std::vector<number>& vQualities, int numSections)
 {
@@ -60,12 +89,12 @@ void CreateElementQualityHistogram(vector<int>& histOut, const std::vector<numbe
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetToElementWithSmallestMinAngle
-void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler& sh, int dim, const char* roid)
+void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler& sh, int dim, const char* roid, int si)
 {
 	if(dim == 2)
-		AssignSubsetToElementWithSmallestMinAngle2d(grid, sh, roid);
+		AssignSubsetToElementWithSmallestMinAngle2d(grid, sh, roid, si);
 	else if(dim == 3)
-		AssignSubsetToElementWithSmallestMinAngle3d(grid, sh, roid);
+		AssignSubsetToElementWithSmallestMinAngle3d(grid, sh, roid, si);
 	else
 		UG_THROW("ERROR in AssignSubsetToElementWithSmallestMinAngle: Only dimensions 2 or 3 supported.");
 }
@@ -73,16 +102,12 @@ void AssignSubsetToElementWithSmallestMinAngle(MultiGrid& grid, MGSubsetHandler&
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetToElementWithSmallestMinAngle2d
-void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid)
+void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid, int si)
 {
+	Selector sel(grid);
 	GridObjectCollection goc = grid.get_grid_objects();
 	Grid::VertexAttachmentAccessor<APosition2> aaPos(grid, aPosition2);
 	uint i = goc.num_levels() - 1;
-
-	sh.assign_subset(goc.begin<Vertex>(i), goc.end<Vertex>(i), 0);
-	sh.assign_subset(goc.begin<Edge>(i), goc.end<Edge>(i), 0);
-	sh.assign_subset(goc.begin<Face>(i), goc.end<Face>(i), 0);
-	sh.set_subset_name("grid", 0);
 
 	if(strcmp(roid, "triangle") == 0 || strcmp(roid, "quadrilateral") == 0)
 	{
@@ -92,8 +117,14 @@ void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandle
 															goc.end<Face>(i),
 															aaPos);
 
-		sh.assign_subset(minAngleElement, 1);
-		sh.set_subset_name("face_with_smallest_minAngle", 1);
+		sel.select(minAngleElement);
+		CloseSelection(sel);
+
+		sh.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), si);
+		sh.assign_subset(sel.begin<Edge>(), sel.end<Edge>(), si);
+		sh.assign_subset(sel.begin<Face>(), sel.end<Face>(), si);
+
+		sh.set_subset_name("face_with_smallest_minAngle", si);
 	}
 	else
 		UG_THROW("ERROR in AssignSubsetToElementWithSmallestMinAngle2d: only 'triangle' and 'quadrilateral' supported.");
@@ -104,17 +135,12 @@ void AssignSubsetToElementWithSmallestMinAngle2d(MultiGrid& grid, MGSubsetHandle
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //	AssignSubsetToElementWithSmallestMinAngle3d
-void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid)
+void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandler& sh, const char* roid, int si)
 {
+	Selector sel(grid);
 	GridObjectCollection goc = grid.get_grid_objects();
 	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
 	uint i = goc.num_levels() - 1;
-
-	sh.assign_subset(goc.begin<Vertex>(i), goc.end<Vertex>(i), 0);
-	sh.assign_subset(goc.begin<Edge>(i), goc.end<Edge>(i), 0);
-	sh.assign_subset(goc.begin<Face>(i), goc.end<Face>(i), 0);
-	sh.assign_subset(goc.begin<Volume>(i), goc.end<Volume>(i), 0);
-	sh.set_subset_name("grid", 0);
 
 	if(strcmp(roid, "triangle") == 0 || strcmp(roid, "quadrilateral") == 0)
 	{
@@ -124,8 +150,14 @@ void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandle
 															goc.end<Face>(i),
 															aaPos);
 
-		sh.assign_subset(minAngleElement, 1);
-		sh.set_subset_name("face_with_smallest_minAngle", 1);
+		sel.select(minAngleElement);
+		CloseSelection(sel);
+
+		sh.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), si);
+		sh.assign_subset(sel.begin<Edge>(), sel.end<Edge>(), si);
+		sh.assign_subset(sel.begin<Face>(), sel.end<Face>(), si);
+
+		sh.set_subset_name("face_with_smallest_minAngle", si);
 	}
 	else if(strcmp(roid, "tetrahedron") == 0)
 	{
@@ -135,13 +167,245 @@ void AssignSubsetToElementWithSmallestMinAngle3d(MultiGrid& grid, MGSubsetHandle
 															goc.end<Tetrahedron>(i),
 															aaPos);
 
-		sh.assign_subset(minAngleElement, 1);
-		sh.set_subset_name("tet_with_smallest_minAngle", 1);
+		sel.select(minAngleElement);
+		CloseSelection(sel);
+
+		sh.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), si);
+		sh.assign_subset(sel.begin<Edge>(), sel.end<Edge>(), si);
+		sh.assign_subset(sel.begin<Face>(), sel.end<Face>(), si);
+		sh.assign_subset(sel.begin<Volume>(), sel.end<Volume>(), si);
+
+		sh.set_subset_name("tet_with_smallest_minAngle", si);
 	}
 	else
 		UG_THROW("ERROR in AssignSubsetToElementWithSmallestMinAngle: only 'triangle', 'quadrilateral' and 'tetrahedron' supported.");
 
 	AssignSubsetColors(sh);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	MeasureTetrahedronWithSmallestMinAngle
+void MeasureTetrahedronWithSmallestMinAngle(MultiGrid& grid)
+{
+	Selector sel(grid);
+	MGSubsetHandler sh(grid);
+	GridObjectCollection goc = grid.get_grid_objects();
+	Grid::VertexAttachmentAccessor<APosition> aaPos(grid, aPosition);
+	uint i = goc.num_levels() - 1;
+
+	Tetrahedron* minAngleElement;
+	minAngleElement = FindElementWithSmallestMinAngle(	grid,
+														goc.begin<Tetrahedron>(i),
+														goc.end<Tetrahedron>(i),
+														aaPos);
+
+	sel.select(minAngleElement);
+	CloseSelection(sel);
+
+//	consecutive subset assignment of volume sub-elements
+	int subsetIndex = 0;
+
+//	Edges
+	for(EdgeIterator eIter = sel.begin<Edge>(); eIter != sel.end<Edge>(); ++eIter)
+	{
+		Edge* e = *eIter;
+		sh.assign_subset(e, subsetIndex);
+		subsetIndex++;
+	}
+
+//	Faces
+	for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
+	{
+		Face* f = *fIter;
+		sh.assign_subset(f, subsetIndex);
+		subsetIndex++;
+	}
+
+//	Volume (assign vertices to same subset as volume element for valence calculation)
+	sh.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), subsetIndex);
+	sh.assign_subset(minAngleElement, subsetIndex);
+	sh.set_subset_name("tet_with_smallest_minAngle", subsetIndex);
+
+//	Taking measures
+	number measure = 0.0;
+	double faceAreaNormSquared_a = 0.0;
+	double edgeLengthNormSq_b = 0.0;
+
+	UG_LOG(std::endl);
+	UG_LOG("-------------------------------------" << std::endl);
+	UG_LOG("ElementWithSmallestMinAngle measures:" << std::endl);
+
+	cout.precision(17);
+
+	for(int i = 0; i <= 5; ++i)
+	{
+		measure = CalculateVolume(sh.begin<Edge>(i, grid.top_level()), sh.end<Edge>(i, grid.top_level()), aaPos);
+		edgeLengthNormSq_b += measure*measure;
+		UG_LOG("Edge " << i << " length : " << measure << std::endl);
+	}
+
+	for(int i = 6; i <= 9; ++i)
+	{
+		measure = CalculateVolume(sh.begin<Face>(i, grid.top_level()), sh.end<Face>(i, grid.top_level()), aaPos);
+		faceAreaNormSquared_a += measure*measure;
+		UG_LOG("Face " << i << " area : " << measure << std::endl);
+	}
+
+	measure = CalculateVolume(minAngleElement, aaPos);
+	UG_LOG("Volume V = " << measure << std::endl);
+
+	UG_LOG("Area norm squared a = " << faceAreaNormSquared_a << std::endl);
+	UG_LOG("Length norm squared b = " << edgeLengthNormSq_b << std::endl);
+	UG_LOG("-------------------------------------" << std::endl);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//	FindBoundsForStiffnesMatrixMaxEigenvalue
+void FindBoundsForStiffnesMatrixMaxEigenvalue(MultiGrid& mg, MGSubsetHandler& shOut)
+{
+	Selector sel(mg);
+
+//	Vertex valence defitions
+	AInt aNumElems;
+	mg.attach_to_vertices_dv(aNumElems, 0);
+	Grid::VertexAttachmentAccessor<APosition> aaPos(mg, aPosition);
+	Grid::VertexAttachmentAccessor<AInt> aaNumElems(mg, aNumElems);
+
+//	Bound defining volume
+	Volume* bdv = *mg.begin<Volume>(mg.top_level());
+
+//	Measurement values
+	number volume = 0.0;
+	number faceArea = 0.0;
+	number faceAreaNormSquared_a = 0.0;
+	number edgeLength = 0.0;
+	number edgeLengthNormSq_b = 0.0;
+	number upperBound = 0.0;
+	number upperBoundTmp = 0.0;
+	int maxVertexValence = 0;
+
+//	Calculate vertex valences
+	for(VolumeIterator vIter = mg.begin<Volume>(mg.top_level()); vIter != mg.end<Volume>(mg.top_level()); ++vIter)
+	{
+		Volume* vol = *vIter;
+
+		for(size_t i = 0; i < vol->num_vertices(); ++i)
+		{
+			++aaNumElems[vol->vertex(i)];
+		}
+	}
+
+	sel.clear();
+
+//	Determine bound defining volume
+	for(VolumeIterator vIter = mg.begin<Volume>(mg.top_level()); vIter != mg.end<Volume>(mg.top_level()); ++vIter)
+	{
+		Volume* vol = *vIter;
+
+		sel.select(vol);
+		CloseSelection(sel);
+
+	//	Volume
+		volume = CalculateVolume(vol, aaPos);
+
+	//	Faces
+		for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
+		{
+			Face* f = *fIter;
+			faceArea = CalculateVolume(f, aaPos);
+			faceAreaNormSquared_a += faceArea*faceArea;
+		}
+
+		upperBoundTmp = faceAreaNormSquared_a/9.0/volume;
+
+		if(upperBound < upperBoundTmp)
+		{
+			upperBound = upperBoundTmp;
+			bdv = vol;
+		}
+
+		sel.clear();
+		faceAreaNormSquared_a = 0.0;
+	}
+
+//	Complementary TetrahedronVolToRMSFaceAreaRatio calculation
+	Tetrahedron* bdt = static_cast<Tetrahedron*>(bdv);
+	number volToRMSFaceAreaRatio = CalculateTetrahedronVolToRMSFaceAreaRatio(mg, bdt, aaPos);
+
+//	Identification of element with smallest TetrahedronVolToRMSFaceAreaRatio for debugging purposes
+//	GridObjectCollection goc = mg.get_grid_objects();
+//	Tetrahedron* bdt_eqs = FindElementWithSmallestVolToRMSFaceAreaRatio(mg,
+//															goc.begin<Tetrahedron>(mg.top_level()),
+//															goc.end<Tetrahedron>(mg.top_level()),
+//															aaPos);
+//	number volToRMSFaceAreaRatio_eqs = CalculateTetrahedronVolToRMSFaceAreaRatio(mg, bdt_eqs, aaPos);
+
+	//sel.select(bdt_eqs);
+	sel.select(bdv);
+	CloseSelection(sel);
+
+//	Take measurements of bdv
+
+//	Volume
+	//volume = CalculateVolume(bdt_eqs, aaPos);
+	volume = CalculateVolume(bdv, aaPos);
+
+//	Faces
+	for(FaceIterator fIter = sel.begin<Face>(); fIter != sel.end<Face>(); ++fIter)
+	{
+		Face* f = *fIter;
+		faceArea = CalculateVolume(f, aaPos);
+		faceAreaNormSquared_a += faceArea*faceArea;
+	}
+
+//	Edges
+	for(EdgeIterator eIter = sel.begin<Edge>(); eIter != sel.end<Edge>(); ++eIter)
+	{
+		Edge* e = *eIter;
+		edgeLength = CalculateVolume(e, aaPos);
+		edgeLengthNormSq_b += edgeLength*edgeLength;
+	}
+
+//	maximal element vertex valence
+	for(VertexIterator vrtIter = sel.begin<Vertex>(); vrtIter != sel.end<Vertex>(); ++vrtIter)
+	{
+		Vertex* vrt = *vrtIter;
+
+		if(maxVertexValence < aaNumElems[vrt])
+		{
+			maxVertexValence = aaNumElems[vrt];
+		}
+	}
+
+	cout.precision(17);
+
+	number volToMeanSquareFaceAreaRatio = 4.0/(upperBound*9.0);
+
+	UG_LOG(std::endl);
+	UG_LOG("-----------------------------------------------------------------------------" << std::endl);
+	UG_LOG("Bound defining tetrahedron measures (for stiffness matrix maximal eigenvalue):" << std::endl);
+	UG_LOG(std::endl);
+	UG_LOG("volToMeanSquareFaceAreaRatio = " << volToMeanSquareFaceAreaRatio << std::endl);
+	UG_LOG("volToRMSFaceAreaRatio        = " << volToRMSFaceAreaRatio << std::endl);
+//	UG_LOG("volToRMSFaceAreaRatio_eqs    = " << volToRMSFaceAreaRatio_eqs << std::endl);
+	UG_LOG("Lower local bound            = " << upperBound/3.0 << std::endl);
+	UG_LOG("Upper local bound            = " << upperBound << std::endl);
+	UG_LOG("Lower global bound           = " << upperBound/3.0 << std::endl);
+	UG_LOG("Upper global bound           = " << upperBound*maxVertexValence << std::endl);
+	UG_LOG("Max valence                  = " << maxVertexValence << std::endl);
+	UG_LOG("Volume V                     = " << volume << std::endl);
+	UG_LOG("Area norm squared a          = " << faceAreaNormSquared_a << std::endl);
+	UG_LOG("Length norm squared b        = " << edgeLengthNormSq_b << std::endl);
+	UG_LOG("-----------------------------------------------------------------------------" << std::endl);
+
+	shOut.assign_subset(sel.begin<Vertex>(), sel.end<Vertex>(), 0);
+	shOut.assign_subset(sel.begin<Edge>(), sel.end<Edge>(), 0);
+	shOut.assign_subset(sel.begin<Face>(), sel.end<Face>(), 0);
+	shOut.assign_subset(sel.begin<Volume>(), sel.end<Volume>(), 0);
+
+	AssignSubsetColors(shOut);
 }
 
 
@@ -839,11 +1103,12 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	//	----------------------------------------
 		if(bWriteHistograms)
 		{
-    int procRank = 0;
-    #ifdef UG_PARALLEL
-      procRank = pcl::ProcRank();
-    #endif
-			if(procRank == 0) {
+			int procRank = 0;
+			#ifdef UG_PARALLEL
+				procRank = pcl::ProcRank();
+			#endif
+			if(procRank == 0)
+			{
 				ofstream ofstr;
 				std::stringstream ss;
 				ss << "volMinAngles_lvl_" << i << ".csv";

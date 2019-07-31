@@ -50,6 +50,18 @@ InitUGPlugin_ElementQualityStatistics(ug::bridge::Registry* reg, string parentGr
 						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, int, int)) (&ug::AssignSubsetsByElementQuality),
 						grp, "", "mg#sh", "");
 	reg->add_function(	"AssignSubsetToElementWithSmallestMinAngle",
-						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, int, const char*)) (&ug::AssignSubsetToElementWithSmallestMinAngle),
+						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, int, const char*, int)) (&ug::AssignSubsetToElementWithSmallestMinAngle),
 						grp, "", "mg#sh#roid", "");
+
+	reg->add_function(	"MeasureTetrahedronWithSmallestMinAngle",
+						(void (*)(ug::MultiGrid&)) (&ug::MeasureTetrahedronWithSmallestMinAngle),
+						grp, "", "mg", "");
+
+	reg->add_function(	"FindBoundsForStiffnesMatrixMaxEigenvalue",
+						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&)) (&ug::FindBoundsForStiffnesMatrixMaxEigenvalue),
+						grp, "", "mg#sh", "");
+
+	reg->add_function(	"PrintVertexVolumeValence",
+						(void (*)(ug::MultiGrid&, ug::MGSubsetHandler&, int)) (&ug::PrintVertexVolumeValence),
+						grp, "", "mg#sh#si", "");
 }
