@@ -751,6 +751,10 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	number n_maxTetAspectRatio = std::numeric_limits<double>::min();
 	number n_minTetVolToRMSFaceAreaRatio = std::numeric_limits<double>::max();
 	number n_maxTetVolToRMSFaceAreaRatio = std::numeric_limits<double>::min();
+	number n_minHexAspectRatio = std::numeric_limits<double>::max();
+	number n_maxHexAspectRatio = std::numeric_limits<double>::min();
+	number n_minHexVolToRMSFaceAreaRatio = std::numeric_limits<double>::max();
+	number n_maxHexVolToRMSFaceAreaRatio = std::numeric_limits<double>::min();
 
 
 //	Elements
@@ -760,8 +764,15 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	Face* maxFace = NULL;
 	Face* minAngleFace;
 	Face* maxAngleFace;
-	Face* minAspectRatioTri;
-	Face* maxAspectRatioTri;
+	Triangle* minAngleTri;
+	Triangle* maxAngleTri;
+	Triangle* minAspectRatioTri;
+	Triangle* maxAspectRatioTri;
+
+	Quadrilateral* minAngleQuad;
+	Quadrilateral* maxAngleQuad;
+	Quadrilateral* minAspectRatioQuad;
+	Quadrilateral* maxAspectRatioQuad;
 
 	Volume* minVolume;
 	Volume* maxVolume;
@@ -771,6 +782,9 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	Tetrahedron* maxAspectRatioTet;
 	Tetrahedron* minVolToRMSFaceAreaRatioTet;
 	Tetrahedron* maxVolToRMSFaceAreaRatioTet;
+
+	Hexahedron* minAspectRatioHex;
+	Hexahedron* maxAspectRatioHex;
 
 
 //	Basic grid properties on level i
@@ -898,18 +912,34 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	//	Check for triangles
 		if(goc.num<Triangle>(i) > 0)
 		{
-			minAspectRatioTri = FindElementWithSmallestAspectRatio(	grid,
-																	goc.begin<Face>(i),
-																	goc.end<Face>(i),
+			minAspectRatioTri = FindElementWithSmallestAspectRatio(grid,
+																	goc.begin<Triangle>(i),
+																	goc.end<Triangle>(i),
 																	aaPos);
-			maxAspectRatioTri = FindElementWithLargestAspectRatio(	grid,
-																	goc.begin<Face>(i),
-																	goc.end<Face>(i),
+			maxAspectRatioTri = FindElementWithLargestAspectRatio(grid,
+																	goc.begin<Triangle>(i),
+																	goc.end<Triangle>(i),
 																	aaPos);
 			if(minAspectRatioTri != NULL)
 				n_minTriAspectRatio = CalculateAspectRatio(grid, minAspectRatioTri, aaPos);
 			if(maxAspectRatioTri != NULL)
 				n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
+		}
+
+		if (goc.num<Quadrilateral>(i) > 0)
+		{
+			minAspectRatioQuad = FindElementWithSmallestAspectRatio(grid,
+																	goc.begin<Quadrilateral>(i),
+																	goc.end<Quadrilateral>(i),
+																	aaPos);
+			maxAspectRatioQuad = FindElementWithLargestAspectRatio(	grid,
+																	goc.begin<Quadrilateral>(i),
+																	goc.end<Quadrilateral>(i),
+																	aaPos);
+			if(minAspectRatioQuad != NULL)
+				n_minQuadAspectRatio = CalculateAspectRatio(grid, minAspectRatioQuad, aaPos);
+			if(maxAspectRatioQuad != NULL)
+				n_maxQuadAspectRatio = CalculateAspectRatio(grid, maxAspectRatioQuad, aaPos);
 		}
 		//PROFILE_END();
 
@@ -949,6 +979,7 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 			if(goc.num<Tetrahedron>(i) > 0)
 			{
 				minAspectRatioTet = FindElementWithSmallestAspectRatio(	grid,
+
 																		goc.begin<Tetrahedron>(i),
 																		goc.end<Tetrahedron>(i),
 																		aaPos);
@@ -966,6 +997,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 																		goc.end<Tetrahedron>(i),
 																		aaPos);
 
+
+
 				if(minAspectRatioTet != NULL)
 					n_minTetAspectRatio = CalculateAspectRatio(grid, minAspectRatioTet, aaPos);
 				if(maxAspectRatioTet != NULL)
@@ -974,6 +1007,22 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 					n_minTetVolToRMSFaceAreaRatio = CalculateVolToRMSFaceAreaRatio(grid, minVolToRMSFaceAreaRatioTet, aaPos);
 				if(maxVolToRMSFaceAreaRatioTet != NULL)
 					n_maxTetVolToRMSFaceAreaRatio = CalculateVolToRMSFaceAreaRatio(grid, maxVolToRMSFaceAreaRatioTet, aaPos);
+			}
+
+			if (goc.num<Hexahedron>(i) > 0) {
+				minAspectRatioHex = FindElementWithSmallestAspectRatio(	grid,
+																		goc.begin<Hexahedron>(i),
+																		goc.end<Hexahedron>(i),
+																		aaPos);
+				maxAspectRatioHex = FindElementWithLargestAspectRatio(	grid,
+																		goc.begin<Hexahedron>(i),
+																		goc.end<Hexahedron>(i),
+																		aaPos);
+
+				if(minAspectRatioHex != NULL)
+					n_minHexAspectRatio = CalculateAspectRatio(grid, minAspectRatioHex, aaPos);
+				if(maxAspectRatioHex != NULL)
+					n_maxHexAspectRatio = CalculateAspectRatio(grid, maxAspectRatioHex, aaPos);
 			}
 		}
 
@@ -990,7 +1039,10 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 				n_maxFaceAngle = pc.allreduce(n_maxFaceAngle, PCL_RO_MAX);
 				n_minTriAspectRatio = pc.allreduce(n_minTriAspectRatio, PCL_RO_MIN);
 				n_maxTriAspectRatio = pc.allreduce(n_maxTriAspectRatio, PCL_RO_MAX);
-
+				n_minQuadAngle = pc.allreduce(n_minQuadAngle, PCL_RO_MIN);
+				n_maxQuadAngle = pc.allreduce(n_maxQuadAngle, PCL_RO_MAX);
+				n_minQuadAspectRatio = pc.allreduce(n_minQuadAspectRatio, PCL_RO_MIN);
+				n_maxQuadAspectRatio = pc.allreduce(n_maxQuadAspectRatio, PCL_RO_MAX);
 				n_minVolume = pc.allreduce(n_minVolume, PCL_RO_MIN);
 				n_maxVolume = pc.allreduce(n_maxVolume, PCL_RO_MAX);
 				n_minVolAngle = pc.allreduce(n_minVolAngle, PCL_RO_MIN);
@@ -1030,22 +1082,29 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 			table(7, 2) << "Largest quadrilateral AR"; table(7, 3) << n_maxQuadAspectRatio;
 		}
 
-		table(8, 0) << "Smallest face";	table(7, 1) << n_minFace;
-		table(8, 2) << "Largest face";	table(7, 3) << n_maxFace;
+		table(8, 0) << "Smallest face";	table(8, 1) << n_minFace;
+		table(8, 2) << "Largest face";	table(8, 3) << n_maxFace;
 
 		if(goc.num_volumes(i) > 0)
 		{
-			table(9, 0) << "Smallest volume";		table(8, 1) << n_minVolume;
-			table(9, 2) << "Largest volume";		table(8, 3) << n_maxVolume;
-			table(10, 0) << "Smallest volume dihedral";	table(9, 1) << n_minVolAngle;
-			table(10, 2) << "Largest volume dihedral";	table(9, 3) << n_maxVolAngle;
+			table(9, 0) << "Smallest volume";		table(9, 1) << n_minVolume;
+			table(9, 2) << "Largest volume";		table(9, 3) << n_maxVolume;
+			table(10, 0) << "Smallest volume dihedral";	table(10, 1) << n_minVolAngle;
+			table(10, 2) << "Largest volume dihedral";	table(10, 3) << n_maxVolAngle;
 
 			if(goc.num<Tetrahedron>(i) > 0)
 			{
-				table(11, 0) << "Smallest tet AR";	table(10, 1) << n_minTetAspectRatio;
-				table(11, 2) << "Largest tet AR";	table(10, 3) << n_maxTetAspectRatio;
-				table(12, 0) << "Smallest tet Vol/FaceAreaRatio";	table(11, 1) << n_minTetVolToRMSFaceAreaRatio;
-				table(12, 2) << "Largest tet Vol/FaceAreaRatio";	table(11, 3) << n_maxTetVolToRMSFaceAreaRatio;
+				table(11, 0) << "Smallest tet AR";	table(11, 1) << n_minTetAspectRatio;
+				table(11, 2) << "Largest tet AR";	table(11, 3) << n_maxTetAspectRatio;
+				table(12, 0) << "Smallest tet Vol/FaceAreaRatio";	table(12, 1) << n_minTetVolToRMSFaceAreaRatio;
+				table(12, 2) << "Largest tet Vol/FaceAreaRatio";	table(12, 3) << n_maxTetVolToRMSFaceAreaRatio;
+			}
+
+			if (goc.num<Hexahedron>(i) > 0) {
+				table(13, 0) << "Smallest hex AR";	table(13, 1) << n_minHexAspectRatio;
+				table(13, 2) << "Largest hex AR";	table(13, 3) << n_maxHexAspectRatio;
+				table(14, 0) << "Smallest hex Vol/FaceAreaRatio";	table(14, 1) << n_minHexVolToRMSFaceAreaRatio;
+				table(14, 2) << "Largest hex Vol/FaceAreaRatio";	table(14, 3) << n_maxHexVolToRMSFaceAreaRatio;
 			}
 		}
 
@@ -1289,7 +1348,7 @@ void PrintAspectRatioHistogram(vector<number>& locAspectRatios, number stepSize,
 	#endif
 
 //	Sort the calculated aspectRatios in an ascending way
-	sort (aspectRatios.begin(), aspectRatios.end());
+	sort(aspectRatios.begin(), aspectRatios.end());
 
 //	Evaluate the minimal and maximal aspectRatio rounding to 0.01
 	number minAspectRatio = round(number(aspectRatios.front()) * 10.0) / 10.0;
@@ -1400,8 +1459,4 @@ void PrintAspectRatioHistogram(vector<number>& locAspectRatios, number stepSize,
 		outTable(i, 1) << 100.0/numElems*counter[i];
 	}
 }
-
-
-
-
 }
