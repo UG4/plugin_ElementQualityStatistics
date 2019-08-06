@@ -585,8 +585,10 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, number ang
 	number n_maxFace = 0.0;
 	number n_minFaceAngle = 0.0;
 	number n_maxFaceAngle = 0.0;
+
 	number n_minTriAspectRatio = 0.0;
 	number n_maxTriAspectRatio = 0.0;
+
 	number n_minQuadAspectRatio = 0.0;
 	number n_maxQuadAspectRatio = 0.0;
 
@@ -598,8 +600,10 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, number ang
 	Face* maxFace;
 	Face* minAngleFace;
 	Face* maxAngleFace;
+
 	Triangle* minAspectRatioTri;
 	Triangle* maxAspectRatioTri;
+
 	Quadrilateral* minAspectRatioQuad;
 	Quadrilateral* maxAspectRatioQuad;
 
@@ -660,7 +664,7 @@ void ElementQualityStatistics2d(Grid& grid, GridObjectCollection goc, number ang
 				n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
 		}
 
-		//	Check for quadrilaterals
+	//	Check for quadrilaterals
 		if (goc.num<Quadrilateral>(i) > 0)
 		{
 			minAspectRatioQuad = FindElementWithSmallestAspectRatio(grid,
@@ -762,6 +766,7 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	number n_maxFace = std::numeric_limits<double>::min();
 	number n_minFaceAngle = std::numeric_limits<double>::max();
 	number n_maxFaceAngle = std::numeric_limits<double>::min();
+
 	number n_minTriAspectRatio = std::numeric_limits<double>::max();
 	number n_maxTriAspectRatio = std::numeric_limits<double>::min();
 
@@ -772,10 +777,12 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	number n_maxVolume = std::numeric_limits<double>::min();
 	number n_minVolAngle = std::numeric_limits<double>::max();
 	number n_maxVolAngle = std::numeric_limits<double>::min();
+
 	number n_minTetAspectRatio = std::numeric_limits<double>::max();
 	number n_maxTetAspectRatio = std::numeric_limits<double>::min();
 	number n_minTetVolToRMSFaceAreaRatio = std::numeric_limits<double>::max();
 	number n_maxTetVolToRMSFaceAreaRatio = std::numeric_limits<double>::min();
+
 	number n_minHexAspectRatio = std::numeric_limits<double>::max();
 	number n_maxHexAspectRatio = std::numeric_limits<double>::min();
 	number n_minHexVolToRMSFaceAreaRatio = std::numeric_limits<double>::max();
@@ -789,6 +796,7 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	Face* maxFace = NULL;
 	Face* minAngleFace;
 	Face* maxAngleFace;
+
 	Triangle* minAngleTri;
 	Triangle* maxAngleTri;
 	Triangle* minAspectRatioTri;
@@ -803,6 +811,7 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	Volume* maxVolume;
 	Volume* minAngleVol;
 	Volume* maxAngleVol;
+
 	Tetrahedron* minAspectRatioTet;
 	Tetrahedron* maxAspectRatioTet;
 	Tetrahedron* minVolToRMSFaceAreaRatioTet;
@@ -951,6 +960,7 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 				n_maxTriAspectRatio = CalculateAspectRatio(grid, maxAspectRatioTri, aaPos);
 		}
 
+	//	Check for quadrilaterals
 		if (goc.num<Quadrilateral>(i) > 0)
 		{
 			minAspectRatioQuad = FindElementWithSmallestAspectRatio(grid,
@@ -1034,6 +1044,7 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 					n_maxTetVolToRMSFaceAreaRatio = CalculateVolToRMSFaceAreaRatio(grid, maxVolToRMSFaceAreaRatioTet, aaPos);
 			}
 
+		//	Hexahedron section
 			if (goc.num<Hexahedron>(i) > 0) {
 				minAspectRatioHex = FindElementWithSmallestAspectRatio(	grid,
 																		goc.begin<Hexahedron>(i),
