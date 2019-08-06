@@ -1075,8 +1075,8 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 				n_maxFaceAngle = pc.allreduce(n_maxFaceAngle, PCL_RO_MAX);
 				n_minTriAspectRatio = pc.allreduce(n_minTriAspectRatio, PCL_RO_MIN);
 				n_maxTriAspectRatio = pc.allreduce(n_maxTriAspectRatio, PCL_RO_MAX);
-				n_minQuadAngle = pc.allreduce(n_minQuadAngle, PCL_RO_MIN);
-				n_maxQuadAngle = pc.allreduce(n_maxQuadAngle, PCL_RO_MAX);
+//				n_minQuadAngle = pc.allreduce(n_minQuadAngle, PCL_RO_MIN);
+//				n_maxQuadAngle = pc.allreduce(n_maxQuadAngle, PCL_RO_MAX);
 				n_minQuadAspectRatio = pc.allreduce(n_minQuadAspectRatio, PCL_RO_MIN);
 				n_maxQuadAspectRatio = pc.allreduce(n_maxQuadAspectRatio, PCL_RO_MAX);
 				n_minVolume = pc.allreduce(n_minVolume, PCL_RO_MIN);
