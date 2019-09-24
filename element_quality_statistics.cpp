@@ -452,15 +452,15 @@ void AssignSubsetsByElementQuality3d(MultiGrid& grid, MGSubsetHandler& sh, int n
 	int numElems = 0;
 
 //	Calculate aspect ratio for every element and attach element id
-	for(VolumeIterator vIter = grid.begin<Tetrahedron>(); vIter != grid.end<Tetrahedron>(); ++vIter)
+	for(VolumeIterator vIter = grid.begin<Volume>(); vIter != grid.end<Volume>(); ++vIter)
 	{
-		Tetrahedron* tet = static_cast<Tetrahedron*>(*vIter);
-		number q = CalculateMinDihedral(grid, tet, aaPos);
+		//Tetrahedron* tet = static_cast<Tetrahedron*>(*vIter);
+		number q = CalculateMinDihedral(grid, *vIter, aaPos);
 		//ALTERNATIVELY:
 		//number q = CalculateAspectRatio(grid, tet, aaPos);
 		vQualities.push_back(q);
 
-		aaElemID[tet] = numElems;
+		aaElemID[*vIter] = numElems;
 		numElems++;
 	}
 
@@ -469,13 +469,13 @@ void AssignSubsetsByElementQuality3d(MultiGrid& grid, MGSubsetHandler& sh, int n
 	CreateElementQualityHistogram(hist, vQualities, numSecs);
 
 //	Assign elements to subsets by their aspect ration and set subset name by quality
-	for(VolumeIterator vIter = grid.begin<Tetrahedron>(); vIter != grid.end<Tetrahedron>(); ++vIter)
+	for(VolumeIterator vIter = grid.begin<Volume>(); vIter != grid.end<Volume>(); ++vIter)
 	{
-		Tetrahedron* tet = static_cast<Tetrahedron*>(*vIter);
-		sh.assign_subset(tet, hist[aaElemID[tet]]);
+		//Tetrahedron* tet = static_cast<Tetrahedron*>(*vIter);
+		sh.assign_subset(*vIter, hist[aaElemID[*vIter]]);
 
-		const char* siName = (mkstr(vQualities[aaElemID[tet]])).c_str();
-		sh.set_subset_name(siName, hist[aaElemID[tet]]);
+		const char* siName = (mkstr(vQualities[aaElemID[*vIter]])).c_str();
+		sh.set_subset_name(siName, hist[aaElemID[*vIter]]);
 	}
 
 //	Set color range for the assigned subsets and name subsets by their qualities
@@ -797,13 +797,9 @@ void ElementQualityStatistics3d(Grid& grid, GridObjectCollection goc, number ang
 	Face* minAngleFace;
 	Face* maxAngleFace;
 
-	Triangle* minAngleTri;
-	Triangle* maxAngleTri;
 	Triangle* minAspectRatioTri;
 	Triangle* maxAspectRatioTri;
 
-	Quadrilateral* minAngleQuad;
-	Quadrilateral* maxAngleQuad;
 	Quadrilateral* minAspectRatioQuad;
 	Quadrilateral* maxAspectRatioQuad;
 
