@@ -186,6 +186,7 @@ void CollectVolToRMSFaceAreaRatios(Grid& grid, TIterator elementsBegin,
 	}
 
 //	Calculate the ratio of every element
+	bool nonTetrahedralElemsPresent = false;
 	for(TIterator iter = elementsBegin; iter != elementsEnd; ++iter)
 	{
 		#ifdef UG_PARALLEL
@@ -196,9 +197,19 @@ void CollectVolToRMSFaceAreaRatios(Grid& grid, TIterator elementsBegin,
 				continue;
 		#endif
 
+		if (!dynamic_cast<Tetrahedron*>(*iter))
+		{
+			ratios.push_back(0.0);
+			nonTetrahedralElemsPresent = true;
+			continue;
+		}
 		number curRatio = CalculateVolToRMSFaceAreaRatio(grid, *iter, aaPos);
 		ratios.push_back(curRatio);
 	}
+
+	if (nonTetrahedralElemsPresent)
+		UG_LOGN("CollectVolToRMSFaceAreaRatios could not calculate VolToRMSFaceAreaRatios "
+			"for non-tetraheadral elements (set to 0.0)");
 }
 
 
