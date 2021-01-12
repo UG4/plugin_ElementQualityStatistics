@@ -1,7 +1,7 @@
 ################################################################################
 #
 #
-# Copyright (c) 2013-2019:  G-CSC, Goethe University Frankfurt
+# Copyright (c) 2013-2021:  G-CSC, Goethe University Frankfurt
 # Author: Martin Stepniewski
 #
 # This file is part of UG4.
